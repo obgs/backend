@@ -1,0 +1,32 @@
+name: Nightly
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.15'
+      - uses: actions/checkout@v2
+      - run: go test ./...
+
+  failure-notification:
+    name: Notify team on nightly failure
+    runs-on: ubuntu-latest
+
+    if: failure()
+    needs:
+      - test
+
+    steps:
+      - name: Discord notification
+        uses: nobrayner/discord-webhook@v1
+        with:
+          github-token: ${{ secrets.github_token }}
+          discord-webhook: ${{ secrets.DISCORD_WEBHOOK }}
