@@ -37,27 +37,16 @@ CREATE (u8) -[:FRIEND]-> (u5)
 CREATE (u9) -[:FRIEND]-> (u10)
 
 // Friend requests
-MATCH (requesting_user:User {name: 'Mary'})
-MATCH (requested_user:User {name: 'Sam'})
-CREATE (requesting_user) -[:REQUESTED_FRIEND]-> (requested_user)
-
-MATCH (requesting_user:User {name: 'Sam'})
-MATCH (requested_user:User {name: 'Mary'})
-CREATE (requesting_user) -[:REQUESTED_FRIEND]-> (requested_user)
-
-MATCH (requesting_user:User {name: 'Adolf'})
-MATCH (requested_user:User {name: 'Mary'})
-CREATE (requesting_user) -[:REQUESTED_FRIEND]-> (requested_user)
-
-// After every friend request
 CALL {
-  MATCH (a:User) -[r1:REQUESTED_FRIEND]-> (b:User)
-  MATCH (a)     <-[r2:REQUESTED_FRIEND]-  (b)
-  RETURN a, b, r1, r2 ORDER BY a.name ASC LIMIT 1
+  MATCH (requesting_user:User {name: 'Sam'})
+  MATCH (requested_user:User {name: 'Mike'})
+  CREATE (requesting_user) -[new_request:REQUESTED_FRIEND]-> (requested_user)
+  RETURN requesting_user, requested_user, new_request
 }
-DELETE r1, r2
-CREATE (a) -[:FRIEND]-> (b)
-// todo: merge 2 in 1
+MATCH (requesting_user) <-[old_request:REQUESTED_FRIEND]- (requested_user)
+DELETE new_request, old_request
+CREATE (requesting_user) -[f:FRIEND]-> (requested_user)
+RETURN id(new_request), id(f)
 
 // User remove
 MATCH (u:User {name: 'Mary'})
