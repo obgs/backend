@@ -37,11 +37,12 @@ func New(target string) (*Neo4j, error) {
 }
 
 // UserAdd ...
-func (s *Neo4j) UserAdd(name, birth, gender string) error {
+func (s *Neo4j) UserAdd(u obgsstorage.User) error {
 	result, err := s.session.Run("CREATE (:User  {name: $name, birth: date($birth), gender: $gender})", map[string]interface{}{
-		"name":   name,
-		"birth":  birth,
-		"gender": gender,
+		"username":    u.Username,
+		"displayname": u.Displayname,
+		"birth":       u.BirthDate,
+		"gender":      u.Gender,
 	})
 
 	if err != nil {
@@ -52,10 +53,10 @@ func (s *Neo4j) UserAdd(name, birth, gender string) error {
 }
 
 // UserRemove ...
-func (s *Neo4j) UserRemove(name string) error {
+func (s *Neo4j) UserRemove(username string) error {
 
-	result, err := s.session.Run("MATCH (u:User {name: $name})	DELETE u", map[string]interface{}{
-		"name": name,
+	result, err := s.session.Run("MATCH (u:User {username: $username})	DELETE u", map[string]interface{}{
+		"username": username,
 	})
 
 	if err != nil {
@@ -66,15 +67,48 @@ func (s *Neo4j) UserRemove(name string) error {
 }
 
 // UserRequestFriendship ...
-func (s *Neo4j) UserRequestFriendship(nameFrom, nameTo string) error {
-	// todo
-	return nil
+func (s *Neo4j) UserRequestFriendship(usernameFrom, usernameTo string) error {
+	result, err := s.session.Run(`
+	  CALL {
+		MATCH (requesting_user:User {name: $usernameFrom})
+		MATCH (requested_user:User {name: $usernameTo})
+		CREATE (requesting_user) -[new_request:REQUESTED_FRIEND]-> (requested_user)
+		RETURN requesting_user, requested_user, new_request
+	  }
+	  MATCH (requesting_user) <-[old_request:REQUESTED_FRIEND]- (requested_user)
+	  DELETE new_request, old_request
+	  CREATE (requesting_user) -[f:FRIEND]-> (requested_user)
+	  RETURN id(new_request), id(f)
+	`, map[string]interface{}{
+		"usernameFrom": usernameFrom,
+		"usernameTo":   usernameTo,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return result.Err()
 }
 
 // UserRemoveFriendship ...
-func (s *Neo4j) UserRemoveFriendship(nameFrom, nameTo string) error {
-	// todo
-	return nil
+func (s *Neo4j) UserRemoveFriendship(usernameFrom, usernameTo string) error {
+	result, err := s.session.Run(`
+	  MATCH (requesting_user:User {username: 'sam'}) -[r:FRIEND]- (requested_user:User {username: 'mike'})
+	  CREATE (requesting_user) <-[:REQUESTED_FRIEND]- (requested_user)
+	  DELETE r;
+	  MATCH (requesting_user:User {username: 'sam'}) -[r:REQUESTED_FRIEND]-> (requested_user:User {username: 'mike'})
+	  DELETE r
+	`, map[string]interface{}{
+		"usernameFrom": usernameFrom,
+		"usernameTo":   usernameTo,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return result.Err()
 }
 
 func testNeo4j() error {
