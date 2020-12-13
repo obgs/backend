@@ -15,4 +15,13 @@ jobs:
           go-version: '^1.15'
       - uses: actions/checkout@v2
       - run: go test ./...
-      - run: .github/workflows/check-generate.sh
+
+  check-generate:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.15'
+      - uses: actions/checkout@v2
+      - run: .github/scripts/check-generate.sh
