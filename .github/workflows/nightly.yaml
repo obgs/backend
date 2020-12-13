@@ -14,6 +14,8 @@ jobs:
         with:
           go-version: '^1.15'
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - run: go test ./...
 
   check-generate:
@@ -24,6 +26,8 @@ jobs:
         with:
           go-version: '^1.15'
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - run: .github/scripts/check-generate.sh
 
   failure-notification:
