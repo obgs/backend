@@ -15,7 +15,6 @@ jobs:
           go-version: '^1.15'
       - uses: actions/checkout@v2
         with:
-          ssh-key: ${{ secrets.SCHEMA_DEPLOY_KEY }}
           submodules: recursive
       - run: go test ./...
 
@@ -28,7 +27,6 @@ jobs:
           go-version: '^1.15'
       - uses: actions/checkout@v2
         with:
-          ssh-key: ${{ secrets.SCHEMA_DEPLOY_KEY }}
           submodules: recursive
       - run: .github/scripts/check-generate.sh
 
