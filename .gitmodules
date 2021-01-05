@@ -1,3 +1,0 @@
-[submodule "graphql/schema"]
-	path = graphql/schema
-	url = ../schema.git
