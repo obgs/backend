@@ -1,0 +1,14 @@
+type User {
+  id: ID!
+  name: String!
+  createdAt: Date!
+  player: Player!
+}
+
+input UserInput {
+  name: String!
+}
+
+extend type Mutation {
+  register(input: UserInput!): User!
+}

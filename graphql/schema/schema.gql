@@ -1,0 +1,10 @@
+type Query
+
+type Mutation
+
+scalar Date
+
+schema {
+  query: Query
+  mutation: Mutation
+}
