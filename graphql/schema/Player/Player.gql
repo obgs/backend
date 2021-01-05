@@ -1,0 +1,17 @@
+type Player {
+  id: ID!
+  owner: User
+  name: String
+}
+
+input PlayerInput {
+  name: String
+}
+
+extend type Mutation {
+  createPlayer(input: PlayerInput!): Player!
+}
+
+extend type Query {
+  myPlayers: [Player!]!
+}
