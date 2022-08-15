@@ -10,6 +10,7 @@ import (
 	"github.com/open-boardgame-stats/backend/graphql/model"
 )
 
+// Register is the resolver for the register field.
 func (r *mutationResolver) Register(ctx context.Context, input model.UserInput) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }

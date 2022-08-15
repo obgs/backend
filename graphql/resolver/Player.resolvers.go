@@ -10,10 +10,12 @@ import (
 	"github.com/open-boardgame-stats/backend/graphql/model"
 )
 
+// CreatePlayer is the resolver for the createPlayer field.
 func (r *mutationResolver) CreatePlayer(ctx context.Context, input model.PlayerInput) (*model.Player, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
+// MyPlayers is the resolver for the myPlayers field.
 func (r *queryResolver) MyPlayers(ctx context.Context) ([]*model.Player, error) {
 	panic(fmt.Errorf("not implemented"))
 }
