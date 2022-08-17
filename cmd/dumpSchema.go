@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/open-boardgame-stats/backend/graphql/generated"
-	"github.com/open-boardgame-stats/backend/graphql/resolver"
 )
 
 func getIntrospection(schema graphql.ExecutableSchema) *graphql.Response {
@@ -48,9 +47,7 @@ var dumpSchemaCmd = &cobra.Command{
 	Use:   "dumpSchema",
 	Short: "Dump graphql schema introspection",
 	Run: func(cmd *cobra.Command, args []string) {
-		schema := generated.NewExecutableSchema(generated.Config{
-			Resolvers: &resolver.Resolver{},
-		})
+		schema := generated.NewExecutableSchema(generated.Config{})
 		res := getIntrospection(schema)
 		if err := printJSON(os.Stdout, res); err != nil {
 			log.Fatalf("%v", err)

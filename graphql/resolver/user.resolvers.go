@@ -4,14 +4,18 @@ package resolver
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
+	"context"
+
+	"github.com/open-boardgame-stats/backend/ent"
 	"github.com/open-boardgame-stats/backend/graphql/generated"
 )
+
+// UpdateUser is the resolver for the updateUser field.
+func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input ent.UpdateUserInput) (*ent.User, error) {
+	return ent.FromContext(ctx).User.UpdateOneID(id).SetInput(input).Save(ctx)
+}
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
-// Query returns generated.QueryResolver implementation.
-func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
-
 type mutationResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }

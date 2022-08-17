@@ -1,1 +1,3 @@
-schema: "graphql/schema/**/*.gql"
+schema:
+  - "graphql/schema/**/*.gql"
+  - "graphql/schema/**/*.graphql"
