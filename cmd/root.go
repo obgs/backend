@@ -16,6 +16,7 @@ type Config struct {
 	DBName    string `mapstructure:"DB_NAME"`
 	DBUser    string `mapstructure:"DB_USER"`
 	DBPass    string `mapstructure:"DB_PASS"`
+	JWTSecret string `mapstructure:"JWT_SECRET"`
 }
 
 var config Config
