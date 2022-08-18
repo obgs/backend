@@ -9,8 +9,10 @@ import (
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/go-chi/chi/v5"
 	"github.com/spf13/cobra"
 
+	"github.com/open-boardgame-stats/backend/auth"
 	"github.com/open-boardgame-stats/backend/ent"
 	"github.com/open-boardgame-stats/backend/ent/migrate"
 	"github.com/open-boardgame-stats/backend/graphql/resolver"
@@ -29,8 +31,9 @@ var serverCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("failed to open connection to postgres: %v", err)
 		}
+		ctx := context.Background()
 		if err := client.Schema.Create(
-			context.Background(),
+			ctx,
 			migrate.WithGlobalUniqueID(true),
 		); err != nil {
 			log.Fatalf("failed to migrate schema: %v", err)
@@ -39,10 +42,15 @@ var serverCmd = &cobra.Command{
 		srv := handler.NewDefaultServer(resolver.NewSchema(client))
 		srv.Use(entgql.Transactioner{TxOpener: client})
 
-		http.Handle("/", playground.Handler("OBGS", "/graphql"))
-		http.Handle("/graphql", srv)
+		authService := auth.NewAuthService(client, ctx, config.JWTSecret)
 
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", serverPort), nil))
+		router := chi.NewRouter()
+		router.Get("/", playground.Handler("OBGS", "/graphql"))
+		router.Handle("/graphql", srv)
+		router.Post("/signup", authService.SignUp)
+		router.Post("/signin", authService.SignIn)
+
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", serverPort), router))
 	},
 }
 

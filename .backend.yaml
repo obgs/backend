@@ -3,3 +3,4 @@ DB_PORT: 5432
 DB_NAME: obgs
 DB_USER: postgres
 DB_PASS: postgres
+JWT_SECRET: secret

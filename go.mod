@@ -6,12 +6,15 @@ require (
 	entgo.io/contrib v0.3.1
 	entgo.io/ent v0.11.2
 	github.com/99designs/gqlgen v0.17.13
+	github.com/go-chi/chi/v5 v5.0.7
+	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/lib/pq v1.10.6
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 	github.com/vektah/gqlparser/v2 v2.4.7
 	github.com/vmihailenco/msgpack/v5 v5.3.5
+	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 )
 
