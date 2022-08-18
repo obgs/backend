@@ -6,17 +6,18 @@ package resolver
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/ent"
 	"github.com/open-boardgame-stats/backend/graphql/generated"
 )
 
 // Node is the resolver for the node field.
-func (r *queryResolver) Node(ctx context.Context, id int) (ent.Noder, error) {
+func (r *queryResolver) Node(ctx context.Context, id uuid.UUID) (ent.Noder, error) {
 	return r.client.Noder(ctx, id)
 }
 
 // Nodes is the resolver for the nodes field.
-func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, error) {
+func (r *queryResolver) Nodes(ctx context.Context, ids []uuid.UUID) ([]ent.Noder, error) {
 	return r.client.Noders(ctx, ids)
 }
 

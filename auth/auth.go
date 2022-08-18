@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/ent"
 	"github.com/open-boardgame-stats/backend/ent/user"
 	"golang.org/x/crypto/bcrypt"
@@ -29,7 +30,7 @@ func internalServerError(w http.ResponseWriter, message string) {
 }
 
 // create and sign access and refresh tokens
-func (a *AuthService) generateTokens(w http.ResponseWriter, userId int) {
+func (a *AuthService) generateTokens(w http.ResponseWriter, userId uuid.UUID) {
 	now := time.Now()
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  userId,
