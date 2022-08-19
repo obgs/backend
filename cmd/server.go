@@ -47,9 +47,9 @@ var serverCmd = &cobra.Command{
 		router := chi.NewRouter()
 		router.Get("/", playground.Handler("OBGS", "/graphql"))
 		router.Handle("/graphql", srv)
-		router.Post("/signup", authService.SignUp)
-		router.Post("/signin", authService.SignIn)
-		router.Post("/refresh", authService.Refresh)
+		router.Post("/auth/signup", authService.SignUp)
+		router.Post("/auth/signin", authService.SignIn)
+		router.Post("/auth/refresh", authService.Refresh)
 
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", serverPort), router))
 	},
