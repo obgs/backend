@@ -29,6 +29,10 @@ func internalServerError(w http.ResponseWriter, message string) {
 	http.Error(w, message, http.StatusInternalServerError)
 }
 
+func invalidRefreshToken(w http.ResponseWriter) {
+	http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+}
+
 // create and sign access and refresh tokens
 func (a *AuthService) generateTokens(w http.ResponseWriter, userId uuid.UUID) {
 	now := time.Now()
@@ -112,4 +116,32 @@ func (a *AuthService) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.generateTokens(w, u.ID)
+}
+
+// Refresh refreshes the access and refresh token
+func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) {
+	// get the refresh token
+	refreshToken := r.FormValue("refresh_token")
+
+	// parse the refresh token
+	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(a.secret), nil
+	})
+	if err != nil {
+		invalidRefreshToken(w)
+		return
+	}
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		id, err := uuid.Parse(claims["id"].(string))
+		if err != nil {
+			invalidRefreshToken(w)
+			return
+		}
+		a.generateTokens(w, id)
+	} else {
+		invalidRefreshToken(w)
+	}
 }

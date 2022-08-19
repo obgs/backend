@@ -49,6 +49,7 @@ var serverCmd = &cobra.Command{
 		router.Handle("/graphql", srv)
 		router.Post("/signup", authService.SignUp)
 		router.Post("/signin", authService.SignIn)
+		router.Post("/refresh", authService.Refresh)
 
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", serverPort), router))
 	},
