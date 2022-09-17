@@ -10,6 +10,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/spf13/cobra"
 
 	"github.com/open-boardgame-stats/backend/auth"
@@ -45,6 +46,17 @@ var serverCmd = &cobra.Command{
 		authService := auth.NewAuthService(client, ctx, config.JWTSecret)
 
 		router := chi.NewRouter()
+
+		// cors setup
+		router.Use(cors.Handler(cors.Options{
+			AllowedOrigins:   []string{"*"},
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: false,
+			MaxAge:           300, // Maximum value not ignored by any of major browsers
+		}))
+
 		router.Get("/", playground.Handler("OBGS", "/graphql"))
 		router.Handle("/graphql", srv)
 		router.Post("/auth/signup", authService.SignUp)
