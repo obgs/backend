@@ -34,7 +34,7 @@ func invalidRefreshToken(w http.ResponseWriter) {
 }
 
 // create and sign access and refresh tokens
-func (a *AuthService) generateTokens(w http.ResponseWriter, userId uuid.UUID) {
+func (a *AuthService) generateTokens(w http.ResponseWriter, userId uuid.UUID, statusCode int) {
 	now := time.Now()
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  userId,
@@ -56,7 +56,7 @@ func (a *AuthService) generateTokens(w http.ResponseWriter, userId uuid.UUID) {
 	}
 
 	// return the response
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(statusCode)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"access_token":  signedAccessToken,
@@ -88,7 +88,7 @@ func (a *AuthService) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.generateTokens(w, u.ID)
+	a.generateTokens(w, u.ID, http.StatusCreated)
 }
 
 // SignIn authenticates a user with email and password from form data
@@ -115,7 +115,7 @@ func (a *AuthService) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.generateTokens(w, u.ID)
+	a.generateTokens(w, u.ID, http.StatusOK)
 }
 
 // Refresh refreshes the access and refresh token
@@ -140,7 +140,7 @@ func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) {
 			invalidRefreshToken(w)
 			return
 		}
-		a.generateTokens(w, id)
+		a.generateTokens(w, id, http.StatusOK)
 	} else {
 		invalidRefreshToken(w)
 	}
