@@ -1,0 +1,11 @@
+**
+!go.mod
+!go.sum
+!*.go
+!.graphqlrc.yml
+!gqlgen.yml
+!auth
+!cmd
+!ent
+!graphql
+!tools
