@@ -6,40 +6,28 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	"github.com/open-boardgame-stats/backend/ent"
-	"github.com/open-boardgame-stats/backend/ent/user"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
-const (
-	oAuthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo"
-	oAuthStateTTL     = 20 * time.Minute
-)
-
-var oAuthGoogleConfig = oauth2.Config{
-	ClientID:     "43480745913-1lhqt43oe2gir7fqdv5058m5l3q1hl2p.apps.googleusercontent.com",
-	ClientSecret: "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",
-	Endpoint:     google.Endpoint,
-	RedirectURL:  "http://localhost:8881/auth/google/callback",
-	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
-}
+const oAuthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 type oAuthGoogleUserData struct {
 	Email string `json:"email"`
 }
 
+func (d *oAuthGoogleUserData) GetEmail() string {
+	return d.Email
+}
+
 func (a *AuthService) OAuthGoogleLogin(w http.ResponseWriter, r *http.Request) {
 	oAuthState := a.generateOAuthState()
-	fmt.Println(oAuthState)
-	redirectUrl := oAuthGoogleConfig.AuthCodeURL(oAuthState)
+	redirectUrl := a.oAuthConfig.google.AuthCodeURL(oAuthState)
 	http.Redirect(w, r, redirectUrl, http.StatusTemporaryRedirect)
 }
 
 func (a *AuthService) OAuthGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	// get state
 	oAuthState := r.FormValue("state")
+	defer a.clearOAuthState(oAuthState)
 
 	// validate state
 	t, ok := a.oAuthStates[oAuthState]
@@ -54,11 +42,11 @@ func (a *AuthService) OAuthGoogleCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	a.oAuthGoogleSignUp(data, w)
+	a.oAuthSignUp(data, w)
 }
 
 func (a *AuthService) oAuthGoogleGetData(code string) (*oAuthGoogleUserData, error) {
-	token, err := oAuthGoogleConfig.Exchange(a.ctx, code)
+	token, err := a.oAuthConfig.google.Exchange(a.ctx, code)
 	if err != nil {
 		return nil, fmt.Errorf("code exchange wrong: %v", err)
 	}
@@ -79,23 +67,4 @@ func (a *AuthService) oAuthGoogleGetData(code string) (*oAuthGoogleUserData, err
 	}
 
 	return userData, nil
-}
-
-func (a *AuthService) oAuthGoogleSignUp(data *oAuthGoogleUserData, w http.ResponseWriter) {
-	var u *ent.User
-	u, findErr := a.client.User.Query().Where(user.EmailEQ(data.Email)).Only(a.ctx)
-	if findErr != nil && !ent.IsNotFound(findErr) {
-		internalServerError(w, fmt.Sprintf("failed to find user: %v", findErr))
-		return
-	}
-	if ent.IsNotFound(findErr) {
-		newU, createErr := a.client.User.Create().SetEmail(data.Email).Save(a.ctx)
-		if createErr != nil {
-			internalServerError(w, fmt.Sprintf("failed to create user: %v", createErr))
-			return
-		}
-		u = newU
-	}
-
-	a.generateTokens(w, u.ID)
 }

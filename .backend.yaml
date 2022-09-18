@@ -4,5 +4,6 @@ DB_NAME: obgs
 DB_USER: postgres
 DB_PASS: postgres
 JWT_SECRET: secret
-OAUTH2_GITHUB_CLIENT_ID: b47ead2b6b662cb45efb
-OAUTH2_GITHUB_SECRET: 99d4906dcd846d19be10cfa710736c84bf5c3066
+SERVER_HOST: localhost
+OAUTH_GOOGLE_CLIENT_ID: google_client_id
+OAUTH_GOOGLE_CLIENT_SECRET: google_client_secret

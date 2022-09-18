@@ -43,7 +43,8 @@ var serverCmd = &cobra.Command{
 		srv := handler.NewDefaultServer(resolver.NewSchema(client))
 		srv.Use(entgql.Transactioner{TxOpener: client})
 
-		authService := auth.NewAuthService(client, ctx, config.JWTSecret)
+		oAuthConfig := auth.NewOAuthConfig(config.ServerHost, serverPort, config.OAuthGoogleClinetID, config.OAuthGoogleClinetSecret)
+		authService := auth.NewAuthService(client, ctx, config.JWTSecret, oAuthConfig)
 
 		router := chi.NewRouter()
 

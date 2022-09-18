@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,18 +15,49 @@ import (
 	"github.com/open-boardgame-stats/backend/ent"
 	"github.com/open-boardgame-stats/backend/ent/user"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
+
+const oAuthStateTTL = 20 * time.Minute
 
 type AuthService struct {
 	client      *ent.Client
 	ctx         context.Context
 	secret      string
+	oAuthConfig oAuthConfig
 	oAuthStates map[string]time.Time
 }
 
+type oAuthConfig struct {
+	google oauth2.Config
+}
+
+func NewOAuthConfig(serverHost, serverPort, googleClientID, googleClientSecret string) oAuthConfig {
+	return oAuthConfig{
+		google: oauth2.Config{
+			ClientID:     googleClientID,
+			ClientSecret: googleClientSecret,
+			Endpoint:     google.Endpoint,
+			RedirectURL:  fmt.Sprintf("http://%s:%s/auth/google/callback", serverHost, serverPort),
+			Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
+		},
+	}
+}
+
+type oAuthData interface {
+	GetEmail() string
+}
+
 // NewAuthService returns a new AuthService
-func NewAuthService(client *ent.Client, ctx context.Context, secret string) *AuthService {
-	return &AuthService{client, ctx, secret, make(map[string]time.Time)}
+func NewAuthService(client *ent.Client, ctx context.Context, secret string, oAuthConfig oAuthConfig) *AuthService {
+	return &AuthService{
+		client,
+		ctx,
+		secret,
+		oAuthConfig,
+		make(map[string]time.Time),
+	}
 }
 
 func internalServerError(w http.ResponseWriter, message string) {
@@ -149,6 +181,32 @@ func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
+	u, findErr := a.client.User.Query().Where(user.EmailEQ(data.GetEmail())).Only(a.ctx)
+	if findErr != nil && !ent.IsNotFound(findErr) {
+		internalServerError(w, fmt.Sprintf("failed to find user: %v", findErr))
+		return
+	}
+
+	if ent.IsNotFound(findErr) {
+		password := a.randomPassword(32)
+		newU, createErr := a.client.User.Create().SetEmail(data.GetEmail()).SetPassword(password).Save(a.ctx)
+		if createErr != nil {
+			internalServerError(w, fmt.Sprintf("failed to create user: %v", createErr))
+			return
+		}
+		u = newU
+	}
+
+	a.generateTokens(w, u.ID, http.StatusOK)
+}
+
+func (a *AuthService) randomPassword(n int) string {
+	b := make([]byte, n)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
 func (a *AuthService) generateOAuthState() string {
 	b := make([]byte, 16)
 	rand.Read(b)
@@ -156,4 +214,8 @@ func (a *AuthService) generateOAuthState() string {
 	a.oAuthStates[state] = time.Now()
 
 	return state
+}
+
+func (a *AuthService) clearOAuthState(state string) {
+	delete(a.oAuthStates, state)
 }

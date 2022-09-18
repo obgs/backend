@@ -11,12 +11,15 @@ import (
 var cfgFile string
 
 type Config struct {
-	DBAddress string `mapstructure:"DB_ADDRESS"`
-	DBPort    string `mapstructure:"DB_PORT"`
-	DBName    string `mapstructure:"DB_NAME"`
-	DBUser    string `mapstructure:"DB_USER"`
-	DBPass    string `mapstructure:"DB_PASS"`
-	JWTSecret string `mapstructure:"JWT_SECRET"`
+	DBAddress               string `mapstructure:"DB_ADDRESS"`
+	DBPort                  string `mapstructure:"DB_PORT"`
+	DBName                  string `mapstructure:"DB_NAME"`
+	DBUser                  string `mapstructure:"DB_USER"`
+	DBPass                  string `mapstructure:"DB_PASS"`
+	JWTSecret               string `mapstructure:"JWT_SECRET"`
+	ServerHost              string `mapstructure:"SERVER_HOST"`
+	OAuthGoogleClinetID     string `mapstructure:"OAUTH_GOOGLE_CLIENT_ID"`
+	OAuthGoogleClinetSecret string `mapstructure:"OAUTH_GOOGLE_CLIENT_SECRET"`
 }
 
 var config Config
