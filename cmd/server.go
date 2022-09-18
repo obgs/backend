@@ -58,6 +58,8 @@ var serverCmd = &cobra.Command{
 			MaxAge:           300, // Maximum value not ignored by any of major browsers
 		}))
 
+		router.Use(authService.Middleware)
+
 		router.Get("/", playground.Handler("OBGS", "/graphql"))
 		router.Handle("/graphql", srv)
 		router.Post("/auth/signup", authService.SignUp)
