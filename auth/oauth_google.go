@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 const oAuthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo"
@@ -18,25 +17,8 @@ func (d *oAuthGoogleUserData) GetEmail() string {
 	return d.Email
 }
 
-func (a *AuthService) OAuthGoogleLogin(w http.ResponseWriter, r *http.Request) {
-	oAuthState := a.generateOAuthState()
-	redirectUrl := a.oAuthConfig.google.AuthCodeURL(oAuthState)
-	http.Redirect(w, r, redirectUrl, http.StatusTemporaryRedirect)
-}
-
-func (a *AuthService) OAuthGoogleCallback(w http.ResponseWriter, r *http.Request) {
-	// get state
-	oAuthState := r.FormValue("state")
-	defer a.clearOAuthState(oAuthState)
-
-	// validate state
-	t, ok := a.oAuthStates[oAuthState]
-	if !ok || t.Add(oAuthStateTTL).Before(time.Now()) {
-		internalServerError(w, "invalid oauth state")
-		return
-	}
-
-	data, err := a.oAuthGoogleGetData(r.FormValue("code"))
+func (a *AuthService) OAuthGoogleSignIn(w http.ResponseWriter, r *http.Request) {
+	data, err := a.oAuthGoogleGetData(r.FormValue("token"))
 	if err != nil {
 		internalServerError(w, fmt.Sprintf("failed to get user data: %v", err))
 		return
@@ -45,12 +27,8 @@ func (a *AuthService) OAuthGoogleCallback(w http.ResponseWriter, r *http.Request
 	a.oAuthSignUp(data, w)
 }
 
-func (a *AuthService) oAuthGoogleGetData(code string) (*oAuthGoogleUserData, error) {
-	token, err := a.oAuthConfig.google.Exchange(a.ctx, code)
-	if err != nil {
-		return nil, fmt.Errorf("code exchange wrong: %v", err)
-	}
-	response, err := http.Get(fmt.Sprintf("%s?access_token=%s", oAuthGoogleUrlAPI, token.AccessToken))
+func (a *AuthService) oAuthGoogleGetData(token string) (*oAuthGoogleUserData, error) {
+	response, err := http.Get(fmt.Sprintf("%s?access_token=%s", oAuthGoogleUrlAPI, token))
 	if err != nil {
 		return nil, fmt.Errorf("failed getting user info: %v", err)
 	}

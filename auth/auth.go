@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -26,7 +25,6 @@ type AuthService struct {
 	ctx         context.Context
 	secret      string
 	oAuthConfig oAuthConfig
-	oAuthStates map[string]time.Time
 }
 
 type oAuthConfig struct {
@@ -56,7 +54,6 @@ func NewAuthService(client *ent.Client, ctx context.Context, secret string, oAut
 		ctx,
 		secret,
 		oAuthConfig,
-		make(map[string]time.Time),
 	}
 }
 
@@ -205,17 +202,4 @@ func (a *AuthService) randomPassword(n int) string {
 	b := make([]byte, n)
 	rand.Read(b)
 	return hex.EncodeToString(b)
-}
-
-func (a *AuthService) generateOAuthState() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	state := base64.URLEncoding.EncodeToString(b)
-	a.oAuthStates[state] = time.Now()
-
-	return state
-}
-
-func (a *AuthService) clearOAuthState(state string) {
-	delete(a.oAuthStates, state)
 }
