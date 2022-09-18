@@ -14,7 +14,9 @@ type Resolver struct{ client *ent.Client }
 
 // NewSchema creates a graphql executable schema.
 func NewSchema(client *ent.Client) graphql.ExecutableSchema {
-	return generated.NewExecutableSchema(generated.Config{
+	config := generated.Config{
 		Resolvers: &Resolver{client},
-	})
+	}
+	config.Directives.Authenticated = AuthenticatedDirective
+	return generated.NewExecutableSchema(config)
 }

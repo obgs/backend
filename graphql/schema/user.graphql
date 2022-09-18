@@ -1,3 +1,7 @@
 extend type Mutation {
   updateUser(id: ID!, input: UpdateUserInput!): User!
 }
+
+extend type Query {
+  me: User! @authenticated
+}
