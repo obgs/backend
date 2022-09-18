@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,14 +17,15 @@ import (
 )
 
 type AuthService struct {
-	client *ent.Client
-	ctx    context.Context
-	secret string
+	client      *ent.Client
+	ctx         context.Context
+	secret      string
+	oAuthStates map[string]time.Time
 }
 
 // NewAuthService returns a new AuthService
 func NewAuthService(client *ent.Client, ctx context.Context, secret string) *AuthService {
-	return &AuthService{client, ctx, secret}
+	return &AuthService{client, ctx, secret, make(map[string]time.Time)}
 }
 
 func internalServerError(w http.ResponseWriter, message string) {
@@ -144,4 +147,13 @@ func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) {
 	} else {
 		invalidRefreshToken(w)
 	}
+}
+
+func (a *AuthService) generateOAuthState() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	state := base64.URLEncoding.EncodeToString(b)
+	a.oAuthStates[state] = time.Now()
+
+	return state
 }

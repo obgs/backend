@@ -62,6 +62,8 @@ var serverCmd = &cobra.Command{
 		router.Post("/auth/signup", authService.SignUp)
 		router.Post("/auth/signin", authService.SignIn)
 		router.Post("/auth/refresh", authService.Refresh)
+		router.Get("/auth/google/login", authService.OAuthGoogleLogin)
+		router.Get("/auth/google/callback", authService.OAuthGoogleCallback)
 
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", serverPort), router))
 	},
