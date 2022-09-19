@@ -17,6 +17,8 @@ const (
 	FieldEmail = "email"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
+	// FieldAvatarURL holds the string denoting the avatar_url field in the database.
+	FieldAvatarURL = "avatar_url"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 )
@@ -27,6 +29,7 @@ var Columns = []string{
 	FieldName,
 	FieldEmail,
 	FieldPassword,
+	FieldAvatarURL,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -46,6 +49,8 @@ var (
 	EmailValidator func(string) error
 	// PasswordValidator is a validator for the "password" field. It is called by the builders before save.
 	PasswordValidator func(string) error
+	// DefaultAvatarURL holds the default value on creation for the "avatar_url" field.
+	DefaultAvatarURL string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
