@@ -15,7 +15,7 @@ type FileStorageService struct {
 }
 
 // NewFileStorageService creates a new FileStorageService
-func NewFileStorageService(accessKeyID string, secretAccessKey string, region string, endpoint string, bucket string) *FileStorageService {
+func NewFileStorageService(accessKeyID, secretAccessKey, region, endpoint, bucket string, usingMinio bool) *FileStorageService {
 	cfg := aws.Config{
 		Credentials: credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, ""),
 		Region:      region,
@@ -26,7 +26,11 @@ func NewFileStorageService(accessKeyID string, secretAccessKey string, region st
 			}, nil
 		}),
 	}
-	client := s3.NewPresignClient(s3.NewFromConfig(cfg))
+	client := s3.NewPresignClient(s3.NewFromConfig(cfg, func(o *s3.Options) {
+		if usingMinio {
+			o.UsePathStyle = true
+		}
+	}))
 	return &FileStorageService{
 		client,
 		bucket,
