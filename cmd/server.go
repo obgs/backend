@@ -16,6 +16,7 @@ import (
 	"github.com/open-boardgame-stats/backend/auth"
 	"github.com/open-boardgame-stats/backend/ent"
 	"github.com/open-boardgame-stats/backend/ent/migrate"
+	"github.com/open-boardgame-stats/backend/filestorage"
 	"github.com/open-boardgame-stats/backend/graphql/resolver"
 
 	_ "github.com/lib/pq"
@@ -40,7 +41,9 @@ var serverCmd = &cobra.Command{
 			log.Fatalf("failed to migrate schema: %v", err)
 		}
 
-		srv := handler.NewDefaultServer(resolver.NewSchema(client))
+		fileUploadService := filestorage.NewFileStorageService(config.S3AccessKeyID, config.S3SecretAccessKey, config.S3Region, config.S3Endpoint, config.S3Bucket)
+
+		srv := handler.NewDefaultServer(resolver.NewSchema(client, fileUploadService))
 		srv.Use(entgql.Transactioner{TxOpener: client})
 
 		authService := auth.NewAuthService(client, ctx, config.JWTSecret)
