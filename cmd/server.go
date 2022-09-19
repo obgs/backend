@@ -41,7 +41,7 @@ var serverCmd = &cobra.Command{
 			log.Fatalf("failed to migrate schema: %v", err)
 		}
 
-		fileUploadService := filestorage.NewFileStorageService(config.S3AccessKeyID, config.S3SecretAccessKey, config.S3Region, config.S3Endpoint, config.S3Bucket)
+		fileUploadService := filestorage.NewFileStorageService(config.S3AccessKeyID, config.S3SecretAccessKey, config.S3Region, config.S3Endpoint, config.S3Bucket, config.UsingMinio)
 
 		srv := handler.NewDefaultServer(resolver.NewSchema(client, fileUploadService))
 		srv.Use(entgql.Transactioner{TxOpener: client})
