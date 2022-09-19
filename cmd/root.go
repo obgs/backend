@@ -11,12 +11,17 @@ import (
 var cfgFile string
 
 type Config struct {
-	DBAddress string `mapstructure:"DB_ADDRESS"`
-	DBPort    string `mapstructure:"DB_PORT"`
-	DBName    string `mapstructure:"DB_NAME"`
-	DBUser    string `mapstructure:"DB_USER"`
-	DBPass    string `mapstructure:"DB_PASS"`
-	JWTSecret string `mapstructure:"JWT_SECRET"`
+	DBAddress         string `mapstructure:"DB_ADDRESS"`
+	DBPort            string `mapstructure:"DB_PORT"`
+	DBName            string `mapstructure:"DB_NAME"`
+	DBUser            string `mapstructure:"DB_USER"`
+	DBPass            string `mapstructure:"DB_PASS"`
+	JWTSecret         string `mapstructure:"JWT_SECRET"`
+	S3AccessKeyID     string `mapstructure:"S3_ACCESS_KEY_ID"`
+	S3SecretAccessKey string `mapstructure:"S3_SECRET_ACCESS_KEY"`
+	S3Region          string `mapstructure:"S3_REGION"`
+	S3Endpoint        string `mapstructure:"S3_ENDPOINT"`
+	S3Bucket          string `mapstructure:"S3_BUCKET"`
 }
 
 var config Config

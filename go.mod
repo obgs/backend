@@ -6,6 +6,9 @@ require (
 	entgo.io/contrib v0.3.1
 	entgo.io/ent v0.11.2
 	github.com/99designs/gqlgen v0.17.13
+	github.com/aws/aws-sdk-go-v2 v1.16.15
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.19
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.10
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/cors v1.2.1
 	github.com/golang-jwt/jwt/v4 v4.4.2
@@ -24,6 +27,15 @@ require (
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.8 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.22 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.16 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.9 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.17 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.16 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.16 // indirect
+	github.com/aws/smithy-go v1.13.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
