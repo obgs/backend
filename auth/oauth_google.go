@@ -3,14 +3,14 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
-const oAuthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo"
+const oAuthGoogleAPI = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 func newOAuthGoogleConfig(googleClientID, googleClientSecret, serverHost, serverPort string) oauth2.Config {
 	return oauth2.Config{
@@ -49,12 +49,12 @@ func (a *AuthService) OAuthGoogleSignIn(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *AuthService) oAuthGoogleGetData(token string) (*oAuthGoogleUserData, error) {
-	response, err := http.Get(fmt.Sprintf("%s?access_token=%s", oAuthGoogleUrlAPI, token))
+	response, err := http.Get(fmt.Sprintf("%s?access_token=%s", oAuthGoogleAPI, token))
 	if err != nil {
 		return nil, fmt.Errorf("failed getting user info: %v", err)
 	}
 	defer response.Body.Close()
-	contents, err := ioutil.ReadAll(response.Body)
+	contents, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed read response: %v", err)
 	}

@@ -18,8 +18,8 @@ type Config struct {
 	DBPass                  string `mapstructure:"DB_PASS"`
 	JWTSecret               string `mapstructure:"JWT_SECRET"`
 	ServerHost              string `mapstructure:"SERVER_HOST"`
-	OAuthGoogleClinetID     string `mapstructure:"OAUTH_GOOGLE_CLIENT_ID"`
-	OAuthGoogleClinetSecret string `mapstructure:"OAUTH_GOOGLE_CLIENT_SECRET"`
+	OAuthGoogleClientID     string `mapstructure:"OAUTH_GOOGLE_CLIENT_ID"`
+	OAuthGoogleClientSecret string `mapstructure:"OAUTH_GOOGLE_CLIENT_SECRET"`
 }
 
 var config Config

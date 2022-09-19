@@ -17,21 +17,19 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const oAuthStateTTL = 20 * time.Minute
-
 type AuthService struct {
 	client      *ent.Client
 	ctx         context.Context
 	secret      string
-	oAuthConfig oAuthConfig
+	oAuthConfig *oAuthConfig
 }
 
 type oAuthConfig struct {
 	google oauth2.Config
 }
 
-func NewOAuthConfig(serverHost, serverPort, googleClientID, googleClientSecret string) oAuthConfig {
-	return oAuthConfig{
+func NewOAuthConfig(serverHost, serverPort, googleClientID, googleClientSecret string) *oAuthConfig {
+	return &oAuthConfig{
 		google: newOAuthGoogleConfig(googleClientID, googleClientSecret, serverHost, serverPort),
 	}
 }
@@ -42,7 +40,7 @@ type oAuthData interface {
 }
 
 // NewAuthService returns a new AuthService
-func NewAuthService(client *ent.Client, ctx context.Context, secret string, oAuthConfig oAuthConfig) *AuthService {
+func NewAuthService(client *ent.Client, ctx context.Context, secret string, oAuthConfig *oAuthConfig) *AuthService {
 	return &AuthService{
 		client,
 		ctx,
@@ -173,12 +171,9 @@ func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
-	u, findErr := a.client.User.Query().Where(user.EmailEQ(data.GetEmail())).Only(a.ctx)
-	if findErr != nil && !ent.IsNotFound(findErr) {
-		internalServerError(w, fmt.Sprintf("failed to find user: %v", findErr))
-		return
-	}
+	email := data.GetEmail()
 
+	u, findErr := a.client.User.Query().Where(user.EmailEQ(email)).Only(a.ctx)
 	if ent.IsNotFound(findErr) {
 		hashedPassword, passErr := a.encryptPassword(a.randomPassword(32))
 		if passErr != nil {
@@ -187,7 +182,7 @@ func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
 		}
 
 		newU, createErr := a.client.User.Create().
-			SetEmail(data.GetEmail()).
+			SetEmail(email).
 			SetPassword(string(hashedPassword)).
 			SetName(data.GetName()).
 			Save(a.ctx)
@@ -195,7 +190,14 @@ func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
 			internalServerError(w, fmt.Sprintf("failed to create user: %v", createErr))
 			return
 		}
-		u = newU
+
+		a.generateTokens(w, newU.ID, http.StatusCreated)
+		return
+	}
+
+	if findErr != nil {
+		internalServerError(w, fmt.Sprintf("failed to find user: %v", findErr))
+		return
 	}
 
 	a.generateTokens(w, u.ID, http.StatusOK)
