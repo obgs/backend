@@ -4,8 +4,9 @@ package ent
 
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
-	Name  *string
-	Email *string
+	Name      *string
+	Email     *string
+	AvatarURL *string
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
@@ -15,6 +16,9 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.Email; v != nil {
 		m.SetEmail(*v)
+	}
+	if v := i.AvatarURL; v != nil {
+		m.SetAvatarURL(*v)
 	}
 }
 

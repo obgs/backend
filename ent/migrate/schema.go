@@ -14,6 +14,7 @@ var (
 		{Name: "name", Type: field.TypeString, Default: ""},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
+		{Name: "avatar_url", Type: field.TypeString, Default: ""},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{

@@ -22,6 +22,9 @@ func (User) Fields() []ent.Field {
 		field.String("password").NotEmpty().Sensitive().Annotations(
 			entgql.Annotation(entgql.Skip()),
 		),
+		field.String("avatar_url").Default("").Annotations(
+			entgql.Skip(entgql.SkipWhereInput),
+		),
 	}
 }
 

@@ -22,6 +22,8 @@ type User struct {
 	Email string `json:"email,omitempty"`
 	// Password holds the value of the "password" field.
 	Password string `json:"-"`
+	// AvatarURL holds the value of the "avatar_url" field.
+	AvatarURL string `json:"avatar_url,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -29,7 +31,7 @@ func (*User) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldName, user.FieldEmail, user.FieldPassword:
+		case user.FieldName, user.FieldEmail, user.FieldPassword, user.FieldAvatarURL:
 			values[i] = new(sql.NullString)
 		case user.FieldID:
 			values[i] = new(uuid.UUID)
@@ -72,6 +74,12 @@ func (u *User) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				u.Password = value.String
 			}
+		case user.FieldAvatarURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field avatar_url", values[i])
+			} else if value.Valid {
+				u.AvatarURL = value.String
+			}
 		}
 	}
 	return nil
@@ -107,6 +115,9 @@ func (u *User) String() string {
 	builder.WriteString(u.Email)
 	builder.WriteString(", ")
 	builder.WriteString("password=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("avatar_url=")
+	builder.WriteString(u.AvatarURL)
 	builder.WriteByte(')')
 	return builder.String()
 }
