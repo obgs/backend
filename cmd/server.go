@@ -41,7 +41,15 @@ var serverCmd = &cobra.Command{
 			log.Fatalf("failed to migrate schema: %v", err)
 		}
 
-		fileUploadService := filestorage.NewFileStorageService(config.S3AccessKeyID, config.S3SecretAccessKey, config.S3Region, config.S3Endpoint, config.S3Bucket, config.UsingMinio)
+		fileUploadService, err := filestorage.NewFileStorageService(config.S3AccessKeyID, config.S3SecretAccessKey, config.S3Region, config.S3Endpoint, config.S3Bucket, config.UsingMinio)
+		if err != nil {
+			log.Fatalf("failed to create file upload service: %v", err)
+		}
+
+		err = fileUploadService.CreateBucket(ctx)
+		if err != nil {
+			log.Fatalf("failed to create bucket: %v", err)
+		}
 
 		srv := handler.NewDefaultServer(resolver.NewSchema(client, fileUploadService))
 		srv.Use(entgql.Transactioner{TxOpener: client})
