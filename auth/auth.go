@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,17 +14,39 @@ import (
 	"github.com/open-boardgame-stats/backend/ent"
 	"github.com/open-boardgame-stats/backend/ent/user"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
 )
 
 type AuthService struct {
-	client *ent.Client
-	ctx    context.Context
-	secret string
+	client      *ent.Client
+	ctx         context.Context
+	secret      string
+	oAuthConfig *oAuthConfig
+}
+
+type oAuthConfig struct {
+	google oauth2.Config
+}
+
+func NewOAuthConfig(serverHost, serverPort, googleClientID, googleClientSecret string) *oAuthConfig {
+	return &oAuthConfig{
+		google: newOAuthGoogleConfig(googleClientID, googleClientSecret, serverHost, serverPort),
+	}
+}
+
+type oAuthData interface {
+	GetEmail() string
+	GetName() string
 }
 
 // NewAuthService returns a new AuthService
-func NewAuthService(client *ent.Client, ctx context.Context, secret string) *AuthService {
-	return &AuthService{client, ctx, secret}
+func NewAuthService(client *ent.Client, ctx context.Context, secret string, oAuthConfig *oAuthConfig) *AuthService {
+	return &AuthService{
+		client,
+		ctx,
+		secret,
+		oAuthConfig,
+	}
 }
 
 func internalServerError(w http.ResponseWriter, message string) {
@@ -71,7 +95,7 @@ func (a *AuthService) SignUp(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	// encrypt the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := a.encryptPassword(password)
 	if err != nil {
 		internalServerError(w, fmt.Sprintf("failed to hash password: %v", err))
 		return
@@ -144,4 +168,48 @@ func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) {
 	} else {
 		invalidRefreshToken(w)
 	}
+}
+
+func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
+	email := data.GetEmail()
+
+	u, findErr := a.client.User.Query().Where(user.EmailEQ(email)).Only(a.ctx)
+	if ent.IsNotFound(findErr) {
+		hashedPassword, passErr := a.encryptPassword(a.randomPassword(32))
+		if passErr != nil {
+			internalServerError(w, fmt.Sprintf("failed to hash password: %v", passErr))
+			return
+		}
+
+		newU, createErr := a.client.User.Create().
+			SetEmail(email).
+			SetPassword(string(hashedPassword)).
+			SetName(data.GetName()).
+			Save(a.ctx)
+		if createErr != nil {
+			internalServerError(w, fmt.Sprintf("failed to create user: %v", createErr))
+			return
+		}
+
+		a.generateTokens(w, newU.ID, http.StatusCreated)
+		return
+	}
+
+	if findErr != nil {
+		internalServerError(w, fmt.Sprintf("failed to find user: %v", findErr))
+		return
+	}
+
+	a.generateTokens(w, u.ID, http.StatusOK)
+}
+
+func (a *AuthService) randomPassword(n int) string {
+	b := make([]byte, n)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+// encrypt the password
+func (a *AuthService) encryptPassword(password string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }

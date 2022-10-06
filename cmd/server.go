@@ -54,7 +54,8 @@ var serverCmd = &cobra.Command{
 		srv := handler.NewDefaultServer(resolver.NewSchema(client, fileUploadService))
 		srv.Use(entgql.Transactioner{TxOpener: client})
 
-		authService := auth.NewAuthService(client, ctx, config.JWTSecret)
+		oAuthConfig := auth.NewOAuthConfig(config.ServerHost, serverPort, config.OAuthGoogleClientID, config.OAuthGoogleClientSecret)
+		authService := auth.NewAuthService(client, ctx, config.JWTSecret, oAuthConfig)
 
 		router := chi.NewRouter()
 
@@ -75,6 +76,7 @@ var serverCmd = &cobra.Command{
 		router.Post("/auth/signup", authService.SignUp)
 		router.Post("/auth/signin", authService.SignIn)
 		router.Post("/auth/refresh", authService.Refresh)
+		router.Post("/auth/google/signin", authService.OAuthGoogleSignIn)
 
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", serverPort), router))
 	},
