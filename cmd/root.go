@@ -20,6 +20,12 @@ type Config struct {
 	ServerHost              string `mapstructure:"SERVER_HOST"`
 	OAuthGoogleClientID     string `mapstructure:"OAUTH_GOOGLE_CLIENT_ID"`
 	OAuthGoogleClientSecret string `mapstructure:"OAUTH_GOOGLE_CLIENT_SECRET"`
+	S3AccessKeyID           string `mapstructure:"S3_ACCESS_KEY_ID"`
+	S3SecretAccessKey       string `mapstructure:"S3_SECRET_ACCESS_KEY"`
+	S3Region                string `mapstructure:"S3_REGION"`
+	S3Endpoint              string `mapstructure:"S3_ENDPOINT"`
+	S3Bucket                string `mapstructure:"S3_BUCKET"`
+	UsingMinio              bool   `mapstructure:"USING_MINIO"`
 }
 
 var config Config
