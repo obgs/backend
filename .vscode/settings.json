@@ -1,5 +1,9 @@
 {
   "go.lintTool": "golangci-lint",
   "go.lintFlags": ["--fast"],
-  "go.lintOnSave": "package"
+  "go.lintOnSave": "workspace",
+  "gopls": {
+    "formatting.gofumpt": true
+  },
+  "go.useLanguageServer": true
 }
