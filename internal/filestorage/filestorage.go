@@ -21,17 +21,26 @@ type FileStorageService struct {
 	minioClient     *minio.Client
 }
 
+const BUCKET_CORS_MAX_AGE_SECONDS = 3000
+
 // NewFileStorageService creates a new FileStorageService
-func NewFileStorageService(accessKeyID, secretAccessKey, region, endpoint, bucket string, usingMinio bool) (*FileStorageService, error) {
+func NewFileStorageService(accessKeyID,
+	secretAccessKey,
+	region,
+	endpoint,
+	bucket string,
+	usingMinio bool,
+) (*FileStorageService, error) {
 	cfg := aws.Config{
 		Credentials: credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, ""),
 		Region:      region,
-		EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				URL:           endpoint,
-				SigningRegion: region,
-			}, nil
-		}),
+		EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(
+			func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+				return aws.Endpoint{
+					URL:           endpoint,
+					SigningRegion: region,
+				}, nil
+			}),
 	}
 	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
 		if usingMinio {
@@ -39,7 +48,7 @@ func NewFileStorageService(accessKeyID, secretAccessKey, region, endpoint, bucke
 		}
 	})
 	s3PresignClient := s3.NewPresignClient(s3Client)
-	var minioEndpoint = endpoint
+	minioEndpoint := endpoint
 	minioEndpoint = strings.TrimPrefix(strings.TrimPrefix(minioEndpoint, "http://"), "https://")
 	minioClient, err := minio.New(minioEndpoint, &minio.Options{
 		Creds:  miniocreds.NewStaticV4(accessKeyID, secretAccessKey, ""),
@@ -48,6 +57,7 @@ func NewFileStorageService(accessKeyID, secretAccessKey, region, endpoint, bucke
 	if err != nil {
 		return nil, err
 	}
+
 	return &FileStorageService{
 		s3Client,
 		s3PresignClient,
@@ -67,6 +77,7 @@ func (s *FileStorageService) SignUploadURL(ctx context.Context) (string, error) 
 	if err != nil {
 		return "", err
 	}
+
 	return req.URL, nil
 }
 
@@ -85,7 +96,12 @@ func (s *FileStorageService) CreateBucket(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		err = s.minioClient.SetBucketPolicy(ctx, s.bucket, `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetBucketLocation","s3:ListBucket"],"Resource":["arn:aws:s3:::`+s.bucket+`"]},{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::`+s.bucket+`/*"]}]} `)
+		err = s.minioClient.SetBucketPolicy(
+			ctx,
+			s.bucket,
+			//nolint:lll
+			`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetBucketLocation","s3:ListBucket"],"Resource":["arn:aws:s3:::`+s.bucket+`"]},{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::`+s.bucket+`/*"]}]} `,
+		)
 	} else {
 		_, err = s.s3Client.CreateBucket(ctx, &s3.CreateBucketInput{
 			Bucket: aws.String(s.bucket),
@@ -104,7 +120,7 @@ func (s *FileStorageService) CreateBucket(ctx context.Context) error {
 						AllowedMethods: []string{"GET", "PUT", "POST", "DELETE"},
 						AllowedOrigins: []string{"*"},
 						ExposeHeaders:  []string{"ETag"},
-						MaxAgeSeconds:  3000,
+						MaxAgeSeconds:  BUCKET_CORS_MAX_AGE_SECONDS,
 					},
 				},
 			},

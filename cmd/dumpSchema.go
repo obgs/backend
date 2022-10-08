@@ -33,12 +33,14 @@ func getIntrospection(schema graphql.ExecutableSchema) *graphql.Response {
 
 	rc.DisableIntrospection = false
 	resp, ctx2 := executor.DispatchOperation(ctx, rc)
+
 	return resp(ctx2)
 }
 
 func printJSON(w io.Writer, v interface{}) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
+
 	return enc.Encode(v)
 }
 

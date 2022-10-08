@@ -34,5 +34,6 @@ func UnmarshalUUID(v interface{}) (u uuid.UUID, err error) {
 	if !ok {
 		return u, fmt.Errorf("invalid type %T, expect string", v)
 	}
+
 	return uuid.Parse(s)
 }

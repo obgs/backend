@@ -7,12 +7,14 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
 // A private key for context that only this package can access. This is important
 // to prevent collisions between different context uses
+
 var userCtxKey = &contextKey{"user"}
 
 type contextKey struct {
@@ -21,7 +23,6 @@ type contextKey struct {
 
 func (a *AuthService) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		// get the access token from the request
 		accessToken := r.Header.Get("Authorization")
 		if accessToken == "" {
@@ -56,5 +57,6 @@ func UserFromContext(ctx context.Context) (*ent.User, error) {
 	if !ok {
 		return nil, fmt.Errorf("user not found in context")
 	}
+
 	return raw, nil
 }
