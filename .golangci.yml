@@ -12,10 +12,31 @@ issues:
   max-issues-per-linter: 50
   max-same-issues: 3
   new: false
+  exclude:
+    - "/internal/ent"
+  include:
+    - "/internal/ent/schema"
+  exclude-rules:
+    - path: "internal/graphql/resolver/*.*.go"
+      text: "line is .* characters"
 
 linters:
   enable-all: true
+  disable:
+    - wsl
+    - godot
+    - nosnakecase
+    - gochecknoglobals
+    - gochecknoinits
+    - gci
+    - ifshort
+    - scopelint
+
   fast: true
+
+linters-settings:
+  nlreturn:
+    block-size: 2
 
 output:
   print-issued-lines: true
