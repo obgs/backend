@@ -4,9 +4,6 @@
 !*.go
 !.graphqlrc.yml
 !gqlgen.yml
-!auth
 !cmd
-!ent
-!graphql
 !tools
-!filestorage
+!internal

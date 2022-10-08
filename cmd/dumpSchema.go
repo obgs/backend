@@ -12,7 +12,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/spf13/cobra"
 
-	"github.com/open-boardgame-stats/backend/graphql/generated"
+	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 )
 
 func getIntrospection(schema graphql.ExecutableSchema) *graphql.Response {

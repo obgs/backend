@@ -13,11 +13,11 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/spf13/cobra"
 
-	"github.com/open-boardgame-stats/backend/auth"
-	"github.com/open-boardgame-stats/backend/ent"
-	"github.com/open-boardgame-stats/backend/ent/migrate"
-	"github.com/open-boardgame-stats/backend/filestorage"
-	"github.com/open-boardgame-stats/backend/graphql/resolver"
+	"github.com/open-boardgame-stats/backend/internal/auth"
+	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
+	"github.com/open-boardgame-stats/backend/internal/filestorage"
+	"github.com/open-boardgame-stats/backend/internal/graphql/resolver"
 
 	_ "github.com/lib/pq"
 )

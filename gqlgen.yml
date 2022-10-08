@@ -1,11 +1,11 @@
 # Where are all the schema files located? globs are supported eg  src/**/*.graphqls
 schema:
-  - graphql/schema/**/*.gql
-  - graphql/schema/**/*.graphql
+  - internal/graphql/schema/**/*.gql
+  - internal/graphql/schema/**/*.graphql
 
 # Where should the generated server code go?
 exec:
-  filename: graphql/generated/generated.go
+  filename: internal/graphql/generated/generated.go
   package: generated
 
 # Uncomment to enable federation
@@ -16,7 +16,7 @@ exec:
 # Where should the resolver implementations go?
 resolver:
   layout: follow-schema
-  dir: graphql/resolver
+  dir: internal/graphql/resolver
   package: resolver
 
 # Optional: turn on to use `gqlgen:"fieldName"` tags in your models
@@ -31,12 +31,12 @@ struct_tag: json
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-  - github.com/open-boardgame-stats/backend/ent
+  - github.com/open-boardgame-stats/backend/internal/ent
 
 models:
   ID:
     model:
-      - github.com/open-boardgame-stats/backend/ent/schema/uuidgql.UUID
+      - github.com/open-boardgame-stats/backend/internal/ent/schema/uuidgql.UUID
   Node:
     model:
-      - github.com/open-boardgame-stats/backend/ent.Noder
+      - github.com/open-boardgame-stats/backend/internal/ent.Noder
