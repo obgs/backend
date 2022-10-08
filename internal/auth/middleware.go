@@ -21,6 +21,7 @@ type contextKey struct {
 
 func (a *AuthService) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 		// get the access token from the request
 		accessToken := r.Header.Get("Authorization")
 		if accessToken == "" {
@@ -36,14 +37,15 @@ func (a *AuthService) Middleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		ctx := context.Background()
 		// get the user from the database
-		user, err := a.client.User.Query().Where(user.IDEQ(uuid.MustParse(claims["id"].(string)))).Only(a.ctx)
+		user, err := a.client.User.Query().Where(user.IDEQ(uuid.MustParse(claims["id"].(string)))).Only(ctx)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
 		// set the user in the context
-		ctx := context.WithValue(r.Context(), userCtxKey, user)
+		ctx = context.WithValue(r.Context(), userCtxKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

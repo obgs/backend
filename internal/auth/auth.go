@@ -19,7 +19,6 @@ import (
 
 type AuthService struct {
 	client      *ent.Client
-	ctx         context.Context
 	secret      string
 	oAuthConfig *oAuthConfig
 }
@@ -43,7 +42,6 @@ type oAuthData interface {
 func NewAuthService(client *ent.Client, ctx context.Context, secret string, oAuthConfig *oAuthConfig) *AuthService {
 	return &AuthService{
 		client,
-		ctx,
 		secret,
 		oAuthConfig,
 	}
@@ -101,8 +99,9 @@ func (a *AuthService) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := context.Background()
 	// create the user
-	u, err := a.client.User.Create().SetEmail(email).SetPassword(string(hashedPassword)).Save(a.ctx)
+	u, err := a.client.User.Create().SetEmail(email).SetPassword(string(hashedPassword)).Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
 			http.Error(w, fmt.Sprintf("user with email %s already exists", email), http.StatusConflict)
@@ -121,8 +120,9 @@ func (a *AuthService) SignIn(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
+	ctx := context.Background()
 	// get the user
-	u, err := a.client.User.Query().Where(user.EmailEQ(email)).Only(a.ctx)
+	u, err := a.client.User.Query().Where(user.EmailEQ(email)).Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			http.Error(w, "user not found", http.StatusNotFound)
@@ -173,7 +173,8 @@ func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) {
 func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
 	email := data.GetEmail()
 
-	u, findErr := a.client.User.Query().Where(user.EmailEQ(email)).Only(a.ctx)
+	ctx := context.Background()
+	u, findErr := a.client.User.Query().Where(user.EmailEQ(email)).Only(ctx)
 	if ent.IsNotFound(findErr) {
 		hashedPassword, passErr := a.encryptPassword(a.randomPassword(32))
 		if passErr != nil {
@@ -185,7 +186,7 @@ func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
 			SetEmail(email).
 			SetPassword(string(hashedPassword)).
 			SetName(data.GetName()).
-			Save(a.ctx)
+			Save(ctx)
 		if createErr != nil {
 			internalServerError(w, fmt.Sprintf("failed to create user: %v", createErr))
 			return
