@@ -11,6 +11,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
 
 	"github.com/open-boardgame-stats/backend/internal/auth"
@@ -18,9 +19,9 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
 	"github.com/open-boardgame-stats/backend/internal/filestorage"
 	"github.com/open-boardgame-stats/backend/internal/graphql/resolver"
-
-	_ "github.com/lib/pq"
 )
+
+const CORS_MAX_AGE = 300
 
 var serverPort string
 
@@ -29,7 +30,8 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Starts the gql server",
 	Run: func(cmd *cobra.Command, args []string) {
-		client, err := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", config.DBAddress, config.DBPort, config.DBUser, config.DBPass, config.DBName))
+		client, err := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			config.DBAddress, config.DBPort, config.DBUser, config.DBPass, config.DBName))
 		if err != nil {
 			log.Fatalf("failed to open connection to postgres: %v", err)
 		}
@@ -41,7 +43,13 @@ var serverCmd = &cobra.Command{
 			log.Fatalf("failed to migrate schema: %v", err)
 		}
 
-		fileUploadService, err := filestorage.NewFileStorageService(config.S3AccessKeyID, config.S3SecretAccessKey, config.S3Region, config.S3Endpoint, config.S3Bucket, config.UsingMinio)
+		fileUploadService, err := filestorage.NewFileStorageService(
+			config.S3AccessKeyID,
+			config.S3SecretAccessKey,
+			config.S3Region,
+			config.S3Endpoint,
+			config.S3Bucket,
+			config.UsingMinio)
 		if err != nil {
 			log.Fatalf("failed to create file upload service: %v", err)
 		}
@@ -54,7 +62,11 @@ var serverCmd = &cobra.Command{
 		srv := handler.NewDefaultServer(resolver.NewSchema(client, fileUploadService))
 		srv.Use(entgql.Transactioner{TxOpener: client})
 
-		oAuthConfig := auth.NewOAuthConfig(config.ServerHost, serverPort, config.OAuthGoogleClientID, config.OAuthGoogleClientSecret)
+		oAuthConfig := auth.NewOAuthConfig(
+			config.ServerHost,
+			serverPort,
+			config.OAuthGoogleClientID,
+			config.OAuthGoogleClientSecret)
 		authService := auth.NewAuthService(client, ctx, config.JWTSecret, oAuthConfig)
 
 		router := chi.NewRouter()
@@ -66,7 +78,7 @@ var serverCmd = &cobra.Command{
 			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: false,
-			MaxAge:           300, // Maximum value not ignored by any of major browsers
+			MaxAge:           CORS_MAX_AGE,
 		}))
 
 		router.Use(authService.Middleware)

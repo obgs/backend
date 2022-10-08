@@ -11,10 +11,11 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
+
+	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
 type AuthService struct {
@@ -55,12 +56,16 @@ func invalidRefreshToken(w http.ResponseWriter) {
 	http.Error(w, "invalid refresh token", http.StatusUnauthorized)
 }
 
+const DAY = 24 * time.Hour
+
+const RANDOM_PASSWORD_LENGTH = 32
+
 // create and sign access and refresh tokens
 func (a *AuthService) generateTokens(w http.ResponseWriter, userId uuid.UUID, statusCode int) {
 	now := time.Now()
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  userId,
-		"exp": now.Add(24 * time.Hour).Unix(),
+		"exp": now.Add(DAY).Unix(),
 	})
 	signedAccessToken, err := accessToken.SignedString([]byte(a.secret))
 	if err != nil {
@@ -108,6 +113,7 @@ func (a *AuthService) SignUp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		internalServerError(w, fmt.Sprintf("failed to create user: %v", err))
+
 		return
 	}
 
@@ -129,6 +135,7 @@ func (a *AuthService) SignIn(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		internalServerError(w, fmt.Sprintf("failed to get user: %v", err))
+
 		return
 	}
 
@@ -152,6 +159,7 @@ func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
+
 		return []byte(a.secret), nil
 	})
 	if err != nil {
@@ -176,7 +184,7 @@ func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
 	ctx := context.Background()
 	u, findErr := a.client.User.Query().Where(user.EmailEQ(email)).Only(ctx)
 	if ent.IsNotFound(findErr) {
-		hashedPassword, passErr := a.encryptPassword(a.randomPassword(32))
+		hashedPassword, passErr := a.encryptPassword(a.randomPassword(RANDOM_PASSWORD_LENGTH))
 		if passErr != nil {
 			internalServerError(w, fmt.Sprintf("failed to hash password: %v", passErr))
 			return
@@ -193,6 +201,7 @@ func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
 		}
 
 		a.generateTokens(w, newU.ID, http.StatusCreated)
+
 		return
 	}
 
@@ -207,6 +216,7 @@ func (a *AuthService) oAuthSignUp(data oAuthData, w http.ResponseWriter) {
 func (a *AuthService) randomPassword(n int) string {
 	b := make([]byte, n)
 	rand.Read(b)
+
 	return hex.EncodeToString(b)
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
+
 	"github.com/open-boardgame-stats/backend/internal/auth"
 )
 
@@ -13,5 +14,6 @@ func AuthenticatedDirective(ctx context.Context, obj interface{}, next graphql.R
 	if (err != nil) || (user == nil) {
 		return nil, fmt.Errorf("not authenticated")
 	}
+
 	return next(ctx)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 
 	"golang.org/x/oauth2"
@@ -17,7 +18,7 @@ func newOAuthGoogleConfig(googleClientID, googleClientSecret, serverHost, server
 		ClientID:     googleClientID,
 		ClientSecret: googleClientSecret,
 		Endpoint:     google.Endpoint,
-		RedirectURL:  fmt.Sprintf("http://%s:%s/auth/google/callback", serverHost, serverPort),
+		RedirectURL:  fmt.Sprintf("http://%s/auth/google/callback", net.JoinHostPort(serverHost, serverPort)),
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile",

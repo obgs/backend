@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"github.com/99designs/gqlgen/graphql"
+
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/filestorage"
 	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
@@ -25,5 +26,6 @@ func NewSchema(client *ent.Client, filestorage *filestorage.FileStorageService) 
 		},
 	}
 	config.Directives.Authenticated = AuthenticatedDirective
+
 	return generated.NewExecutableSchema(config)
 }
