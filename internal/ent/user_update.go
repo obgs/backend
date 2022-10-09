@@ -10,6 +10,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
@@ -67,9 +69,70 @@ func (uu *UserUpdate) SetNillableAvatarURL(s *string) *UserUpdate {
 	return uu
 }
 
+// AddPlayerIDs adds the "players" edge to the Player entity by IDs.
+func (uu *UserUpdate) AddPlayerIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddPlayerIDs(ids...)
+	return uu
+}
+
+// AddPlayers adds the "players" edges to the Player entity.
+func (uu *UserUpdate) AddPlayers(p ...*Player) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.AddPlayerIDs(ids...)
+}
+
+// SetMainPlayerID sets the "main_player" edge to the Player entity by ID.
+func (uu *UserUpdate) SetMainPlayerID(id uuid.UUID) *UserUpdate {
+	uu.mutation.SetMainPlayerID(id)
+	return uu
+}
+
+// SetNillableMainPlayerID sets the "main_player" edge to the Player entity by ID if the given value is not nil.
+func (uu *UserUpdate) SetNillableMainPlayerID(id *uuid.UUID) *UserUpdate {
+	if id != nil {
+		uu = uu.SetMainPlayerID(*id)
+	}
+	return uu
+}
+
+// SetMainPlayer sets the "main_player" edge to the Player entity.
+func (uu *UserUpdate) SetMainPlayer(p *Player) *UserUpdate {
+	return uu.SetMainPlayerID(p.ID)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
+}
+
+// ClearPlayers clears all "players" edges to the Player entity.
+func (uu *UserUpdate) ClearPlayers() *UserUpdate {
+	uu.mutation.ClearPlayers()
+	return uu
+}
+
+// RemovePlayerIDs removes the "players" edge to Player entities by IDs.
+func (uu *UserUpdate) RemovePlayerIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemovePlayerIDs(ids...)
+	return uu
+}
+
+// RemovePlayers removes "players" edges to Player entities.
+func (uu *UserUpdate) RemovePlayers(p ...*Player) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.RemovePlayerIDs(ids...)
+}
+
+// ClearMainPlayer clears the "main_player" edge to the Player entity.
+func (uu *UserUpdate) ClearMainPlayer() *UserUpdate {
+	uu.mutation.ClearMainPlayer()
+	return uu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -193,6 +256,95 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: user.FieldAvatarURL,
 		})
 	}
+	if uu.mutation.PlayersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PlayersTable,
+			Columns: user.PlayersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedPlayersIDs(); len(nodes) > 0 && !uu.mutation.PlayersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PlayersTable,
+			Columns: user.PlayersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.PlayersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PlayersTable,
+			Columns: user.PlayersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.MainPlayerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.MainPlayerTable,
+			Columns: []string{user.MainPlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.MainPlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.MainPlayerTable,
+			Columns: []string{user.MainPlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -252,9 +404,70 @@ func (uuo *UserUpdateOne) SetNillableAvatarURL(s *string) *UserUpdateOne {
 	return uuo
 }
 
+// AddPlayerIDs adds the "players" edge to the Player entity by IDs.
+func (uuo *UserUpdateOne) AddPlayerIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddPlayerIDs(ids...)
+	return uuo
+}
+
+// AddPlayers adds the "players" edges to the Player entity.
+func (uuo *UserUpdateOne) AddPlayers(p ...*Player) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.AddPlayerIDs(ids...)
+}
+
+// SetMainPlayerID sets the "main_player" edge to the Player entity by ID.
+func (uuo *UserUpdateOne) SetMainPlayerID(id uuid.UUID) *UserUpdateOne {
+	uuo.mutation.SetMainPlayerID(id)
+	return uuo
+}
+
+// SetNillableMainPlayerID sets the "main_player" edge to the Player entity by ID if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableMainPlayerID(id *uuid.UUID) *UserUpdateOne {
+	if id != nil {
+		uuo = uuo.SetMainPlayerID(*id)
+	}
+	return uuo
+}
+
+// SetMainPlayer sets the "main_player" edge to the Player entity.
+func (uuo *UserUpdateOne) SetMainPlayer(p *Player) *UserUpdateOne {
+	return uuo.SetMainPlayerID(p.ID)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
+}
+
+// ClearPlayers clears all "players" edges to the Player entity.
+func (uuo *UserUpdateOne) ClearPlayers() *UserUpdateOne {
+	uuo.mutation.ClearPlayers()
+	return uuo
+}
+
+// RemovePlayerIDs removes the "players" edge to Player entities by IDs.
+func (uuo *UserUpdateOne) RemovePlayerIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemovePlayerIDs(ids...)
+	return uuo
+}
+
+// RemovePlayers removes "players" edges to Player entities.
+func (uuo *UserUpdateOne) RemovePlayers(p ...*Player) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.RemovePlayerIDs(ids...)
+}
+
+// ClearMainPlayer clears the "main_player" edge to the Player entity.
+func (uuo *UserUpdateOne) ClearMainPlayer() *UserUpdateOne {
+	uuo.mutation.ClearMainPlayer()
+	return uuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -407,6 +620,95 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Value:  value,
 			Column: user.FieldAvatarURL,
 		})
+	}
+	if uuo.mutation.PlayersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PlayersTable,
+			Columns: user.PlayersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedPlayersIDs(); len(nodes) > 0 && !uuo.mutation.PlayersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PlayersTable,
+			Columns: user.PlayersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.PlayersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PlayersTable,
+			Columns: user.PlayersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.MainPlayerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.MainPlayerTable,
+			Columns: []string{user.MainPlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.MainPlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.MainPlayerTable,
+			Columns: []string{user.MainPlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &User{config: uuo.config}
 	_spec.Assign = _node.assignValues

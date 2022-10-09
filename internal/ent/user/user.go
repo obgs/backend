@@ -19,8 +19,24 @@ const (
 	FieldPassword = "password"
 	// FieldAvatarURL holds the string denoting the avatar_url field in the database.
 	FieldAvatarURL = "avatar_url"
+	// EdgePlayers holds the string denoting the players edge name in mutations.
+	EdgePlayers = "players"
+	// EdgeMainPlayer holds the string denoting the main_player edge name in mutations.
+	EdgeMainPlayer = "main_player"
 	// Table holds the table name of the user in the database.
 	Table = "users"
+	// PlayersTable is the table that holds the players relation/edge. The primary key declared below.
+	PlayersTable = "user_players"
+	// PlayersInverseTable is the table name for the Player entity.
+	// It exists in this package in order to avoid circular dependency with the "player" package.
+	PlayersInverseTable = "players"
+	// MainPlayerTable is the table that holds the main_player relation/edge.
+	MainPlayerTable = "players"
+	// MainPlayerInverseTable is the table name for the Player entity.
+	// It exists in this package in order to avoid circular dependency with the "player" package.
+	MainPlayerInverseTable = "players"
+	// MainPlayerColumn is the table column denoting the main_player relation/edge.
+	MainPlayerColumn = "user_main_player"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -31,6 +47,12 @@ var Columns = []string{
 	FieldPassword,
 	FieldAvatarURL,
 }
+
+var (
+	// PlayersPrimaryKey and PlayersColumn2 are the table columns denoting the
+	// primary key for the players relation (M2M).
+	PlayersPrimaryKey = []string{"user_id", "player_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

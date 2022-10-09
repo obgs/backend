@@ -2,11 +2,17 @@
 
 package ent
 
+import "github.com/google/uuid"
+
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
-	Name      *string
-	Email     *string
-	AvatarURL *string
+	Name            *string
+	Email           *string
+	AvatarURL       *string
+	AddPlayerIDs    []uuid.UUID
+	RemovePlayerIDs []uuid.UUID
+	ClearMainPlayer bool
+	MainPlayerID    *uuid.UUID
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.
@@ -19,6 +25,18 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.AvatarURL; v != nil {
 		m.SetAvatarURL(*v)
+	}
+	if v := i.AddPlayerIDs; len(v) > 0 {
+		m.AddPlayerIDs(v...)
+	}
+	if v := i.RemovePlayerIDs; len(v) > 0 {
+		m.RemovePlayerIDs(v...)
+	}
+	if i.ClearMainPlayer {
+		m.ClearMainPlayer()
+	}
+	if v := i.MainPlayerID; v != nil {
+		m.SetMainPlayerID(*v)
 	}
 }
 

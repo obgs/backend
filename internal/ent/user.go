@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -24,6 +25,46 @@ type User struct {
 	Password string `json:"-"`
 	// AvatarURL holds the value of the "avatar_url" field.
 	AvatarURL string `json:"avatar_url,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the UserQuery when eager-loading is set.
+	Edges UserEdges `json:"edges"`
+}
+
+// UserEdges holds the relations/edges for other nodes in the graph.
+type UserEdges struct {
+	// Players holds the value of the players edge.
+	Players []*Player `json:"players,omitempty"`
+	// MainPlayer holds the value of the main_player edge.
+	MainPlayer *Player `json:"main_player,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+	// totalCount holds the count of the edges above.
+	totalCount [2]map[string]int
+
+	namedPlayers map[string][]*Player
+}
+
+// PlayersOrErr returns the Players value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) PlayersOrErr() ([]*Player, error) {
+	if e.loadedTypes[0] {
+		return e.Players, nil
+	}
+	return nil, &NotLoadedError{edge: "players"}
+}
+
+// MainPlayerOrErr returns the MainPlayer value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) MainPlayerOrErr() (*Player, error) {
+	if e.loadedTypes[1] {
+		if e.MainPlayer == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: player.Label}
+		}
+		return e.MainPlayer, nil
+	}
+	return nil, &NotLoadedError{edge: "main_player"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -85,6 +126,16 @@ func (u *User) assignValues(columns []string, values []interface{}) error {
 	return nil
 }
 
+// QueryPlayers queries the "players" edge of the User entity.
+func (u *User) QueryPlayers() *PlayerQuery {
+	return (&UserClient{config: u.config}).QueryPlayers(u)
+}
+
+// QueryMainPlayer queries the "main_player" edge of the User entity.
+func (u *User) QueryMainPlayer() *PlayerQuery {
+	return (&UserClient{config: u.config}).QueryMainPlayer(u)
+}
+
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -120,6 +171,30 @@ func (u *User) String() string {
 	builder.WriteString(u.AvatarURL)
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedPlayers returns the Players named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (u *User) NamedPlayers(name string) ([]*Player, error) {
+	if u.Edges.namedPlayers == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := u.Edges.namedPlayers[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (u *User) appendNamedPlayers(name string, edges ...*Player) {
+	if u.Edges.namedPlayers == nil {
+		u.Edges.namedPlayers = make(map[string][]*Player)
+	}
+	if len(edges) == 0 {
+		u.Edges.namedPlayers[name] = []*Player{}
+	} else {
+		u.Edges.namedPlayers[name] = append(u.Edges.namedPlayers[name], edges...)
+	}
 }
 
 // Users is a parsable slice of User.

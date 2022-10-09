@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -72,6 +73,40 @@ func (uc *UserCreate) SetNillableID(u *uuid.UUID) *UserCreate {
 		uc.SetID(*u)
 	}
 	return uc
+}
+
+// AddPlayerIDs adds the "players" edge to the Player entity by IDs.
+func (uc *UserCreate) AddPlayerIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddPlayerIDs(ids...)
+	return uc
+}
+
+// AddPlayers adds the "players" edges to the Player entity.
+func (uc *UserCreate) AddPlayers(p ...*Player) *UserCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uc.AddPlayerIDs(ids...)
+}
+
+// SetMainPlayerID sets the "main_player" edge to the Player entity by ID.
+func (uc *UserCreate) SetMainPlayerID(id uuid.UUID) *UserCreate {
+	uc.mutation.SetMainPlayerID(id)
+	return uc
+}
+
+// SetNillableMainPlayerID sets the "main_player" edge to the Player entity by ID if the given value is not nil.
+func (uc *UserCreate) SetNillableMainPlayerID(id *uuid.UUID) *UserCreate {
+	if id != nil {
+		uc = uc.SetMainPlayerID(*id)
+	}
+	return uc
+}
+
+// SetMainPlayer sets the "main_player" edge to the Player entity.
+func (uc *UserCreate) SetMainPlayer(p *Player) *UserCreate {
+	return uc.SetMainPlayerID(p.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -256,6 +291,44 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Column: user.FieldAvatarURL,
 		})
 		_node.AvatarURL = value
+	}
+	if nodes := uc.mutation.PlayersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.PlayersTable,
+			Columns: user.PlayersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.MainPlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.MainPlayerTable,
+			Columns: []string{user.MainPlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

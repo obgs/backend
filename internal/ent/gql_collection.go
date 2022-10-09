@@ -10,6 +10,78 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (pl *PlayerQuery) CollectFields(ctx context.Context, satisfies ...string) (*PlayerQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return pl, nil
+	}
+	if err := pl.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return pl, nil
+}
+
+func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &UserQuery{config: pl.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			pl.withOwner = query
+		case "supervisors":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &UserQuery{config: pl.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			pl.WithNamedSupervisors(alias, func(wq *UserQuery) {
+				*wq = *query
+			})
+		}
+	}
+	return nil
+}
+
+type playerPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []PlayerPaginateOption
+}
+
+func newPlayerPaginateArgs(rv map[string]interface{}) *playerPaginateArgs {
+	args := &playerPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*PlayerWhereInput); ok {
+		args.opts = append(args.opts, WithPlayerFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) (*UserQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -23,6 +95,32 @@ func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) (*Us
 
 func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "players":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PlayerQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.WithNamedPlayers(alias, func(wq *PlayerQuery) {
+				*wq = *query
+			})
+		case "mainPlayer", "main_player":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PlayerQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.withMainPlayer = query
+		}
+	}
 	return nil
 }
 

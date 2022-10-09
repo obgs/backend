@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 )
 
 // UpdateUser is the resolver for the updateUser field.
@@ -22,8 +21,3 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	user, _ := auth.UserFromContext(ctx)
 	return user, nil
 }
-
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
-type mutationResolver struct{ *Resolver }
