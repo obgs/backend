@@ -4,6 +4,7 @@ package user
 
 import (
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 )
@@ -500,6 +501,62 @@ func AvatarURLEqualFold(v string) predicate.User {
 func AvatarURLContainsFold(v string) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldAvatarURL), v))
+	})
+}
+
+// HasPlayers applies the HasEdge predicate on the "players" edge.
+func HasPlayers() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PlayersTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, PlayersTable, PlayersPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPlayersWith applies the HasEdge predicate on the "players" edge with a given conditions (other predicates).
+func HasPlayersWith(preds ...predicate.Player) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PlayersInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, PlayersTable, PlayersPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasMainPlayer applies the HasEdge predicate on the "main_player" edge.
+func HasMainPlayer() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MainPlayerTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, MainPlayerTable, MainPlayerColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMainPlayerWith applies the HasEdge predicate on the "main_player" edge with a given conditions (other predicates).
+func HasMainPlayerWith(preds ...predicate.Player) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MainPlayerInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, MainPlayerTable, MainPlayerColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

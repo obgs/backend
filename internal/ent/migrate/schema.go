@@ -8,6 +8,26 @@ import (
 )
 
 var (
+	// PlayersColumns holds the columns for the "players" table.
+	PlayersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString, Default: ""},
+		{Name: "user_main_player", Type: field.TypeUUID, Unique: true, Nullable: true},
+	}
+	// PlayersTable holds the schema information for the "players" table.
+	PlayersTable = &schema.Table{
+		Name:       "players",
+		Columns:    PlayersColumns,
+		PrimaryKey: []*schema.Column{PlayersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "players_users_main_player",
+				Columns:    []*schema.Column{PlayersColumns[2]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -22,11 +42,41 @@ var (
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 	}
+	// UserPlayersColumns holds the columns for the "user_players" table.
+	UserPlayersColumns = []*schema.Column{
+		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "player_id", Type: field.TypeUUID},
+	}
+	// UserPlayersTable holds the schema information for the "user_players" table.
+	UserPlayersTable = &schema.Table{
+		Name:       "user_players",
+		Columns:    UserPlayersColumns,
+		PrimaryKey: []*schema.Column{UserPlayersColumns[0], UserPlayersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_players_user_id",
+				Columns:    []*schema.Column{UserPlayersColumns[0]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "user_players_player_id",
+				Columns:    []*schema.Column{UserPlayersColumns[1]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		PlayersTable,
 		UsersTable,
+		UserPlayersTable,
 	}
 )
 
 func init() {
+	PlayersTable.ForeignKeys[0].RefTable = UsersTable
+	UserPlayersTable.ForeignKeys[0].RefTable = UsersTable
+	UserPlayersTable.ForeignKeys[1].RefTable = PlayersTable
 }

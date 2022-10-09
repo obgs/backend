@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -11,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
@@ -18,14 +20,17 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	limit      *int
-	offset     *int
-	unique     *bool
-	order      []OrderFunc
-	fields     []string
-	predicates []predicate.User
-	modifiers  []func(*sql.Selector)
-	loadTotal  []func(context.Context, []*User) error
+	limit            *int
+	offset           *int
+	unique           *bool
+	order            []OrderFunc
+	fields           []string
+	predicates       []predicate.User
+	withPlayers      *PlayerQuery
+	withMainPlayer   *PlayerQuery
+	modifiers        []func(*sql.Selector)
+	loadTotal        []func(context.Context, []*User) error
+	withNamedPlayers map[string]*PlayerQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -60,6 +65,50 @@ func (uq *UserQuery) Unique(unique bool) *UserQuery {
 func (uq *UserQuery) Order(o ...OrderFunc) *UserQuery {
 	uq.order = append(uq.order, o...)
 	return uq
+}
+
+// QueryPlayers chains the current query on the "players" edge.
+func (uq *UserQuery) QueryPlayers() *PlayerQuery {
+	query := &PlayerQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.PlayersTable, user.PlayersPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMainPlayer chains the current query on the "main_player" edge.
+func (uq *UserQuery) QueryMainPlayer() *PlayerQuery {
+	query := &PlayerQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.MainPlayerTable, user.MainPlayerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first User entity from the query.
@@ -238,16 +287,40 @@ func (uq *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:     uq.config,
-		limit:      uq.limit,
-		offset:     uq.offset,
-		order:      append([]OrderFunc{}, uq.order...),
-		predicates: append([]predicate.User{}, uq.predicates...),
+		config:         uq.config,
+		limit:          uq.limit,
+		offset:         uq.offset,
+		order:          append([]OrderFunc{}, uq.order...),
+		predicates:     append([]predicate.User{}, uq.predicates...),
+		withPlayers:    uq.withPlayers.Clone(),
+		withMainPlayer: uq.withMainPlayer.Clone(),
 		// clone intermediate query.
 		sql:    uq.sql.Clone(),
 		path:   uq.path,
 		unique: uq.unique,
 	}
+}
+
+// WithPlayers tells the query-builder to eager-load the nodes that are connected to
+// the "players" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithPlayers(opts ...func(*PlayerQuery)) *UserQuery {
+	query := &PlayerQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withPlayers = query
+	return uq
+}
+
+// WithMainPlayer tells the query-builder to eager-load the nodes that are connected to
+// the "main_player" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithMainPlayer(opts ...func(*PlayerQuery)) *UserQuery {
+	query := &PlayerQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withMainPlayer = query
+	return uq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -316,8 +389,12 @@ func (uq *UserQuery) prepareQuery(ctx context.Context) error {
 
 func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, error) {
 	var (
-		nodes = []*User{}
-		_spec = uq.querySpec()
+		nodes       = []*User{}
+		_spec       = uq.querySpec()
+		loadedTypes = [2]bool{
+			uq.withPlayers != nil,
+			uq.withMainPlayer != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		return (*User).scanValues(nil, columns)
@@ -325,6 +402,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	_spec.Assign = func(columns []string, values []interface{}) error {
 		node := &User{config: uq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(uq.modifiers) > 0 {
@@ -339,12 +417,119 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := uq.withPlayers; query != nil {
+		if err := uq.loadPlayers(ctx, query, nodes,
+			func(n *User) { n.Edges.Players = []*Player{} },
+			func(n *User, e *Player) { n.Edges.Players = append(n.Edges.Players, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withMainPlayer; query != nil {
+		if err := uq.loadMainPlayer(ctx, query, nodes, nil,
+			func(n *User, e *Player) { n.Edges.MainPlayer = e }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range uq.withNamedPlayers {
+		if err := uq.loadPlayers(ctx, query, nodes,
+			func(n *User) { n.appendNamedPlayers(name) },
+			func(n *User, e *Player) { n.appendNamedPlayers(name, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for i := range uq.loadTotal {
 		if err := uq.loadTotal[i](ctx, nodes); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
+}
+
+func (uq *UserQuery) loadPlayers(ctx context.Context, query *PlayerQuery, nodes []*User, init func(*User), assign func(*User, *Player)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*User)
+	nids := make(map[uuid.UUID]map[*User]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(user.PlayersTable)
+		s.Join(joinT).On(s.C(player.FieldID), joinT.C(user.PlayersPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(user.PlayersPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(user.PlayersPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]interface{}, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]interface{}{new(uuid.UUID)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []interface{}) error {
+			outValue := *values[0].(*uuid.UUID)
+			inValue := *values[1].(*uuid.UUID)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*User]struct{}{byID[outValue]: struct{}{}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "players" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (uq *UserQuery) loadMainPlayer(ctx context.Context, query *PlayerQuery, nodes []*User, init func(*User), assign func(*User, *Player)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.Player(func(s *sql.Selector) {
+		s.Where(sql.InValues(user.MainPlayerColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_main_player
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_main_player" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_main_player" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (uq *UserQuery) sqlCount(ctx context.Context) (int, error) {
@@ -445,6 +630,20 @@ func (uq *UserQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedPlayers tells the query-builder to eager-load the nodes that are connected to the "players"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithNamedPlayers(name string, opts ...func(*PlayerQuery)) *UserQuery {
+	query := &PlayerQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if uq.withNamedPlayers == nil {
+		uq.withNamedPlayers = make(map[string]*PlayerQuery)
+	}
+	uq.withNamedPlayers[name] = query
+	return uq
 }
 
 // UserGroupBy is the group-by builder for User entities.

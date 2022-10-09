@@ -11,10 +11,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
 
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -22,6 +24,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Player is the client for interacting with the Player builders.
+	Player *PlayerClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -37,6 +41,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Player = NewPlayerClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -71,6 +76,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:    ctx,
 		config: cfg,
+		Player: NewPlayerClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -91,6 +97,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:    ctx,
 		config: cfg,
+		Player: NewPlayerClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -98,7 +105,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		User.
+//		Player.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -120,7 +127,130 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Player.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// PlayerClient is a client for the Player schema.
+type PlayerClient struct {
+	config
+}
+
+// NewPlayerClient returns a client for the Player from the given config.
+func NewPlayerClient(c config) *PlayerClient {
+	return &PlayerClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `player.Hooks(f(g(h())))`.
+func (c *PlayerClient) Use(hooks ...Hook) {
+	c.hooks.Player = append(c.hooks.Player, hooks...)
+}
+
+// Create returns a builder for creating a Player entity.
+func (c *PlayerClient) Create() *PlayerCreate {
+	mutation := newPlayerMutation(c.config, OpCreate)
+	return &PlayerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Player entities.
+func (c *PlayerClient) CreateBulk(builders ...*PlayerCreate) *PlayerCreateBulk {
+	return &PlayerCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Player.
+func (c *PlayerClient) Update() *PlayerUpdate {
+	mutation := newPlayerMutation(c.config, OpUpdate)
+	return &PlayerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PlayerClient) UpdateOne(pl *Player) *PlayerUpdateOne {
+	mutation := newPlayerMutation(c.config, OpUpdateOne, withPlayer(pl))
+	return &PlayerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PlayerClient) UpdateOneID(id uuid.UUID) *PlayerUpdateOne {
+	mutation := newPlayerMutation(c.config, OpUpdateOne, withPlayerID(id))
+	return &PlayerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Player.
+func (c *PlayerClient) Delete() *PlayerDelete {
+	mutation := newPlayerMutation(c.config, OpDelete)
+	return &PlayerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PlayerClient) DeleteOne(pl *Player) *PlayerDeleteOne {
+	return c.DeleteOneID(pl.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *PlayerClient) DeleteOneID(id uuid.UUID) *PlayerDeleteOne {
+	builder := c.Delete().Where(player.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PlayerDeleteOne{builder}
+}
+
+// Query returns a query builder for Player.
+func (c *PlayerClient) Query() *PlayerQuery {
+	return &PlayerQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Player entity by its id.
+func (c *PlayerClient) Get(ctx context.Context, id uuid.UUID) (*Player, error) {
+	return c.Query().Where(player.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PlayerClient) GetX(ctx context.Context, id uuid.UUID) *Player {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a Player.
+func (c *PlayerClient) QueryOwner(pl *Player) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, player.OwnerTable, player.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySupervisors queries the supervisors edge of a Player.
+func (c *PlayerClient) QuerySupervisors(pl *Player) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, player.SupervisorsTable, player.SupervisorsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PlayerClient) Hooks() []Hook {
+	return c.hooks.Player
 }
 
 // UserClient is a client for the User schema.
@@ -206,6 +336,38 @@ func (c *UserClient) GetX(ctx context.Context, id uuid.UUID) *User {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryPlayers queries the players edge of a User.
+func (c *UserClient) QueryPlayers(u *User) *PlayerQuery {
+	query := &PlayerQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.PlayersTable, user.PlayersPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMainPlayer queries the main_player edge of a User.
+func (c *UserClient) QueryMainPlayer(u *User) *PlayerQuery {
+	query := &PlayerQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.MainPlayerTable, user.MainPlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

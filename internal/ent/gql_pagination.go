@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/vmihailenco/msgpack/v5"
@@ -240,6 +241,237 @@ func paginateLimit(first, last *int) int {
 		limit = *last + 1
 	}
 	return limit
+}
+
+// PlayerEdge is the edge representation of Player.
+type PlayerEdge struct {
+	Node   *Player `json:"node"`
+	Cursor Cursor  `json:"cursor"`
+}
+
+// PlayerConnection is the connection containing edges to Player.
+type PlayerConnection struct {
+	Edges      []*PlayerEdge `json:"edges"`
+	PageInfo   PageInfo      `json:"pageInfo"`
+	TotalCount int           `json:"totalCount"`
+}
+
+func (c *PlayerConnection) build(nodes []*Player, pager *playerPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *Player
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Player {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Player {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*PlayerEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &PlayerEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// PlayerPaginateOption enables pagination customization.
+type PlayerPaginateOption func(*playerPager) error
+
+// WithPlayerOrder configures pagination ordering.
+func WithPlayerOrder(order *PlayerOrder) PlayerPaginateOption {
+	if order == nil {
+		order = DefaultPlayerOrder
+	}
+	o := *order
+	return func(pager *playerPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultPlayerOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithPlayerFilter configures pagination filter.
+func WithPlayerFilter(filter func(*PlayerQuery) (*PlayerQuery, error)) PlayerPaginateOption {
+	return func(pager *playerPager) error {
+		if filter == nil {
+			return errors.New("PlayerQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type playerPager struct {
+	order  *PlayerOrder
+	filter func(*PlayerQuery) (*PlayerQuery, error)
+}
+
+func newPlayerPager(opts []PlayerPaginateOption) (*playerPager, error) {
+	pager := &playerPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultPlayerOrder
+	}
+	return pager, nil
+}
+
+func (p *playerPager) applyFilter(query *PlayerQuery) (*PlayerQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *playerPager) toCursor(pl *Player) Cursor {
+	return p.order.Field.toCursor(pl)
+}
+
+func (p *playerPager) applyCursors(query *PlayerQuery, after, before *Cursor) *PlayerQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultPlayerOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *playerPager) applyOrder(query *PlayerQuery, reverse bool) *PlayerQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultPlayerOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultPlayerOrder.Field.field))
+	}
+	return query
+}
+
+func (p *playerPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultPlayerOrder.Field {
+			b.Comma().Ident(DefaultPlayerOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Player.
+func (pl *PlayerQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...PlayerPaginateOption,
+) (*PlayerConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newPlayerPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if pl, err = pager.applyFilter(pl); err != nil {
+		return nil, err
+	}
+	conn := &PlayerConnection{Edges: []*PlayerEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			if conn.TotalCount, err = pl.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+
+	pl = pager.applyCursors(pl, after, before)
+	pl = pager.applyOrder(pl, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		pl.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := pl.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := pl.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// PlayerOrderField defines the ordering field of Player.
+type PlayerOrderField struct {
+	field    string
+	toCursor func(*Player) Cursor
+}
+
+// PlayerOrder defines the ordering of Player.
+type PlayerOrder struct {
+	Direction OrderDirection    `json:"direction"`
+	Field     *PlayerOrderField `json:"field"`
+}
+
+// DefaultPlayerOrder is the default ordering of Player.
+var DefaultPlayerOrder = &PlayerOrder{
+	Direction: OrderDirectionAsc,
+	Field: &PlayerOrderField{
+		field: player.FieldID,
+		toCursor: func(pl *Player) Cursor {
+			return Cursor{ID: pl.ID}
+		},
+	},
+}
+
+// ToEdge converts Player into PlayerEdge.
+func (pl *Player) ToEdge(order *PlayerOrder) *PlayerEdge {
+	if order == nil {
+		order = DefaultPlayerOrder
+	}
+	return &PlayerEdge{
+		Node:   pl,
+		Cursor: order.Field.toCursor(pl),
+	}
 }
 
 // UserEdge is the edge representation of User.

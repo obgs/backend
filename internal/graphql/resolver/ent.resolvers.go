@@ -21,6 +21,11 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []uuid.UUID) ([]ent.Noder
 	return r.client.Noders(ctx, ids)
 }
 
+// Players is the resolver for the players field.
+func (r *queryResolver) Players(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.PlayerWhereInput) (*ent.PlayerConnection, error) {
+	return r.client.Player.Query().Paginate(ctx, after, first, before, last, ent.WithPlayerFilter(where.Filter))
+}
+
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.UserWhereInput) (*ent.UserConnection, error) {
 	return r.client.User.Query().Paginate(ctx, after, first, before, last)

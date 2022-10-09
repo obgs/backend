@@ -7,9 +7,232 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
+
+// PlayerWhereInput represents a where input for filtering Player queries.
+type PlayerWhereInput struct {
+	Predicates []predicate.Player  `json:"-"`
+	Not        *PlayerWhereInput   `json:"not,omitempty"`
+	Or         []*PlayerWhereInput `json:"or,omitempty"`
+	And        []*PlayerWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "owner" edge predicates.
+	HasOwner     *bool             `json:"hasOwner,omitempty"`
+	HasOwnerWith []*UserWhereInput `json:"hasOwnerWith,omitempty"`
+
+	// "supervisors" edge predicates.
+	HasSupervisors     *bool             `json:"hasSupervisors,omitempty"`
+	HasSupervisorsWith []*UserWhereInput `json:"hasSupervisorsWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *PlayerWhereInput) AddPredicates(predicates ...predicate.Player) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the PlayerWhereInput filter on the PlayerQuery builder.
+func (i *PlayerWhereInput) Filter(q *PlayerQuery) (*PlayerQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyPlayerWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyPlayerWhereInput is returned in case the PlayerWhereInput is empty.
+var ErrEmptyPlayerWhereInput = errors.New("ent: empty predicate PlayerWhereInput")
+
+// P returns a predicate for filtering players.
+// An error is returned if the input is empty or invalid.
+func (i *PlayerWhereInput) P() (predicate.Player, error) {
+	var predicates []predicate.Player
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, player.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Player, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, player.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Player, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, player.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, player.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, player.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, player.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, player.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, player.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, player.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, player.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, player.IDLTE(*i.IDLTE))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, player.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, player.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, player.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, player.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, player.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, player.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, player.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, player.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, player.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, player.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, player.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, player.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, player.NameContainsFold(*i.NameContainsFold))
+	}
+
+	if i.HasOwner != nil {
+		p := player.HasOwner()
+		if !*i.HasOwner {
+			p = player.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasOwnerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, player.HasOwnerWith(with...))
+	}
+	if i.HasSupervisors != nil {
+		p := player.HasSupervisors()
+		if !*i.HasSupervisors {
+			p = player.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasSupervisorsWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasSupervisorsWith))
+		for _, w := range i.HasSupervisorsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasSupervisorsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, player.HasSupervisorsWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyPlayerWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return player.And(predicates...), nil
+	}
+}
 
 // UserWhereInput represents a where input for filtering User queries.
 type UserWhereInput struct {
@@ -57,6 +280,14 @@ type UserWhereInput struct {
 	EmailHasSuffix    *string  `json:"emailHasSuffix,omitempty"`
 	EmailEqualFold    *string  `json:"emailEqualFold,omitempty"`
 	EmailContainsFold *string  `json:"emailContainsFold,omitempty"`
+
+	// "players" edge predicates.
+	HasPlayers     *bool               `json:"hasPlayers,omitempty"`
+	HasPlayersWith []*PlayerWhereInput `json:"hasPlayersWith,omitempty"`
+
+	// "main_player" edge predicates.
+	HasMainPlayer     *bool               `json:"hasMainPlayer,omitempty"`
+	HasMainPlayerWith []*PlayerWhereInput `json:"hasMainPlayerWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -233,6 +464,42 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 		predicates = append(predicates, user.EmailContainsFold(*i.EmailContainsFold))
 	}
 
+	if i.HasPlayers != nil {
+		p := user.HasPlayers()
+		if !*i.HasPlayers {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasPlayersWith) > 0 {
+		with := make([]predicate.Player, 0, len(i.HasPlayersWith))
+		for _, w := range i.HasPlayersWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasPlayersWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasPlayersWith(with...))
+	}
+	if i.HasMainPlayer != nil {
+		p := user.HasMainPlayer()
+		if !*i.HasMainPlayer {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMainPlayerWith) > 0 {
+		with := make([]predicate.Player, 0, len(i.HasMainPlayerWith))
+		for _, w := range i.HasMainPlayerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMainPlayerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasMainPlayerWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyUserWhereInput

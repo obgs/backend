@@ -1,0 +1,7 @@
+input CreatePlayerInput {
+  name: String!
+}
+
+extend type Mutation {
+  createPlayer(input: CreatePlayerInput!): Player! @authenticated
+}

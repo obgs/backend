@@ -4,6 +4,7 @@ package ent
 
 import (
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
@@ -12,6 +13,16 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	playerFields := schema.Player{}.Fields()
+	_ = playerFields
+	// playerDescName is the schema descriptor for name field.
+	playerDescName := playerFields[1].Descriptor()
+	// player.DefaultName holds the default value on creation for the name field.
+	player.DefaultName = playerDescName.Default.(string)
+	// playerDescID is the schema descriptor for id field.
+	playerDescID := playerFields[0].Descriptor()
+	// player.DefaultID holds the default value on creation for the id field.
+	player.DefaultID = playerDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescName is the schema descriptor for name field.
