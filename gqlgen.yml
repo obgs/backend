@@ -19,6 +19,10 @@ resolver:
   dir: internal/graphql/resolver
   package: resolver
 
+model:
+  filename: internal/graphql/model/model_gen.go
+  package: model
+
 # Optional: turn on to use `gqlgen:"fieldName"` tags in your models
 struct_tag: json
 
