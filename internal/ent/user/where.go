@@ -560,6 +560,62 @@ func HasMainPlayerWith(preds ...predicate.Player) predicate.User {
 	})
 }
 
+// HasSentSupervisionRequests applies the HasEdge predicate on the "sent_supervision_requests" edge.
+func HasSentSupervisionRequests() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SentSupervisionRequestsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SentSupervisionRequestsTable, SentSupervisionRequestsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSentSupervisionRequestsWith applies the HasEdge predicate on the "sent_supervision_requests" edge with a given conditions (other predicates).
+func HasSentSupervisionRequestsWith(preds ...predicate.PlayerSupervisionRequest) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SentSupervisionRequestsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SentSupervisionRequestsTable, SentSupervisionRequestsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSupervisionRequestApprovals applies the HasEdge predicate on the "supervision_request_approvals" edge.
+func HasSupervisionRequestApprovals() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SupervisionRequestApprovalsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SupervisionRequestApprovalsTable, SupervisionRequestApprovalsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSupervisionRequestApprovalsWith applies the HasEdge predicate on the "supervision_request_approvals" edge with a given conditions (other predicates).
+func HasSupervisionRequestApprovalsWith(preds ...predicate.PlayerSupervisionRequestApproval) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SupervisionRequestApprovalsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SupervisionRequestApprovalsTable, SupervisionRequestApprovalsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(func(s *sql.Selector) {

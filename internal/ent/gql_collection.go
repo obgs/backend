@@ -47,6 +47,18 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 			pl.WithNamedSupervisors(alias, func(wq *UserQuery) {
 				*wq = *query
 			})
+		case "supervisionRequests", "supervision_requests":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PlayerSupervisionRequestQuery{config: pl.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			pl.WithNamedSupervisionRequests(alias, func(wq *PlayerSupervisionRequestQuery) {
+				*wq = *query
+			})
 		}
 	}
 	return nil
@@ -77,6 +89,158 @@ func newPlayerPaginateArgs(rv map[string]interface{}) *playerPaginateArgs {
 	}
 	if v, ok := rv[whereField].(*PlayerWhereInput); ok {
 		args.opts = append(args.opts, WithPlayerFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (psr *PlayerSupervisionRequestQuery) CollectFields(ctx context.Context, satisfies ...string) (*PlayerSupervisionRequestQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return psr, nil
+	}
+	if err := psr.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return psr, nil
+}
+
+func (psr *PlayerSupervisionRequestQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "sender":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &UserQuery{config: psr.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			psr.withSender = query
+		case "player":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PlayerQuery{config: psr.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			psr.withPlayer = query
+		case "approvals":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PlayerSupervisionRequestApprovalQuery{config: psr.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			psr.WithNamedApprovals(alias, func(wq *PlayerSupervisionRequestApprovalQuery) {
+				*wq = *query
+			})
+		}
+	}
+	return nil
+}
+
+type playersupervisionrequestPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []PlayerSupervisionRequestPaginateOption
+}
+
+func newPlayerSupervisionRequestPaginateArgs(rv map[string]interface{}) *playersupervisionrequestPaginateArgs {
+	args := &playersupervisionrequestPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*PlayerSupervisionRequestWhereInput); ok {
+		args.opts = append(args.opts, WithPlayerSupervisionRequestFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (psra *PlayerSupervisionRequestApprovalQuery) CollectFields(ctx context.Context, satisfies ...string) (*PlayerSupervisionRequestApprovalQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return psra, nil
+	}
+	if err := psra.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return psra, nil
+}
+
+func (psra *PlayerSupervisionRequestApprovalQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "approver":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &UserQuery{config: psra.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			psra.withApprover = query
+		case "supervisionRequest", "supervision_request":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PlayerSupervisionRequestQuery{config: psra.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			psra.withSupervisionRequest = query
+		}
+	}
+	return nil
+}
+
+type playersupervisionrequestapprovalPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []PlayerSupervisionRequestApprovalPaginateOption
+}
+
+func newPlayerSupervisionRequestApprovalPaginateArgs(rv map[string]interface{}) *playersupervisionrequestapprovalPaginateArgs {
+	args := &playersupervisionrequestapprovalPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*PlayerSupervisionRequestApprovalWhereInput); ok {
+		args.opts = append(args.opts, WithPlayerSupervisionRequestApprovalFilter(v.Filter))
 	}
 	return args
 }
@@ -119,6 +283,18 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			u.withMainPlayer = query
+		case "sentSupervisionRequests", "sent_supervision_requests":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PlayerSupervisionRequestQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.WithNamedSentSupervisionRequests(alias, func(wq *PlayerSupervisionRequestQuery) {
+				*wq = *query
+			})
 		}
 	}
 	return nil

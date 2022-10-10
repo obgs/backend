@@ -9,5 +9,11 @@ import (
 // Player is the predicate function for player builders.
 type Player func(*sql.Selector)
 
+// PlayerSupervisionRequest is the predicate function for playersupervisionrequest builders.
+type PlayerSupervisionRequest func(*sql.Selector)
+
+// PlayerSupervisionRequestApproval is the predicate function for playersupervisionrequestapproval builders.
+type PlayerSupervisionRequestApproval func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

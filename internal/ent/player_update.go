@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
@@ -77,6 +78,21 @@ func (pu *PlayerUpdate) AddSupervisors(u ...*User) *PlayerUpdate {
 	return pu.AddSupervisorIDs(ids...)
 }
 
+// AddSupervisionRequestIDs adds the "supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
+func (pu *PlayerUpdate) AddSupervisionRequestIDs(ids ...uuid.UUID) *PlayerUpdate {
+	pu.mutation.AddSupervisionRequestIDs(ids...)
+	return pu
+}
+
+// AddSupervisionRequests adds the "supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (pu *PlayerUpdate) AddSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.AddSupervisionRequestIDs(ids...)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (pu *PlayerUpdate) Mutation() *PlayerMutation {
 	return pu.mutation
@@ -107,6 +123,27 @@ func (pu *PlayerUpdate) RemoveSupervisors(u ...*User) *PlayerUpdate {
 		ids[i] = u[i].ID
 	}
 	return pu.RemoveSupervisorIDs(ids...)
+}
+
+// ClearSupervisionRequests clears all "supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (pu *PlayerUpdate) ClearSupervisionRequests() *PlayerUpdate {
+	pu.mutation.ClearSupervisionRequests()
+	return pu
+}
+
+// RemoveSupervisionRequestIDs removes the "supervision_requests" edge to PlayerSupervisionRequest entities by IDs.
+func (pu *PlayerUpdate) RemoveSupervisionRequestIDs(ids ...uuid.UUID) *PlayerUpdate {
+	pu.mutation.RemoveSupervisionRequestIDs(ids...)
+	return pu
+}
+
+// RemoveSupervisionRequests removes "supervision_requests" edges to PlayerSupervisionRequest entities.
+func (pu *PlayerUpdate) RemoveSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.RemoveSupervisionRequestIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -277,6 +314,60 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.SupervisionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.SupervisionRequestsTable,
+			Columns: []string{player.SupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedSupervisionRequestsIDs(); len(nodes) > 0 && !pu.mutation.SupervisionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.SupervisionRequestsTable,
+			Columns: []string{player.SupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.SupervisionRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.SupervisionRequestsTable,
+			Columns: []string{player.SupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{player.Label}
@@ -344,6 +435,21 @@ func (puo *PlayerUpdateOne) AddSupervisors(u ...*User) *PlayerUpdateOne {
 	return puo.AddSupervisorIDs(ids...)
 }
 
+// AddSupervisionRequestIDs adds the "supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
+func (puo *PlayerUpdateOne) AddSupervisionRequestIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	puo.mutation.AddSupervisionRequestIDs(ids...)
+	return puo
+}
+
+// AddSupervisionRequests adds the "supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (puo *PlayerUpdateOne) AddSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.AddSupervisionRequestIDs(ids...)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (puo *PlayerUpdateOne) Mutation() *PlayerMutation {
 	return puo.mutation
@@ -374,6 +480,27 @@ func (puo *PlayerUpdateOne) RemoveSupervisors(u ...*User) *PlayerUpdateOne {
 		ids[i] = u[i].ID
 	}
 	return puo.RemoveSupervisorIDs(ids...)
+}
+
+// ClearSupervisionRequests clears all "supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (puo *PlayerUpdateOne) ClearSupervisionRequests() *PlayerUpdateOne {
+	puo.mutation.ClearSupervisionRequests()
+	return puo
+}
+
+// RemoveSupervisionRequestIDs removes the "supervision_requests" edge to PlayerSupervisionRequest entities by IDs.
+func (puo *PlayerUpdateOne) RemoveSupervisionRequestIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+	puo.mutation.RemoveSupervisionRequestIDs(ids...)
+	return puo
+}
+
+// RemoveSupervisionRequests removes "supervision_requests" edges to PlayerSupervisionRequest entities.
+func (puo *PlayerUpdateOne) RemoveSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.RemoveSupervisionRequestIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -566,6 +693,60 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.SupervisionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.SupervisionRequestsTable,
+			Columns: []string{player.SupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedSupervisionRequestsIDs(); len(nodes) > 0 && !puo.mutation.SupervisionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.SupervisionRequestsTable,
+			Columns: []string{player.SupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.SupervisionRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.SupervisionRequestsTable,
+			Columns: []string{player.SupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
 				},
 			},
 		}

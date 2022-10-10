@@ -11,6 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -32,8 +34,10 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		player.Table: player.ValidColumn,
-		user.Table:   user.ValidColumn,
+		player.Table:                           player.ValidColumn,
+		playersupervisionrequest.Table:         playersupervisionrequest.ValidColumn,
+		playersupervisionrequestapproval.Table: playersupervisionrequestapproval.ValidColumn,
+		user.Table:                             user.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

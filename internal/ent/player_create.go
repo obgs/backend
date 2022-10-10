@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -81,6 +82,21 @@ func (pc *PlayerCreate) AddSupervisors(u ...*User) *PlayerCreate {
 		ids[i] = u[i].ID
 	}
 	return pc.AddSupervisorIDs(ids...)
+}
+
+// AddSupervisionRequestIDs adds the "supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
+func (pc *PlayerCreate) AddSupervisionRequestIDs(ids ...uuid.UUID) *PlayerCreate {
+	pc.mutation.AddSupervisionRequestIDs(ids...)
+	return pc
+}
+
+// AddSupervisionRequests adds the "supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (pc *PlayerCreate) AddSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pc.AddSupervisionRequestIDs(ids...)
 }
 
 // Mutation returns the PlayerMutation object of the builder.
@@ -250,6 +266,25 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.SupervisionRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.SupervisionRequestsTable,
+			Columns: []string{player.SupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
 				},
 			},
 		}

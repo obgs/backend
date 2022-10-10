@@ -242,6 +242,34 @@ func HasSupervisorsWith(preds ...predicate.User) predicate.Player {
 	})
 }
 
+// HasSupervisionRequests applies the HasEdge predicate on the "supervision_requests" edge.
+func HasSupervisionRequests() predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SupervisionRequestsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SupervisionRequestsTable, SupervisionRequestsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSupervisionRequestsWith applies the HasEdge predicate on the "supervision_requests" edge with a given conditions (other predicates).
+func HasSupervisionRequestsWith(preds ...predicate.PlayerSupervisionRequest) predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SupervisionRequestsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SupervisionRequestsTable, SupervisionRequestsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Player) predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {

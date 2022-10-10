@@ -12,6 +12,8 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
 
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -26,6 +28,10 @@ type Client struct {
 	Schema *migrate.Schema
 	// Player is the client for interacting with the Player builders.
 	Player *PlayerClient
+	// PlayerSupervisionRequest is the client for interacting with the PlayerSupervisionRequest builders.
+	PlayerSupervisionRequest *PlayerSupervisionRequestClient
+	// PlayerSupervisionRequestApproval is the client for interacting with the PlayerSupervisionRequestApproval builders.
+	PlayerSupervisionRequestApproval *PlayerSupervisionRequestApprovalClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -42,6 +48,8 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Player = NewPlayerClient(c.config)
+	c.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(c.config)
+	c.PlayerSupervisionRequestApproval = NewPlayerSupervisionRequestApprovalClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -74,10 +82,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Player: NewPlayerClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:                              ctx,
+		config:                           cfg,
+		Player:                           NewPlayerClient(cfg),
+		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
+		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
+		User:                             NewUserClient(cfg),
 	}, nil
 }
 
@@ -95,10 +105,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Player: NewPlayerClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:                              ctx,
+		config:                           cfg,
+		Player:                           NewPlayerClient(cfg),
+		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
+		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
+		User:                             NewUserClient(cfg),
 	}, nil
 }
 
@@ -128,6 +140,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Player.Use(hooks...)
+	c.PlayerSupervisionRequest.Use(hooks...)
+	c.PlayerSupervisionRequestApproval.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
@@ -248,9 +262,285 @@ func (c *PlayerClient) QuerySupervisors(pl *Player) *UserQuery {
 	return query
 }
 
+// QuerySupervisionRequests queries the supervision_requests edge of a Player.
+func (c *PlayerClient) QuerySupervisionRequests(pl *Player) *PlayerSupervisionRequestQuery {
+	query := &PlayerSupervisionRequestQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(playersupervisionrequest.Table, playersupervisionrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.SupervisionRequestsTable, player.SupervisionRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *PlayerClient) Hooks() []Hook {
 	return c.hooks.Player
+}
+
+// PlayerSupervisionRequestClient is a client for the PlayerSupervisionRequest schema.
+type PlayerSupervisionRequestClient struct {
+	config
+}
+
+// NewPlayerSupervisionRequestClient returns a client for the PlayerSupervisionRequest from the given config.
+func NewPlayerSupervisionRequestClient(c config) *PlayerSupervisionRequestClient {
+	return &PlayerSupervisionRequestClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `playersupervisionrequest.Hooks(f(g(h())))`.
+func (c *PlayerSupervisionRequestClient) Use(hooks ...Hook) {
+	c.hooks.PlayerSupervisionRequest = append(c.hooks.PlayerSupervisionRequest, hooks...)
+}
+
+// Create returns a builder for creating a PlayerSupervisionRequest entity.
+func (c *PlayerSupervisionRequestClient) Create() *PlayerSupervisionRequestCreate {
+	mutation := newPlayerSupervisionRequestMutation(c.config, OpCreate)
+	return &PlayerSupervisionRequestCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PlayerSupervisionRequest entities.
+func (c *PlayerSupervisionRequestClient) CreateBulk(builders ...*PlayerSupervisionRequestCreate) *PlayerSupervisionRequestCreateBulk {
+	return &PlayerSupervisionRequestCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PlayerSupervisionRequest.
+func (c *PlayerSupervisionRequestClient) Update() *PlayerSupervisionRequestUpdate {
+	mutation := newPlayerSupervisionRequestMutation(c.config, OpUpdate)
+	return &PlayerSupervisionRequestUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PlayerSupervisionRequestClient) UpdateOne(psr *PlayerSupervisionRequest) *PlayerSupervisionRequestUpdateOne {
+	mutation := newPlayerSupervisionRequestMutation(c.config, OpUpdateOne, withPlayerSupervisionRequest(psr))
+	return &PlayerSupervisionRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PlayerSupervisionRequestClient) UpdateOneID(id uuid.UUID) *PlayerSupervisionRequestUpdateOne {
+	mutation := newPlayerSupervisionRequestMutation(c.config, OpUpdateOne, withPlayerSupervisionRequestID(id))
+	return &PlayerSupervisionRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PlayerSupervisionRequest.
+func (c *PlayerSupervisionRequestClient) Delete() *PlayerSupervisionRequestDelete {
+	mutation := newPlayerSupervisionRequestMutation(c.config, OpDelete)
+	return &PlayerSupervisionRequestDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PlayerSupervisionRequestClient) DeleteOne(psr *PlayerSupervisionRequest) *PlayerSupervisionRequestDeleteOne {
+	return c.DeleteOneID(psr.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *PlayerSupervisionRequestClient) DeleteOneID(id uuid.UUID) *PlayerSupervisionRequestDeleteOne {
+	builder := c.Delete().Where(playersupervisionrequest.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PlayerSupervisionRequestDeleteOne{builder}
+}
+
+// Query returns a query builder for PlayerSupervisionRequest.
+func (c *PlayerSupervisionRequestClient) Query() *PlayerSupervisionRequestQuery {
+	return &PlayerSupervisionRequestQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a PlayerSupervisionRequest entity by its id.
+func (c *PlayerSupervisionRequestClient) Get(ctx context.Context, id uuid.UUID) (*PlayerSupervisionRequest, error) {
+	return c.Query().Where(playersupervisionrequest.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PlayerSupervisionRequestClient) GetX(ctx context.Context, id uuid.UUID) *PlayerSupervisionRequest {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySender queries the sender edge of a PlayerSupervisionRequest.
+func (c *PlayerSupervisionRequestClient) QuerySender(psr *PlayerSupervisionRequest) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := psr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(playersupervisionrequest.Table, playersupervisionrequest.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, playersupervisionrequest.SenderTable, playersupervisionrequest.SenderColumn),
+		)
+		fromV = sqlgraph.Neighbors(psr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPlayer queries the player edge of a PlayerSupervisionRequest.
+func (c *PlayerSupervisionRequestClient) QueryPlayer(psr *PlayerSupervisionRequest) *PlayerQuery {
+	query := &PlayerQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := psr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(playersupervisionrequest.Table, playersupervisionrequest.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, playersupervisionrequest.PlayerTable, playersupervisionrequest.PlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(psr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApprovals queries the approvals edge of a PlayerSupervisionRequest.
+func (c *PlayerSupervisionRequestClient) QueryApprovals(psr *PlayerSupervisionRequest) *PlayerSupervisionRequestApprovalQuery {
+	query := &PlayerSupervisionRequestApprovalQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := psr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(playersupervisionrequest.Table, playersupervisionrequest.FieldID, id),
+			sqlgraph.To(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, playersupervisionrequest.ApprovalsTable, playersupervisionrequest.ApprovalsColumn),
+		)
+		fromV = sqlgraph.Neighbors(psr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PlayerSupervisionRequestClient) Hooks() []Hook {
+	return c.hooks.PlayerSupervisionRequest
+}
+
+// PlayerSupervisionRequestApprovalClient is a client for the PlayerSupervisionRequestApproval schema.
+type PlayerSupervisionRequestApprovalClient struct {
+	config
+}
+
+// NewPlayerSupervisionRequestApprovalClient returns a client for the PlayerSupervisionRequestApproval from the given config.
+func NewPlayerSupervisionRequestApprovalClient(c config) *PlayerSupervisionRequestApprovalClient {
+	return &PlayerSupervisionRequestApprovalClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `playersupervisionrequestapproval.Hooks(f(g(h())))`.
+func (c *PlayerSupervisionRequestApprovalClient) Use(hooks ...Hook) {
+	c.hooks.PlayerSupervisionRequestApproval = append(c.hooks.PlayerSupervisionRequestApproval, hooks...)
+}
+
+// Create returns a builder for creating a PlayerSupervisionRequestApproval entity.
+func (c *PlayerSupervisionRequestApprovalClient) Create() *PlayerSupervisionRequestApprovalCreate {
+	mutation := newPlayerSupervisionRequestApprovalMutation(c.config, OpCreate)
+	return &PlayerSupervisionRequestApprovalCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PlayerSupervisionRequestApproval entities.
+func (c *PlayerSupervisionRequestApprovalClient) CreateBulk(builders ...*PlayerSupervisionRequestApprovalCreate) *PlayerSupervisionRequestApprovalCreateBulk {
+	return &PlayerSupervisionRequestApprovalCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PlayerSupervisionRequestApproval.
+func (c *PlayerSupervisionRequestApprovalClient) Update() *PlayerSupervisionRequestApprovalUpdate {
+	mutation := newPlayerSupervisionRequestApprovalMutation(c.config, OpUpdate)
+	return &PlayerSupervisionRequestApprovalUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PlayerSupervisionRequestApprovalClient) UpdateOne(psra *PlayerSupervisionRequestApproval) *PlayerSupervisionRequestApprovalUpdateOne {
+	mutation := newPlayerSupervisionRequestApprovalMutation(c.config, OpUpdateOne, withPlayerSupervisionRequestApproval(psra))
+	return &PlayerSupervisionRequestApprovalUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PlayerSupervisionRequestApprovalClient) UpdateOneID(id uuid.UUID) *PlayerSupervisionRequestApprovalUpdateOne {
+	mutation := newPlayerSupervisionRequestApprovalMutation(c.config, OpUpdateOne, withPlayerSupervisionRequestApprovalID(id))
+	return &PlayerSupervisionRequestApprovalUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PlayerSupervisionRequestApproval.
+func (c *PlayerSupervisionRequestApprovalClient) Delete() *PlayerSupervisionRequestApprovalDelete {
+	mutation := newPlayerSupervisionRequestApprovalMutation(c.config, OpDelete)
+	return &PlayerSupervisionRequestApprovalDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PlayerSupervisionRequestApprovalClient) DeleteOne(psra *PlayerSupervisionRequestApproval) *PlayerSupervisionRequestApprovalDeleteOne {
+	return c.DeleteOneID(psra.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *PlayerSupervisionRequestApprovalClient) DeleteOneID(id uuid.UUID) *PlayerSupervisionRequestApprovalDeleteOne {
+	builder := c.Delete().Where(playersupervisionrequestapproval.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PlayerSupervisionRequestApprovalDeleteOne{builder}
+}
+
+// Query returns a query builder for PlayerSupervisionRequestApproval.
+func (c *PlayerSupervisionRequestApprovalClient) Query() *PlayerSupervisionRequestApprovalQuery {
+	return &PlayerSupervisionRequestApprovalQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a PlayerSupervisionRequestApproval entity by its id.
+func (c *PlayerSupervisionRequestApprovalClient) Get(ctx context.Context, id uuid.UUID) (*PlayerSupervisionRequestApproval, error) {
+	return c.Query().Where(playersupervisionrequestapproval.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PlayerSupervisionRequestApprovalClient) GetX(ctx context.Context, id uuid.UUID) *PlayerSupervisionRequestApproval {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryApprover queries the approver edge of a PlayerSupervisionRequestApproval.
+func (c *PlayerSupervisionRequestApprovalClient) QueryApprover(psra *PlayerSupervisionRequestApproval) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := psra.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, playersupervisionrequestapproval.ApproverTable, playersupervisionrequestapproval.ApproverColumn),
+		)
+		fromV = sqlgraph.Neighbors(psra.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySupervisionRequest queries the supervision_request edge of a PlayerSupervisionRequestApproval.
+func (c *PlayerSupervisionRequestApprovalClient) QuerySupervisionRequest(psra *PlayerSupervisionRequestApproval) *PlayerSupervisionRequestQuery {
+	query := &PlayerSupervisionRequestQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := psra.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.FieldID, id),
+			sqlgraph.To(playersupervisionrequest.Table, playersupervisionrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, playersupervisionrequestapproval.SupervisionRequestTable, playersupervisionrequestapproval.SupervisionRequestColumn),
+		)
+		fromV = sqlgraph.Neighbors(psra.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PlayerSupervisionRequestApprovalClient) Hooks() []Hook {
+	return c.hooks.PlayerSupervisionRequestApproval
 }
 
 // UserClient is a client for the User schema.
@@ -363,6 +653,38 @@ func (c *UserClient) QueryMainPlayer(u *User) *PlayerQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(player.Table, player.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, user.MainPlayerTable, user.MainPlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySentSupervisionRequests queries the sent_supervision_requests edge of a User.
+func (c *UserClient) QuerySentSupervisionRequests(u *User) *PlayerSupervisionRequestQuery {
+	query := &PlayerSupervisionRequestQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(playersupervisionrequest.Table, playersupervisionrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SentSupervisionRequestsTable, user.SentSupervisionRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySupervisionRequestApprovals queries the supervision_request_approvals edge of a User.
+func (c *UserClient) QuerySupervisionRequestApprovals(u *User) *PlayerSupervisionRequestApprovalQuery {
+	query := &PlayerSupervisionRequestApprovalQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SupervisionRequestApprovalsTable, user.SupervisionRequestApprovalsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

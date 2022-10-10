@@ -61,10 +61,11 @@ type ComplexityRoot struct {
 	}
 
 	Player struct {
-		ID          func(childComplexity int) int
-		Name        func(childComplexity int) int
-		Owner       func(childComplexity int) int
-		Supervisors func(childComplexity int) int
+		ID                  func(childComplexity int) int
+		Name                func(childComplexity int) int
+		Owner               func(childComplexity int) int
+		SupervisionRequests func(childComplexity int) int
+		Supervisors         func(childComplexity int) int
 	}
 
 	PlayerConnection struct {
@@ -78,6 +79,21 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	PlayerSupervisionRequest struct {
+		Approvals func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Message   func(childComplexity int) int
+		Player    func(childComplexity int) int
+		Sender    func(childComplexity int) int
+	}
+
+	PlayerSupervisionRequestApproval struct {
+		Approved           func(childComplexity int) int
+		Approver           func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		SupervisionRequest func(childComplexity int) int
+	}
+
 	Query struct {
 		GetFileUploadURL func(childComplexity int) int
 		Me               func(childComplexity int) int
@@ -88,12 +104,13 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		AvatarURL  func(childComplexity int) int
-		Email      func(childComplexity int) int
-		ID         func(childComplexity int) int
-		MainPlayer func(childComplexity int) int
-		Name       func(childComplexity int) int
-		Players    func(childComplexity int) int
+		AvatarURL               func(childComplexity int) int
+		Email                   func(childComplexity int) int
+		ID                      func(childComplexity int) int
+		MainPlayer              func(childComplexity int) int
+		Name                    func(childComplexity int) int
+		Players                 func(childComplexity int) int
+		SentSupervisionRequests func(childComplexity int) int
 	}
 
 	UserConnection struct {
@@ -209,6 +226,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Player.Owner(childComplexity), true
 
+	case "Player.supervisionRequests":
+		if e.complexity.Player.SupervisionRequests == nil {
+			break
+		}
+
+		return e.complexity.Player.SupervisionRequests(childComplexity), true
+
 	case "Player.supervisors":
 		if e.complexity.Player.Supervisors == nil {
 			break
@@ -250,6 +274,69 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PlayerEdge.Node(childComplexity), true
+
+	case "PlayerSupervisionRequest.approvals":
+		if e.complexity.PlayerSupervisionRequest.Approvals == nil {
+			break
+		}
+
+		return e.complexity.PlayerSupervisionRequest.Approvals(childComplexity), true
+
+	case "PlayerSupervisionRequest.id":
+		if e.complexity.PlayerSupervisionRequest.ID == nil {
+			break
+		}
+
+		return e.complexity.PlayerSupervisionRequest.ID(childComplexity), true
+
+	case "PlayerSupervisionRequest.message":
+		if e.complexity.PlayerSupervisionRequest.Message == nil {
+			break
+		}
+
+		return e.complexity.PlayerSupervisionRequest.Message(childComplexity), true
+
+	case "PlayerSupervisionRequest.player":
+		if e.complexity.PlayerSupervisionRequest.Player == nil {
+			break
+		}
+
+		return e.complexity.PlayerSupervisionRequest.Player(childComplexity), true
+
+	case "PlayerSupervisionRequest.sender":
+		if e.complexity.PlayerSupervisionRequest.Sender == nil {
+			break
+		}
+
+		return e.complexity.PlayerSupervisionRequest.Sender(childComplexity), true
+
+	case "PlayerSupervisionRequestApproval.approved":
+		if e.complexity.PlayerSupervisionRequestApproval.Approved == nil {
+			break
+		}
+
+		return e.complexity.PlayerSupervisionRequestApproval.Approved(childComplexity), true
+
+	case "PlayerSupervisionRequestApproval.approver":
+		if e.complexity.PlayerSupervisionRequestApproval.Approver == nil {
+			break
+		}
+
+		return e.complexity.PlayerSupervisionRequestApproval.Approver(childComplexity), true
+
+	case "PlayerSupervisionRequestApproval.id":
+		if e.complexity.PlayerSupervisionRequestApproval.ID == nil {
+			break
+		}
+
+		return e.complexity.PlayerSupervisionRequestApproval.ID(childComplexity), true
+
+	case "PlayerSupervisionRequestApproval.supervisionRequest":
+		if e.complexity.PlayerSupervisionRequestApproval.SupervisionRequest == nil {
+			break
+		}
+
+		return e.complexity.PlayerSupervisionRequestApproval.SupervisionRequest(childComplexity), true
 
 	case "Query.getFileUploadURL":
 		if e.complexity.Query.GetFileUploadURL == nil {
@@ -355,6 +442,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Players(childComplexity), true
 
+	case "User.sentSupervisionRequests":
+		if e.complexity.User.SentSupervisionRequests == nil {
+			break
+		}
+
+		return e.complexity.User.SentSupervisionRequests(childComplexity), true
+
 	case "UserConnection.edges":
 		if e.complexity.UserConnection.Edges == nil {
 			break
@@ -399,6 +493,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputCreatePlayerInput,
+		ec.unmarshalInputPlayerSupervisionRequestApprovalWhereInput,
+		ec.unmarshalInputPlayerSupervisionRequestWhereInput,
 		ec.unmarshalInputPlayerWhereInput,
 		ec.unmarshalInputUpdateUserInput,
 		ec.unmarshalInputUserWhereInput,
@@ -505,6 +601,7 @@ type Player implements Node {
   name: String!
   owner: User
   supervisors: [User!]
+  supervisionRequests: [PlayerSupervisionRequest!]
 }
 """A connection to a list of items."""
 type PlayerConnection {
@@ -521,6 +618,75 @@ type PlayerEdge {
   node: Player
   """A cursor for use in pagination."""
   cursor: Cursor!
+}
+type PlayerSupervisionRequest implements Node {
+  id: ID!
+  message: String
+  sender: User!
+  player: Player!
+  approvals: [PlayerSupervisionRequestApproval!]
+}
+type PlayerSupervisionRequestApproval implements Node {
+  id: ID!
+  approved: Boolean
+  approver: User!
+  supervisionRequest: PlayerSupervisionRequest!
+}
+"""
+PlayerSupervisionRequestApprovalWhereInput is used for filtering PlayerSupervisionRequestApproval objects.
+Input was generated by ent.
+"""
+input PlayerSupervisionRequestApprovalWhereInput {
+  not: PlayerSupervisionRequestApprovalWhereInput
+  and: [PlayerSupervisionRequestApprovalWhereInput!]
+  or: [PlayerSupervisionRequestApprovalWhereInput!]
+  """id field predicates"""
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """approved field predicates"""
+  approved: Boolean
+  approvedNEQ: Boolean
+  approvedIsNil: Boolean
+  approvedNotNil: Boolean
+  """approver edge predicates"""
+  hasApprover: Boolean
+  hasApproverWith: [UserWhereInput!]
+  """supervision_request edge predicates"""
+  hasSupervisionRequest: Boolean
+  hasSupervisionRequestWith: [PlayerSupervisionRequestWhereInput!]
+}
+"""
+PlayerSupervisionRequestWhereInput is used for filtering PlayerSupervisionRequest objects.
+Input was generated by ent.
+"""
+input PlayerSupervisionRequestWhereInput {
+  not: PlayerSupervisionRequestWhereInput
+  and: [PlayerSupervisionRequestWhereInput!]
+  or: [PlayerSupervisionRequestWhereInput!]
+  """id field predicates"""
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """sender edge predicates"""
+  hasSender: Boolean
+  hasSenderWith: [UserWhereInput!]
+  """player edge predicates"""
+  hasPlayer: Boolean
+  hasPlayerWith: [PlayerWhereInput!]
+  """approvals edge predicates"""
+  hasApprovals: Boolean
+  hasApprovalsWith: [PlayerSupervisionRequestApprovalWhereInput!]
 }
 """
 PlayerWhereInput is used for filtering Player objects.
@@ -559,6 +725,9 @@ input PlayerWhereInput {
   """supervisors edge predicates"""
   hasSupervisors: Boolean
   hasSupervisorsWith: [UserWhereInput!]
+  """supervision_requests edge predicates"""
+  hasSupervisionRequests: Boolean
+  hasSupervisionRequestsWith: [PlayerSupervisionRequestWhereInput!]
 }
 type Query {
   """Fetches an object given its ID."""
@@ -624,6 +793,7 @@ type User implements Node {
   avatarURL: String!
   players: [Player!]
   mainPlayer: Player
+  sentSupervisionRequests: [PlayerSupervisionRequest!]
 }
 """A connection to a list of items."""
 type UserConnection {
@@ -692,6 +862,9 @@ input UserWhereInput {
   """main_player edge predicates"""
   hasMainPlayer: Boolean
   hasMainPlayerWith: [PlayerWhereInput!]
+  """sent_supervision_requests edge predicates"""
+  hasSentSupervisionRequests: Boolean
+  hasSentSupervisionRequestsWith: [PlayerSupervisionRequestWhereInput!]
 }
 `, BuiltIn: false},
 	{Name: "../schema/fileupload.graphql", Input: `extend type Query {
@@ -1012,6 +1185,8 @@ func (ec *executionContext) fieldContext_Mutation_createPlayer(ctx context.Conte
 				return ec.fieldContext_Player_owner(ctx, field)
 			case "supervisors":
 				return ec.fieldContext_Player_supervisors(ctx, field)
+			case "supervisionRequests":
+				return ec.fieldContext_Player_supervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
 		},
@@ -1081,6 +1256,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_players(ctx, field)
 			case "mainPlayer":
 				return ec.fieldContext_User_mainPlayer(ctx, field)
+			case "sentSupervisionRequests":
+				return ec.fieldContext_User_sentSupervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1405,6 +1582,8 @@ func (ec *executionContext) fieldContext_Player_owner(ctx context.Context, field
 				return ec.fieldContext_User_players(ctx, field)
 			case "mainPlayer":
 				return ec.fieldContext_User_mainPlayer(ctx, field)
+			case "sentSupervisionRequests":
+				return ec.fieldContext_User_sentSupervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1460,8 +1639,63 @@ func (ec *executionContext) fieldContext_Player_supervisors(ctx context.Context,
 				return ec.fieldContext_User_players(ctx, field)
 			case "mainPlayer":
 				return ec.fieldContext_User_mainPlayer(ctx, field)
+			case "sentSupervisionRequests":
+				return ec.fieldContext_User_sentSupervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Player_supervisionRequests(ctx context.Context, field graphql.CollectedField, obj *ent.Player) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Player_supervisionRequests(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SupervisionRequests(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.PlayerSupervisionRequest)
+	fc.Result = res
+	return ec.marshalOPlayerSupervisionRequest2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Player_supervisionRequests(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Player",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PlayerSupervisionRequest_id(ctx, field)
+			case "message":
+				return ec.fieldContext_PlayerSupervisionRequest_message(ctx, field)
+			case "sender":
+				return ec.fieldContext_PlayerSupervisionRequest_sender(ctx, field)
+			case "player":
+				return ec.fieldContext_PlayerSupervisionRequest_player(ctx, field)
+			case "approvals":
+				return ec.fieldContext_PlayerSupervisionRequest_approvals(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PlayerSupervisionRequest", field.Name)
 		},
 	}
 	return fc, nil
@@ -1656,6 +1890,8 @@ func (ec *executionContext) fieldContext_PlayerEdge_node(ctx context.Context, fi
 				return ec.fieldContext_Player_owner(ctx, field)
 			case "supervisors":
 				return ec.fieldContext_Player_supervisors(ctx, field)
+			case "supervisionRequests":
+				return ec.fieldContext_Player_supervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
 		},
@@ -1702,6 +1938,459 @@ func (ec *executionContext) fieldContext_PlayerEdge_cursor(ctx context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerSupervisionRequest_id(ctx context.Context, field graphql.CollectedField, obj *ent.PlayerSupervisionRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerSupervisionRequest_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerSupervisionRequest_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerSupervisionRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerSupervisionRequest_message(ctx context.Context, field graphql.CollectedField, obj *ent.PlayerSupervisionRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerSupervisionRequest_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerSupervisionRequest_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerSupervisionRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerSupervisionRequest_sender(ctx context.Context, field graphql.CollectedField, obj *ent.PlayerSupervisionRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerSupervisionRequest_sender(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sender(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerSupervisionRequest_sender(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerSupervisionRequest",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "avatarURL":
+				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "players":
+				return ec.fieldContext_User_players(ctx, field)
+			case "mainPlayer":
+				return ec.fieldContext_User_mainPlayer(ctx, field)
+			case "sentSupervisionRequests":
+				return ec.fieldContext_User_sentSupervisionRequests(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerSupervisionRequest_player(ctx context.Context, field graphql.CollectedField, obj *ent.PlayerSupervisionRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerSupervisionRequest_player(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Player(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Player)
+	fc.Result = res
+	return ec.marshalNPlayer2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerSupervisionRequest_player(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerSupervisionRequest",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Player_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Player_name(ctx, field)
+			case "owner":
+				return ec.fieldContext_Player_owner(ctx, field)
+			case "supervisors":
+				return ec.fieldContext_Player_supervisors(ctx, field)
+			case "supervisionRequests":
+				return ec.fieldContext_Player_supervisionRequests(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerSupervisionRequest_approvals(ctx context.Context, field graphql.CollectedField, obj *ent.PlayerSupervisionRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerSupervisionRequest_approvals(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Approvals(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.PlayerSupervisionRequestApproval)
+	fc.Result = res
+	return ec.marshalOPlayerSupervisionRequestApproval2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerSupervisionRequest_approvals(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerSupervisionRequest",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PlayerSupervisionRequestApproval_id(ctx, field)
+			case "approved":
+				return ec.fieldContext_PlayerSupervisionRequestApproval_approved(ctx, field)
+			case "approver":
+				return ec.fieldContext_PlayerSupervisionRequestApproval_approver(ctx, field)
+			case "supervisionRequest":
+				return ec.fieldContext_PlayerSupervisionRequestApproval_supervisionRequest(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PlayerSupervisionRequestApproval", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerSupervisionRequestApproval_id(ctx context.Context, field graphql.CollectedField, obj *ent.PlayerSupervisionRequestApproval) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerSupervisionRequestApproval_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerSupervisionRequestApproval_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerSupervisionRequestApproval",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerSupervisionRequestApproval_approved(ctx context.Context, field graphql.CollectedField, obj *ent.PlayerSupervisionRequestApproval) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerSupervisionRequestApproval_approved(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Approved, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerSupervisionRequestApproval_approved(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerSupervisionRequestApproval",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerSupervisionRequestApproval_approver(ctx context.Context, field graphql.CollectedField, obj *ent.PlayerSupervisionRequestApproval) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerSupervisionRequestApproval_approver(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Approver(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerSupervisionRequestApproval_approver(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerSupervisionRequestApproval",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "avatarURL":
+				return ec.fieldContext_User_avatarURL(ctx, field)
+			case "players":
+				return ec.fieldContext_User_players(ctx, field)
+			case "mainPlayer":
+				return ec.fieldContext_User_mainPlayer(ctx, field)
+			case "sentSupervisionRequests":
+				return ec.fieldContext_User_sentSupervisionRequests(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlayerSupervisionRequestApproval_supervisionRequest(ctx context.Context, field graphql.CollectedField, obj *ent.PlayerSupervisionRequestApproval) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PlayerSupervisionRequestApproval_supervisionRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SupervisionRequest(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.PlayerSupervisionRequest)
+	fc.Result = res
+	return ec.marshalNPlayerSupervisionRequest2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequest(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PlayerSupervisionRequestApproval_supervisionRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlayerSupervisionRequestApproval",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PlayerSupervisionRequest_id(ctx, field)
+			case "message":
+				return ec.fieldContext_PlayerSupervisionRequest_message(ctx, field)
+			case "sender":
+				return ec.fieldContext_PlayerSupervisionRequest_sender(ctx, field)
+			case "player":
+				return ec.fieldContext_PlayerSupervisionRequest_player(ctx, field)
+			case "approvals":
+				return ec.fieldContext_PlayerSupervisionRequest_approvals(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PlayerSupervisionRequest", field.Name)
 		},
 	}
 	return fc, nil
@@ -2075,6 +2764,8 @@ func (ec *executionContext) fieldContext_Query_me(ctx context.Context, field gra
 				return ec.fieldContext_User_players(ctx, field)
 			case "mainPlayer":
 				return ec.fieldContext_User_mainPlayer(ctx, field)
+			case "sentSupervisionRequests":
+				return ec.fieldContext_User_sentSupervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2431,6 +3122,8 @@ func (ec *executionContext) fieldContext_User_players(ctx context.Context, field
 				return ec.fieldContext_Player_owner(ctx, field)
 			case "supervisors":
 				return ec.fieldContext_Player_supervisors(ctx, field)
+			case "supervisionRequests":
+				return ec.fieldContext_Player_supervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
 		},
@@ -2482,8 +3175,63 @@ func (ec *executionContext) fieldContext_User_mainPlayer(ctx context.Context, fi
 				return ec.fieldContext_Player_owner(ctx, field)
 			case "supervisors":
 				return ec.fieldContext_Player_supervisors(ctx, field)
+			case "supervisionRequests":
+				return ec.fieldContext_Player_supervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_sentSupervisionRequests(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_sentSupervisionRequests(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SentSupervisionRequests(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.PlayerSupervisionRequest)
+	fc.Result = res
+	return ec.marshalOPlayerSupervisionRequest2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_sentSupervisionRequests(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PlayerSupervisionRequest_id(ctx, field)
+			case "message":
+				return ec.fieldContext_PlayerSupervisionRequest_message(ctx, field)
+			case "sender":
+				return ec.fieldContext_PlayerSupervisionRequest_sender(ctx, field)
+			case "player":
+				return ec.fieldContext_PlayerSupervisionRequest_player(ctx, field)
+			case "approvals":
+				return ec.fieldContext_PlayerSupervisionRequest_approvals(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PlayerSupervisionRequest", field.Name)
 		},
 	}
 	return fc, nil
@@ -2682,6 +3430,8 @@ func (ec *executionContext) fieldContext_UserEdge_node(ctx context.Context, fiel
 				return ec.fieldContext_User_players(ctx, field)
 			case "mainPlayer":
 				return ec.fieldContext_User_mainPlayer(ctx, field)
+			case "sentSupervisionRequests":
+				return ec.fieldContext_User_sentSupervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4534,6 +5284,334 @@ func (ec *executionContext) unmarshalInputCreatePlayerInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputPlayerSupervisionRequestApprovalWhereInput(ctx context.Context, obj interface{}) (ent.PlayerSupervisionRequestApprovalWhereInput, error) {
+	var it ent.PlayerSupervisionRequestApprovalWhereInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "approved", "approvedNEQ", "approvedIsNil", "approvedNotNil", "hasApprover", "hasApproverWith", "hasSupervisionRequest", "hasSupervisionRequestWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			it.Not, err = ec.unmarshalOPlayerSupervisionRequestApprovalWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "and":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			it.And, err = ec.unmarshalOPlayerSupervisionRequestApprovalWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "or":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			it.Or, err = ec.unmarshalOPlayerSupervisionRequestApprovalWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			it.IDNEQ, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			it.IDIn, err = ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			it.IDNotIn, err = ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			it.IDGT, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			it.IDGTE, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			it.IDLT, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			it.IDLTE, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "approved":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("approved"))
+			it.Approved, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "approvedNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("approvedNEQ"))
+			it.ApprovedNEQ, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "approvedIsNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("approvedIsNil"))
+			it.ApprovedIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "approvedNotNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("approvedNotNil"))
+			it.ApprovedNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasApprover":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasApprover"))
+			it.HasApprover, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasApproverWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasApproverWith"))
+			it.HasApproverWith, err = ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasSupervisionRequest":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSupervisionRequest"))
+			it.HasSupervisionRequest, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasSupervisionRequestWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSupervisionRequestWith"))
+			it.HasSupervisionRequestWith, err = ec.unmarshalOPlayerSupervisionRequestWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPlayerSupervisionRequestWhereInput(ctx context.Context, obj interface{}) (ent.PlayerSupervisionRequestWhereInput, error) {
+	var it ent.PlayerSupervisionRequestWhereInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "hasSender", "hasSenderWith", "hasPlayer", "hasPlayerWith", "hasApprovals", "hasApprovalsWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			it.Not, err = ec.unmarshalOPlayerSupervisionRequestWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "and":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			it.And, err = ec.unmarshalOPlayerSupervisionRequestWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "or":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			it.Or, err = ec.unmarshalOPlayerSupervisionRequestWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			it.IDNEQ, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			it.IDIn, err = ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			it.IDNotIn, err = ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			it.IDGT, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			it.IDGTE, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			it.IDLT, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			it.IDLTE, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasSender":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSender"))
+			it.HasSender, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasSenderWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSenderWith"))
+			it.HasSenderWith, err = ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasPlayer":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasPlayer"))
+			it.HasPlayer, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasPlayerWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasPlayerWith"))
+			it.HasPlayerWith, err = ec.unmarshalOPlayerWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasApprovals":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasApprovals"))
+			it.HasApprovals, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasApprovalsWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasApprovalsWith"))
+			it.HasApprovalsWith, err = ec.unmarshalOPlayerSupervisionRequestApprovalWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPlayerWhereInput(ctx context.Context, obj interface{}) (ent.PlayerWhereInput, error) {
 	var it ent.PlayerWhereInput
 	asMap := map[string]interface{}{}
@@ -4541,7 +5619,7 @@ func (ec *executionContext) unmarshalInputPlayerWhereInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "hasOwner", "hasOwnerWith", "hasSupervisors", "hasSupervisorsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "hasOwner", "hasOwnerWith", "hasSupervisors", "hasSupervisorsWith", "hasSupervisionRequests", "hasSupervisionRequestsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4772,6 +5850,22 @@ func (ec *executionContext) unmarshalInputPlayerWhereInput(ctx context.Context, 
 			if err != nil {
 				return it, err
 			}
+		case "hasSupervisionRequests":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSupervisionRequests"))
+			it.HasSupervisionRequests, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasSupervisionRequestsWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSupervisionRequestsWith"))
+			it.HasSupervisionRequestsWith, err = ec.unmarshalOPlayerSupervisionRequestWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -4861,7 +5955,7 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "hasPlayers", "hasPlayersWith", "hasMainPlayer", "hasMainPlayerWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "email", "emailNEQ", "emailIn", "emailNotIn", "emailGT", "emailGTE", "emailLT", "emailLTE", "emailContains", "emailHasPrefix", "emailHasSuffix", "emailEqualFold", "emailContainsFold", "hasPlayers", "hasPlayersWith", "hasMainPlayer", "hasMainPlayerWith", "hasSentSupervisionRequests", "hasSentSupervisionRequestsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5196,6 +6290,22 @@ func (ec *executionContext) unmarshalInputUserWhereInput(ctx context.Context, ob
 			if err != nil {
 				return it, err
 			}
+		case "hasSentSupervisionRequests":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSentSupervisionRequests"))
+			it.HasSentSupervisionRequests, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasSentSupervisionRequestsWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSentSupervisionRequestsWith"))
+			it.HasSentSupervisionRequestsWith, err = ec.unmarshalOPlayerSupervisionRequestWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -5215,6 +6325,16 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._Player(ctx, sel, obj)
+	case *ent.PlayerSupervisionRequest:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PlayerSupervisionRequest(ctx, sel, obj)
+	case *ent.PlayerSupervisionRequestApproval:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PlayerSupervisionRequestApproval(ctx, sel, obj)
 	case *ent.User:
 		if obj == nil {
 			return graphql.Null
@@ -5378,6 +6498,23 @@ func (ec *executionContext) _Player(ctx context.Context, sel ast.SelectionSet, o
 				return innerFunc(ctx)
 
 			})
+		case "supervisionRequests":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Player_supervisionRequests(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5449,6 +6586,167 @@ func (ec *executionContext) _PlayerEdge(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var playerSupervisionRequestImplementors = []string{"PlayerSupervisionRequest", "Node"}
+
+func (ec *executionContext) _PlayerSupervisionRequest(ctx context.Context, sel ast.SelectionSet, obj *ent.PlayerSupervisionRequest) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, playerSupervisionRequestImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PlayerSupervisionRequest")
+		case "id":
+
+			out.Values[i] = ec._PlayerSupervisionRequest_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "message":
+
+			out.Values[i] = ec._PlayerSupervisionRequest_message(ctx, field, obj)
+
+		case "sender":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PlayerSupervisionRequest_sender(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "player":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PlayerSupervisionRequest_player(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "approvals":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PlayerSupervisionRequest_approvals(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var playerSupervisionRequestApprovalImplementors = []string{"PlayerSupervisionRequestApproval", "Node"}
+
+func (ec *executionContext) _PlayerSupervisionRequestApproval(ctx context.Context, sel ast.SelectionSet, obj *ent.PlayerSupervisionRequestApproval) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, playerSupervisionRequestApprovalImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PlayerSupervisionRequestApproval")
+		case "id":
+
+			out.Values[i] = ec._PlayerSupervisionRequestApproval_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "approved":
+
+			out.Values[i] = ec._PlayerSupervisionRequestApproval_approved(ctx, field, obj)
+
+		case "approver":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PlayerSupervisionRequestApproval_approver(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "supervisionRequest":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PlayerSupervisionRequestApproval_supervisionRequest(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5702,6 +7000,23 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_mainPlayer(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "sentSupervisionRequests":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_sentSupervisionRequests(ctx, field, obj)
 				return res
 			}
 
@@ -6271,6 +7586,36 @@ func (ec *executionContext) marshalNPlayerConnection2ᚖgithubᚗcomᚋopenᚑbo
 	return ec._PlayerConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNPlayerSupervisionRequest2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequest(ctx context.Context, sel ast.SelectionSet, v *ent.PlayerSupervisionRequest) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PlayerSupervisionRequest(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPlayerSupervisionRequestApproval2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApproval(ctx context.Context, sel ast.SelectionSet, v *ent.PlayerSupervisionRequestApproval) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PlayerSupervisionRequestApproval(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNPlayerSupervisionRequestApprovalWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalWhereInput(ctx context.Context, v interface{}) (*ent.PlayerSupervisionRequestApprovalWhereInput, error) {
+	res, err := ec.unmarshalInputPlayerSupervisionRequestApprovalWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNPlayerSupervisionRequestWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInput(ctx context.Context, v interface{}) (*ent.PlayerSupervisionRequestWhereInput, error) {
+	res, err := ec.unmarshalInputPlayerSupervisionRequestWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNPlayerWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerWhereInput(ctx context.Context, v interface{}) (*ent.PlayerWhereInput, error) {
 	res, err := ec.unmarshalInputPlayerWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -6803,6 +8148,156 @@ func (ec *executionContext) marshalOPlayerEdge2ᚖgithubᚗcomᚋopenᚑboardgam
 	return ec._PlayerEdge(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOPlayerSupervisionRequest2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.PlayerSupervisionRequest) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPlayerSupervisionRequest2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequest(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOPlayerSupervisionRequestApproval2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.PlayerSupervisionRequestApproval) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPlayerSupervisionRequestApproval2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApproval(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOPlayerSupervisionRequestApprovalWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.PlayerSupervisionRequestApprovalWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*ent.PlayerSupervisionRequestApprovalWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNPlayerSupervisionRequestApprovalWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOPlayerSupervisionRequestApprovalWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestApprovalWhereInput(ctx context.Context, v interface{}) (*ent.PlayerSupervisionRequestApprovalWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputPlayerSupervisionRequestApprovalWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOPlayerSupervisionRequestWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.PlayerSupervisionRequestWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*ent.PlayerSupervisionRequestWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNPlayerSupervisionRequestWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOPlayerSupervisionRequestWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequestWhereInput(ctx context.Context, v interface{}) (*ent.PlayerSupervisionRequestWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputPlayerSupervisionRequestWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOPlayerWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.PlayerWhereInput, error) {
 	if v == nil {
 		return nil, nil
@@ -6829,6 +8324,16 @@ func (ec *executionContext) unmarshalOPlayerWhereInput2ᚖgithubᚗcomᚋopenᚑ
 	}
 	res, err := ec.unmarshalInputPlayerWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {

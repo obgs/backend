@@ -36,13 +36,19 @@ type UserEdges struct {
 	Players []*Player `json:"players,omitempty"`
 	// MainPlayer holds the value of the main_player edge.
 	MainPlayer *Player `json:"main_player,omitempty"`
+	// SentSupervisionRequests holds the value of the sent_supervision_requests edge.
+	SentSupervisionRequests []*PlayerSupervisionRequest `json:"sent_supervision_requests,omitempty"`
+	// SupervisionRequestApprovals holds the value of the supervision_request_approvals edge.
+	SupervisionRequestApprovals []*PlayerSupervisionRequestApproval `json:"supervision_request_approvals,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]map[string]int
+	totalCount [3]map[string]int
 
-	namedPlayers map[string][]*Player
+	namedPlayers                     map[string][]*Player
+	namedSentSupervisionRequests     map[string][]*PlayerSupervisionRequest
+	namedSupervisionRequestApprovals map[string][]*PlayerSupervisionRequestApproval
 }
 
 // PlayersOrErr returns the Players value or an error if the edge
@@ -65,6 +71,24 @@ func (e UserEdges) MainPlayerOrErr() (*Player, error) {
 		return e.MainPlayer, nil
 	}
 	return nil, &NotLoadedError{edge: "main_player"}
+}
+
+// SentSupervisionRequestsOrErr returns the SentSupervisionRequests value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) SentSupervisionRequestsOrErr() ([]*PlayerSupervisionRequest, error) {
+	if e.loadedTypes[2] {
+		return e.SentSupervisionRequests, nil
+	}
+	return nil, &NotLoadedError{edge: "sent_supervision_requests"}
+}
+
+// SupervisionRequestApprovalsOrErr returns the SupervisionRequestApprovals value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) SupervisionRequestApprovalsOrErr() ([]*PlayerSupervisionRequestApproval, error) {
+	if e.loadedTypes[3] {
+		return e.SupervisionRequestApprovals, nil
+	}
+	return nil, &NotLoadedError{edge: "supervision_request_approvals"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -136,6 +160,16 @@ func (u *User) QueryMainPlayer() *PlayerQuery {
 	return (&UserClient{config: u.config}).QueryMainPlayer(u)
 }
 
+// QuerySentSupervisionRequests queries the "sent_supervision_requests" edge of the User entity.
+func (u *User) QuerySentSupervisionRequests() *PlayerSupervisionRequestQuery {
+	return (&UserClient{config: u.config}).QuerySentSupervisionRequests(u)
+}
+
+// QuerySupervisionRequestApprovals queries the "supervision_request_approvals" edge of the User entity.
+func (u *User) QuerySupervisionRequestApprovals() *PlayerSupervisionRequestApprovalQuery {
+	return (&UserClient{config: u.config}).QuerySupervisionRequestApprovals(u)
+}
+
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -194,6 +228,54 @@ func (u *User) appendNamedPlayers(name string, edges ...*Player) {
 		u.Edges.namedPlayers[name] = []*Player{}
 	} else {
 		u.Edges.namedPlayers[name] = append(u.Edges.namedPlayers[name], edges...)
+	}
+}
+
+// NamedSentSupervisionRequests returns the SentSupervisionRequests named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (u *User) NamedSentSupervisionRequests(name string) ([]*PlayerSupervisionRequest, error) {
+	if u.Edges.namedSentSupervisionRequests == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := u.Edges.namedSentSupervisionRequests[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (u *User) appendNamedSentSupervisionRequests(name string, edges ...*PlayerSupervisionRequest) {
+	if u.Edges.namedSentSupervisionRequests == nil {
+		u.Edges.namedSentSupervisionRequests = make(map[string][]*PlayerSupervisionRequest)
+	}
+	if len(edges) == 0 {
+		u.Edges.namedSentSupervisionRequests[name] = []*PlayerSupervisionRequest{}
+	} else {
+		u.Edges.namedSentSupervisionRequests[name] = append(u.Edges.namedSentSupervisionRequests[name], edges...)
+	}
+}
+
+// NamedSupervisionRequestApprovals returns the SupervisionRequestApprovals named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (u *User) NamedSupervisionRequestApprovals(name string) ([]*PlayerSupervisionRequestApproval, error) {
+	if u.Edges.namedSupervisionRequestApprovals == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := u.Edges.namedSupervisionRequestApprovals[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (u *User) appendNamedSupervisionRequestApprovals(name string, edges ...*PlayerSupervisionRequestApproval) {
+	if u.Edges.namedSupervisionRequestApprovals == nil {
+		u.Edges.namedSupervisionRequestApprovals = make(map[string][]*PlayerSupervisionRequestApproval)
+	}
+	if len(edges) == 0 {
+		u.Edges.namedSupervisionRequestApprovals[name] = []*PlayerSupervisionRequestApproval{}
+	} else {
+		u.Edges.namedSupervisionRequestApprovals[name] = append(u.Edges.namedSupervisionRequestApprovals[name], edges...)
 	}
 }
 

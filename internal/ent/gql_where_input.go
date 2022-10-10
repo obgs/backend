@@ -8,6 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
@@ -51,6 +53,10 @@ type PlayerWhereInput struct {
 	// "supervisors" edge predicates.
 	HasSupervisors     *bool             `json:"hasSupervisors,omitempty"`
 	HasSupervisorsWith []*UserWhereInput `json:"hasSupervisorsWith,omitempty"`
+
+	// "supervision_requests" edge predicates.
+	HasSupervisionRequests     *bool                                 `json:"hasSupervisionRequests,omitempty"`
+	HasSupervisionRequestsWith []*PlayerSupervisionRequestWhereInput `json:"hasSupervisionRequestsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -224,6 +230,24 @@ func (i *PlayerWhereInput) P() (predicate.Player, error) {
 		}
 		predicates = append(predicates, player.HasSupervisorsWith(with...))
 	}
+	if i.HasSupervisionRequests != nil {
+		p := player.HasSupervisionRequests()
+		if !*i.HasSupervisionRequests {
+			p = player.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasSupervisionRequestsWith) > 0 {
+		with := make([]predicate.PlayerSupervisionRequest, 0, len(i.HasSupervisionRequestsWith))
+		for _, w := range i.HasSupervisionRequestsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasSupervisionRequestsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, player.HasSupervisionRequestsWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, ErrEmptyPlayerWhereInput
@@ -231,6 +255,382 @@ func (i *PlayerWhereInput) P() (predicate.Player, error) {
 		return predicates[0], nil
 	default:
 		return player.And(predicates...), nil
+	}
+}
+
+// PlayerSupervisionRequestWhereInput represents a where input for filtering PlayerSupervisionRequest queries.
+type PlayerSupervisionRequestWhereInput struct {
+	Predicates []predicate.PlayerSupervisionRequest  `json:"-"`
+	Not        *PlayerSupervisionRequestWhereInput   `json:"not,omitempty"`
+	Or         []*PlayerSupervisionRequestWhereInput `json:"or,omitempty"`
+	And        []*PlayerSupervisionRequestWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "sender" edge predicates.
+	HasSender     *bool             `json:"hasSender,omitempty"`
+	HasSenderWith []*UserWhereInput `json:"hasSenderWith,omitempty"`
+
+	// "player" edge predicates.
+	HasPlayer     *bool               `json:"hasPlayer,omitempty"`
+	HasPlayerWith []*PlayerWhereInput `json:"hasPlayerWith,omitempty"`
+
+	// "approvals" edge predicates.
+	HasApprovals     *bool                                         `json:"hasApprovals,omitempty"`
+	HasApprovalsWith []*PlayerSupervisionRequestApprovalWhereInput `json:"hasApprovalsWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *PlayerSupervisionRequestWhereInput) AddPredicates(predicates ...predicate.PlayerSupervisionRequest) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the PlayerSupervisionRequestWhereInput filter on the PlayerSupervisionRequestQuery builder.
+func (i *PlayerSupervisionRequestWhereInput) Filter(q *PlayerSupervisionRequestQuery) (*PlayerSupervisionRequestQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyPlayerSupervisionRequestWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyPlayerSupervisionRequestWhereInput is returned in case the PlayerSupervisionRequestWhereInput is empty.
+var ErrEmptyPlayerSupervisionRequestWhereInput = errors.New("ent: empty predicate PlayerSupervisionRequestWhereInput")
+
+// P returns a predicate for filtering playersupervisionrequests.
+// An error is returned if the input is empty or invalid.
+func (i *PlayerSupervisionRequestWhereInput) P() (predicate.PlayerSupervisionRequest, error) {
+	var predicates []predicate.PlayerSupervisionRequest
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, playersupervisionrequest.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.PlayerSupervisionRequest, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, playersupervisionrequest.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.PlayerSupervisionRequest, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, playersupervisionrequest.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, playersupervisionrequest.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, playersupervisionrequest.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, playersupervisionrequest.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, playersupervisionrequest.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, playersupervisionrequest.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, playersupervisionrequest.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, playersupervisionrequest.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, playersupervisionrequest.IDLTE(*i.IDLTE))
+	}
+
+	if i.HasSender != nil {
+		p := playersupervisionrequest.HasSender()
+		if !*i.HasSender {
+			p = playersupervisionrequest.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasSenderWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasSenderWith))
+		for _, w := range i.HasSenderWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasSenderWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, playersupervisionrequest.HasSenderWith(with...))
+	}
+	if i.HasPlayer != nil {
+		p := playersupervisionrequest.HasPlayer()
+		if !*i.HasPlayer {
+			p = playersupervisionrequest.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasPlayerWith) > 0 {
+		with := make([]predicate.Player, 0, len(i.HasPlayerWith))
+		for _, w := range i.HasPlayerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasPlayerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, playersupervisionrequest.HasPlayerWith(with...))
+	}
+	if i.HasApprovals != nil {
+		p := playersupervisionrequest.HasApprovals()
+		if !*i.HasApprovals {
+			p = playersupervisionrequest.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasApprovalsWith) > 0 {
+		with := make([]predicate.PlayerSupervisionRequestApproval, 0, len(i.HasApprovalsWith))
+		for _, w := range i.HasApprovalsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasApprovalsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, playersupervisionrequest.HasApprovalsWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyPlayerSupervisionRequestWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return playersupervisionrequest.And(predicates...), nil
+	}
+}
+
+// PlayerSupervisionRequestApprovalWhereInput represents a where input for filtering PlayerSupervisionRequestApproval queries.
+type PlayerSupervisionRequestApprovalWhereInput struct {
+	Predicates []predicate.PlayerSupervisionRequestApproval  `json:"-"`
+	Not        *PlayerSupervisionRequestApprovalWhereInput   `json:"not,omitempty"`
+	Or         []*PlayerSupervisionRequestApprovalWhereInput `json:"or,omitempty"`
+	And        []*PlayerSupervisionRequestApprovalWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "approved" field predicates.
+	Approved       *bool `json:"approved,omitempty"`
+	ApprovedNEQ    *bool `json:"approvedNEQ,omitempty"`
+	ApprovedIsNil  bool  `json:"approvedIsNil,omitempty"`
+	ApprovedNotNil bool  `json:"approvedNotNil,omitempty"`
+
+	// "approver" edge predicates.
+	HasApprover     *bool             `json:"hasApprover,omitempty"`
+	HasApproverWith []*UserWhereInput `json:"hasApproverWith,omitempty"`
+
+	// "supervision_request" edge predicates.
+	HasSupervisionRequest     *bool                                 `json:"hasSupervisionRequest,omitempty"`
+	HasSupervisionRequestWith []*PlayerSupervisionRequestWhereInput `json:"hasSupervisionRequestWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *PlayerSupervisionRequestApprovalWhereInput) AddPredicates(predicates ...predicate.PlayerSupervisionRequestApproval) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the PlayerSupervisionRequestApprovalWhereInput filter on the PlayerSupervisionRequestApprovalQuery builder.
+func (i *PlayerSupervisionRequestApprovalWhereInput) Filter(q *PlayerSupervisionRequestApprovalQuery) (*PlayerSupervisionRequestApprovalQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyPlayerSupervisionRequestApprovalWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyPlayerSupervisionRequestApprovalWhereInput is returned in case the PlayerSupervisionRequestApprovalWhereInput is empty.
+var ErrEmptyPlayerSupervisionRequestApprovalWhereInput = errors.New("ent: empty predicate PlayerSupervisionRequestApprovalWhereInput")
+
+// P returns a predicate for filtering playersupervisionrequestapprovals.
+// An error is returned if the input is empty or invalid.
+func (i *PlayerSupervisionRequestApprovalWhereInput) P() (predicate.PlayerSupervisionRequestApproval, error) {
+	var predicates []predicate.PlayerSupervisionRequestApproval
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, playersupervisionrequestapproval.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.PlayerSupervisionRequestApproval, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, playersupervisionrequestapproval.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.PlayerSupervisionRequestApproval, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, playersupervisionrequestapproval.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, playersupervisionrequestapproval.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, playersupervisionrequestapproval.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, playersupervisionrequestapproval.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, playersupervisionrequestapproval.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, playersupervisionrequestapproval.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, playersupervisionrequestapproval.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, playersupervisionrequestapproval.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, playersupervisionrequestapproval.IDLTE(*i.IDLTE))
+	}
+	if i.Approved != nil {
+		predicates = append(predicates, playersupervisionrequestapproval.ApprovedEQ(*i.Approved))
+	}
+	if i.ApprovedNEQ != nil {
+		predicates = append(predicates, playersupervisionrequestapproval.ApprovedNEQ(*i.ApprovedNEQ))
+	}
+	if i.ApprovedIsNil {
+		predicates = append(predicates, playersupervisionrequestapproval.ApprovedIsNil())
+	}
+	if i.ApprovedNotNil {
+		predicates = append(predicates, playersupervisionrequestapproval.ApprovedNotNil())
+	}
+
+	if i.HasApprover != nil {
+		p := playersupervisionrequestapproval.HasApprover()
+		if !*i.HasApprover {
+			p = playersupervisionrequestapproval.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasApproverWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasApproverWith))
+		for _, w := range i.HasApproverWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasApproverWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, playersupervisionrequestapproval.HasApproverWith(with...))
+	}
+	if i.HasSupervisionRequest != nil {
+		p := playersupervisionrequestapproval.HasSupervisionRequest()
+		if !*i.HasSupervisionRequest {
+			p = playersupervisionrequestapproval.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasSupervisionRequestWith) > 0 {
+		with := make([]predicate.PlayerSupervisionRequest, 0, len(i.HasSupervisionRequestWith))
+		for _, w := range i.HasSupervisionRequestWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasSupervisionRequestWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, playersupervisionrequestapproval.HasSupervisionRequestWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyPlayerSupervisionRequestApprovalWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return playersupervisionrequestapproval.And(predicates...), nil
 	}
 }
 
@@ -288,6 +688,10 @@ type UserWhereInput struct {
 	// "main_player" edge predicates.
 	HasMainPlayer     *bool               `json:"hasMainPlayer,omitempty"`
 	HasMainPlayerWith []*PlayerWhereInput `json:"hasMainPlayerWith,omitempty"`
+
+	// "sent_supervision_requests" edge predicates.
+	HasSentSupervisionRequests     *bool                                 `json:"hasSentSupervisionRequests,omitempty"`
+	HasSentSupervisionRequestsWith []*PlayerSupervisionRequestWhereInput `json:"hasSentSupervisionRequestsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -499,6 +903,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasMainPlayerWith(with...))
+	}
+	if i.HasSentSupervisionRequests != nil {
+		p := user.HasSentSupervisionRequests()
+		if !*i.HasSentSupervisionRequests {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasSentSupervisionRequestsWith) > 0 {
+		with := make([]predicate.PlayerSupervisionRequest, 0, len(i.HasSentSupervisionRequestsWith))
+		for _, w := range i.HasSentSupervisionRequestsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasSentSupervisionRequestsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasSentSupervisionRequestsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

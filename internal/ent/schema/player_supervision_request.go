@@ -1,0 +1,30 @@
+package schema
+
+import (
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
+)
+
+type PlayerSupervisionRequest struct {
+	ent.Schema
+}
+
+func (PlayerSupervisionRequest) Fields() []ent.Field {
+	return []ent.Field{
+		field.UUID("id", uuid.UUID{}).Default(uuid.New),
+		field.String("message").Optional().Annotations(
+			entgql.Skip(entgql.SkipWhereInput),
+		),
+	}
+}
+
+func (PlayerSupervisionRequest) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("sender", User.Type).Ref("sent_supervision_requests").Required().Unique(),
+		edge.From("player", Player.Type).Ref("supervision_requests").Required().Unique(),
+		edge.To("approvals", PlayerSupervisionRequestApproval.Type),
+	}
+}

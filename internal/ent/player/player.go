@@ -17,6 +17,8 @@ const (
 	EdgeOwner = "owner"
 	// EdgeSupervisors holds the string denoting the supervisors edge name in mutations.
 	EdgeSupervisors = "supervisors"
+	// EdgeSupervisionRequests holds the string denoting the supervision_requests edge name in mutations.
+	EdgeSupervisionRequests = "supervision_requests"
 	// Table holds the table name of the player in the database.
 	Table = "players"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -31,6 +33,13 @@ const (
 	// SupervisorsInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	SupervisorsInverseTable = "users"
+	// SupervisionRequestsTable is the table that holds the supervision_requests relation/edge.
+	SupervisionRequestsTable = "player_supervision_requests"
+	// SupervisionRequestsInverseTable is the table name for the PlayerSupervisionRequest entity.
+	// It exists in this package in order to avoid circular dependency with the "playersupervisionrequest" package.
+	SupervisionRequestsInverseTable = "player_supervision_requests"
+	// SupervisionRequestsColumn is the table column denoting the supervision_requests relation/edge.
+	SupervisionRequestsColumn = "player_supervision_requests"
 )
 
 // Columns holds all SQL columns for player fields.

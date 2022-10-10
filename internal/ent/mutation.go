@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 
@@ -25,26 +27,31 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypePlayer = "Player"
-	TypeUser   = "User"
+	TypePlayer                           = "Player"
+	TypePlayerSupervisionRequest         = "PlayerSupervisionRequest"
+	TypePlayerSupervisionRequestApproval = "PlayerSupervisionRequestApproval"
+	TypeUser                             = "User"
 )
 
 // PlayerMutation represents an operation that mutates the Player nodes in the graph.
 type PlayerMutation struct {
 	config
-	op                 Op
-	typ                string
-	id                 *uuid.UUID
-	name               *string
-	clearedFields      map[string]struct{}
-	owner              *uuid.UUID
-	clearedowner       bool
-	supervisors        map[uuid.UUID]struct{}
-	removedsupervisors map[uuid.UUID]struct{}
-	clearedsupervisors bool
-	done               bool
-	oldValue           func(context.Context) (*Player, error)
-	predicates         []predicate.Player
+	op                          Op
+	typ                         string
+	id                          *uuid.UUID
+	name                        *string
+	clearedFields               map[string]struct{}
+	owner                       *uuid.UUID
+	clearedowner                bool
+	supervisors                 map[uuid.UUID]struct{}
+	removedsupervisors          map[uuid.UUID]struct{}
+	clearedsupervisors          bool
+	supervision_requests        map[uuid.UUID]struct{}
+	removedsupervision_requests map[uuid.UUID]struct{}
+	clearedsupervision_requests bool
+	done                        bool
+	oldValue                    func(context.Context) (*Player, error)
+	predicates                  []predicate.Player
 }
 
 var _ ent.Mutation = (*PlayerMutation)(nil)
@@ -280,6 +287,60 @@ func (m *PlayerMutation) ResetSupervisors() {
 	m.removedsupervisors = nil
 }
 
+// AddSupervisionRequestIDs adds the "supervision_requests" edge to the PlayerSupervisionRequest entity by ids.
+func (m *PlayerMutation) AddSupervisionRequestIDs(ids ...uuid.UUID) {
+	if m.supervision_requests == nil {
+		m.supervision_requests = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.supervision_requests[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSupervisionRequests clears the "supervision_requests" edge to the PlayerSupervisionRequest entity.
+func (m *PlayerMutation) ClearSupervisionRequests() {
+	m.clearedsupervision_requests = true
+}
+
+// SupervisionRequestsCleared reports if the "supervision_requests" edge to the PlayerSupervisionRequest entity was cleared.
+func (m *PlayerMutation) SupervisionRequestsCleared() bool {
+	return m.clearedsupervision_requests
+}
+
+// RemoveSupervisionRequestIDs removes the "supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
+func (m *PlayerMutation) RemoveSupervisionRequestIDs(ids ...uuid.UUID) {
+	if m.removedsupervision_requests == nil {
+		m.removedsupervision_requests = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.supervision_requests, ids[i])
+		m.removedsupervision_requests[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSupervisionRequests returns the removed IDs of the "supervision_requests" edge to the PlayerSupervisionRequest entity.
+func (m *PlayerMutation) RemovedSupervisionRequestsIDs() (ids []uuid.UUID) {
+	for id := range m.removedsupervision_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SupervisionRequestsIDs returns the "supervision_requests" edge IDs in the mutation.
+func (m *PlayerMutation) SupervisionRequestsIDs() (ids []uuid.UUID) {
+	for id := range m.supervision_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSupervisionRequests resets all changes to the "supervision_requests" edge.
+func (m *PlayerMutation) ResetSupervisionRequests() {
+	m.supervision_requests = nil
+	m.clearedsupervision_requests = false
+	m.removedsupervision_requests = nil
+}
+
 // Where appends a list predicates to the PlayerMutation builder.
 func (m *PlayerMutation) Where(ps ...predicate.Player) {
 	m.predicates = append(m.predicates, ps...)
@@ -398,12 +459,15 @@ func (m *PlayerMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PlayerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.owner != nil {
 		edges = append(edges, player.EdgeOwner)
 	}
 	if m.supervisors != nil {
 		edges = append(edges, player.EdgeSupervisors)
+	}
+	if m.supervision_requests != nil {
+		edges = append(edges, player.EdgeSupervisionRequests)
 	}
 	return edges
 }
@@ -422,15 +486,24 @@ func (m *PlayerMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case player.EdgeSupervisionRequests:
+		ids := make([]ent.Value, 0, len(m.supervision_requests))
+		for id := range m.supervision_requests {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PlayerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedsupervisors != nil {
 		edges = append(edges, player.EdgeSupervisors)
+	}
+	if m.removedsupervision_requests != nil {
+		edges = append(edges, player.EdgeSupervisionRequests)
 	}
 	return edges
 }
@@ -445,18 +518,27 @@ func (m *PlayerMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case player.EdgeSupervisionRequests:
+		ids := make([]ent.Value, 0, len(m.removedsupervision_requests))
+		for id := range m.removedsupervision_requests {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PlayerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedowner {
 		edges = append(edges, player.EdgeOwner)
 	}
 	if m.clearedsupervisors {
 		edges = append(edges, player.EdgeSupervisors)
+	}
+	if m.clearedsupervision_requests {
+		edges = append(edges, player.EdgeSupervisionRequests)
 	}
 	return edges
 }
@@ -469,6 +551,8 @@ func (m *PlayerMutation) EdgeCleared(name string) bool {
 		return m.clearedowner
 	case player.EdgeSupervisors:
 		return m.clearedsupervisors
+	case player.EdgeSupervisionRequests:
+		return m.clearedsupervision_requests
 	}
 	return false
 }
@@ -494,29 +578,1055 @@ func (m *PlayerMutation) ResetEdge(name string) error {
 	case player.EdgeSupervisors:
 		m.ResetSupervisors()
 		return nil
+	case player.EdgeSupervisionRequests:
+		m.ResetSupervisionRequests()
+		return nil
 	}
 	return fmt.Errorf("unknown Player edge %s", name)
+}
+
+// PlayerSupervisionRequestMutation represents an operation that mutates the PlayerSupervisionRequest nodes in the graph.
+type PlayerSupervisionRequestMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	message          *string
+	clearedFields    map[string]struct{}
+	sender           *uuid.UUID
+	clearedsender    bool
+	player           *uuid.UUID
+	clearedplayer    bool
+	approvals        map[uuid.UUID]struct{}
+	removedapprovals map[uuid.UUID]struct{}
+	clearedapprovals bool
+	done             bool
+	oldValue         func(context.Context) (*PlayerSupervisionRequest, error)
+	predicates       []predicate.PlayerSupervisionRequest
+}
+
+var _ ent.Mutation = (*PlayerSupervisionRequestMutation)(nil)
+
+// playersupervisionrequestOption allows management of the mutation configuration using functional options.
+type playersupervisionrequestOption func(*PlayerSupervisionRequestMutation)
+
+// newPlayerSupervisionRequestMutation creates new mutation for the PlayerSupervisionRequest entity.
+func newPlayerSupervisionRequestMutation(c config, op Op, opts ...playersupervisionrequestOption) *PlayerSupervisionRequestMutation {
+	m := &PlayerSupervisionRequestMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePlayerSupervisionRequest,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPlayerSupervisionRequestID sets the ID field of the mutation.
+func withPlayerSupervisionRequestID(id uuid.UUID) playersupervisionrequestOption {
+	return func(m *PlayerSupervisionRequestMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *PlayerSupervisionRequest
+		)
+		m.oldValue = func(ctx context.Context) (*PlayerSupervisionRequest, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().PlayerSupervisionRequest.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPlayerSupervisionRequest sets the old PlayerSupervisionRequest of the mutation.
+func withPlayerSupervisionRequest(node *PlayerSupervisionRequest) playersupervisionrequestOption {
+	return func(m *PlayerSupervisionRequestMutation) {
+		m.oldValue = func(context.Context) (*PlayerSupervisionRequest, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PlayerSupervisionRequestMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PlayerSupervisionRequestMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of PlayerSupervisionRequest entities.
+func (m *PlayerSupervisionRequestMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PlayerSupervisionRequestMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PlayerSupervisionRequestMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().PlayerSupervisionRequest.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetMessage sets the "message" field.
+func (m *PlayerSupervisionRequestMutation) SetMessage(s string) {
+	m.message = &s
+}
+
+// Message returns the value of the "message" field in the mutation.
+func (m *PlayerSupervisionRequestMutation) Message() (r string, exists bool) {
+	v := m.message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMessage returns the old "message" field's value of the PlayerSupervisionRequest entity.
+// If the PlayerSupervisionRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PlayerSupervisionRequestMutation) OldMessage(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMessage: %w", err)
+	}
+	return oldValue.Message, nil
+}
+
+// ClearMessage clears the value of the "message" field.
+func (m *PlayerSupervisionRequestMutation) ClearMessage() {
+	m.message = nil
+	m.clearedFields[playersupervisionrequest.FieldMessage] = struct{}{}
+}
+
+// MessageCleared returns if the "message" field was cleared in this mutation.
+func (m *PlayerSupervisionRequestMutation) MessageCleared() bool {
+	_, ok := m.clearedFields[playersupervisionrequest.FieldMessage]
+	return ok
+}
+
+// ResetMessage resets all changes to the "message" field.
+func (m *PlayerSupervisionRequestMutation) ResetMessage() {
+	m.message = nil
+	delete(m.clearedFields, playersupervisionrequest.FieldMessage)
+}
+
+// SetSenderID sets the "sender" edge to the User entity by id.
+func (m *PlayerSupervisionRequestMutation) SetSenderID(id uuid.UUID) {
+	m.sender = &id
+}
+
+// ClearSender clears the "sender" edge to the User entity.
+func (m *PlayerSupervisionRequestMutation) ClearSender() {
+	m.clearedsender = true
+}
+
+// SenderCleared reports if the "sender" edge to the User entity was cleared.
+func (m *PlayerSupervisionRequestMutation) SenderCleared() bool {
+	return m.clearedsender
+}
+
+// SenderID returns the "sender" edge ID in the mutation.
+func (m *PlayerSupervisionRequestMutation) SenderID() (id uuid.UUID, exists bool) {
+	if m.sender != nil {
+		return *m.sender, true
+	}
+	return
+}
+
+// SenderIDs returns the "sender" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SenderID instead. It exists only for internal usage by the builders.
+func (m *PlayerSupervisionRequestMutation) SenderIDs() (ids []uuid.UUID) {
+	if id := m.sender; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSender resets all changes to the "sender" edge.
+func (m *PlayerSupervisionRequestMutation) ResetSender() {
+	m.sender = nil
+	m.clearedsender = false
+}
+
+// SetPlayerID sets the "player" edge to the Player entity by id.
+func (m *PlayerSupervisionRequestMutation) SetPlayerID(id uuid.UUID) {
+	m.player = &id
+}
+
+// ClearPlayer clears the "player" edge to the Player entity.
+func (m *PlayerSupervisionRequestMutation) ClearPlayer() {
+	m.clearedplayer = true
+}
+
+// PlayerCleared reports if the "player" edge to the Player entity was cleared.
+func (m *PlayerSupervisionRequestMutation) PlayerCleared() bool {
+	return m.clearedplayer
+}
+
+// PlayerID returns the "player" edge ID in the mutation.
+func (m *PlayerSupervisionRequestMutation) PlayerID() (id uuid.UUID, exists bool) {
+	if m.player != nil {
+		return *m.player, true
+	}
+	return
+}
+
+// PlayerIDs returns the "player" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// PlayerID instead. It exists only for internal usage by the builders.
+func (m *PlayerSupervisionRequestMutation) PlayerIDs() (ids []uuid.UUID) {
+	if id := m.player; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPlayer resets all changes to the "player" edge.
+func (m *PlayerSupervisionRequestMutation) ResetPlayer() {
+	m.player = nil
+	m.clearedplayer = false
+}
+
+// AddApprovalIDs adds the "approvals" edge to the PlayerSupervisionRequestApproval entity by ids.
+func (m *PlayerSupervisionRequestMutation) AddApprovalIDs(ids ...uuid.UUID) {
+	if m.approvals == nil {
+		m.approvals = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.approvals[ids[i]] = struct{}{}
+	}
+}
+
+// ClearApprovals clears the "approvals" edge to the PlayerSupervisionRequestApproval entity.
+func (m *PlayerSupervisionRequestMutation) ClearApprovals() {
+	m.clearedapprovals = true
+}
+
+// ApprovalsCleared reports if the "approvals" edge to the PlayerSupervisionRequestApproval entity was cleared.
+func (m *PlayerSupervisionRequestMutation) ApprovalsCleared() bool {
+	return m.clearedapprovals
+}
+
+// RemoveApprovalIDs removes the "approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
+func (m *PlayerSupervisionRequestMutation) RemoveApprovalIDs(ids ...uuid.UUID) {
+	if m.removedapprovals == nil {
+		m.removedapprovals = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.approvals, ids[i])
+		m.removedapprovals[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedApprovals returns the removed IDs of the "approvals" edge to the PlayerSupervisionRequestApproval entity.
+func (m *PlayerSupervisionRequestMutation) RemovedApprovalsIDs() (ids []uuid.UUID) {
+	for id := range m.removedapprovals {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ApprovalsIDs returns the "approvals" edge IDs in the mutation.
+func (m *PlayerSupervisionRequestMutation) ApprovalsIDs() (ids []uuid.UUID) {
+	for id := range m.approvals {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetApprovals resets all changes to the "approvals" edge.
+func (m *PlayerSupervisionRequestMutation) ResetApprovals() {
+	m.approvals = nil
+	m.clearedapprovals = false
+	m.removedapprovals = nil
+}
+
+// Where appends a list predicates to the PlayerSupervisionRequestMutation builder.
+func (m *PlayerSupervisionRequestMutation) Where(ps ...predicate.PlayerSupervisionRequest) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *PlayerSupervisionRequestMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (PlayerSupervisionRequest).
+func (m *PlayerSupervisionRequestMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PlayerSupervisionRequestMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.message != nil {
+		fields = append(fields, playersupervisionrequest.FieldMessage)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PlayerSupervisionRequestMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case playersupervisionrequest.FieldMessage:
+		return m.Message()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PlayerSupervisionRequestMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case playersupervisionrequest.FieldMessage:
+		return m.OldMessage(ctx)
+	}
+	return nil, fmt.Errorf("unknown PlayerSupervisionRequest field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PlayerSupervisionRequestMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case playersupervisionrequest.FieldMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMessage(v)
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequest field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PlayerSupervisionRequestMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PlayerSupervisionRequestMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PlayerSupervisionRequestMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequest numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PlayerSupervisionRequestMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(playersupervisionrequest.FieldMessage) {
+		fields = append(fields, playersupervisionrequest.FieldMessage)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PlayerSupervisionRequestMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PlayerSupervisionRequestMutation) ClearField(name string) error {
+	switch name {
+	case playersupervisionrequest.FieldMessage:
+		m.ClearMessage()
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequest nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PlayerSupervisionRequestMutation) ResetField(name string) error {
+	switch name {
+	case playersupervisionrequest.FieldMessage:
+		m.ResetMessage()
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequest field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PlayerSupervisionRequestMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.sender != nil {
+		edges = append(edges, playersupervisionrequest.EdgeSender)
+	}
+	if m.player != nil {
+		edges = append(edges, playersupervisionrequest.EdgePlayer)
+	}
+	if m.approvals != nil {
+		edges = append(edges, playersupervisionrequest.EdgeApprovals)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PlayerSupervisionRequestMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case playersupervisionrequest.EdgeSender:
+		if id := m.sender; id != nil {
+			return []ent.Value{*id}
+		}
+	case playersupervisionrequest.EdgePlayer:
+		if id := m.player; id != nil {
+			return []ent.Value{*id}
+		}
+	case playersupervisionrequest.EdgeApprovals:
+		ids := make([]ent.Value, 0, len(m.approvals))
+		for id := range m.approvals {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PlayerSupervisionRequestMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.removedapprovals != nil {
+		edges = append(edges, playersupervisionrequest.EdgeApprovals)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PlayerSupervisionRequestMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case playersupervisionrequest.EdgeApprovals:
+		ids := make([]ent.Value, 0, len(m.removedapprovals))
+		for id := range m.removedapprovals {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PlayerSupervisionRequestMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedsender {
+		edges = append(edges, playersupervisionrequest.EdgeSender)
+	}
+	if m.clearedplayer {
+		edges = append(edges, playersupervisionrequest.EdgePlayer)
+	}
+	if m.clearedapprovals {
+		edges = append(edges, playersupervisionrequest.EdgeApprovals)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PlayerSupervisionRequestMutation) EdgeCleared(name string) bool {
+	switch name {
+	case playersupervisionrequest.EdgeSender:
+		return m.clearedsender
+	case playersupervisionrequest.EdgePlayer:
+		return m.clearedplayer
+	case playersupervisionrequest.EdgeApprovals:
+		return m.clearedapprovals
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PlayerSupervisionRequestMutation) ClearEdge(name string) error {
+	switch name {
+	case playersupervisionrequest.EdgeSender:
+		m.ClearSender()
+		return nil
+	case playersupervisionrequest.EdgePlayer:
+		m.ClearPlayer()
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequest unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PlayerSupervisionRequestMutation) ResetEdge(name string) error {
+	switch name {
+	case playersupervisionrequest.EdgeSender:
+		m.ResetSender()
+		return nil
+	case playersupervisionrequest.EdgePlayer:
+		m.ResetPlayer()
+		return nil
+	case playersupervisionrequest.EdgeApprovals:
+		m.ResetApprovals()
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequest edge %s", name)
+}
+
+// PlayerSupervisionRequestApprovalMutation represents an operation that mutates the PlayerSupervisionRequestApproval nodes in the graph.
+type PlayerSupervisionRequestApprovalMutation struct {
+	config
+	op                         Op
+	typ                        string
+	id                         *uuid.UUID
+	approved                   *bool
+	clearedFields              map[string]struct{}
+	approver                   *uuid.UUID
+	clearedapprover            bool
+	supervision_request        *uuid.UUID
+	clearedsupervision_request bool
+	done                       bool
+	oldValue                   func(context.Context) (*PlayerSupervisionRequestApproval, error)
+	predicates                 []predicate.PlayerSupervisionRequestApproval
+}
+
+var _ ent.Mutation = (*PlayerSupervisionRequestApprovalMutation)(nil)
+
+// playersupervisionrequestapprovalOption allows management of the mutation configuration using functional options.
+type playersupervisionrequestapprovalOption func(*PlayerSupervisionRequestApprovalMutation)
+
+// newPlayerSupervisionRequestApprovalMutation creates new mutation for the PlayerSupervisionRequestApproval entity.
+func newPlayerSupervisionRequestApprovalMutation(c config, op Op, opts ...playersupervisionrequestapprovalOption) *PlayerSupervisionRequestApprovalMutation {
+	m := &PlayerSupervisionRequestApprovalMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePlayerSupervisionRequestApproval,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPlayerSupervisionRequestApprovalID sets the ID field of the mutation.
+func withPlayerSupervisionRequestApprovalID(id uuid.UUID) playersupervisionrequestapprovalOption {
+	return func(m *PlayerSupervisionRequestApprovalMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *PlayerSupervisionRequestApproval
+		)
+		m.oldValue = func(ctx context.Context) (*PlayerSupervisionRequestApproval, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().PlayerSupervisionRequestApproval.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPlayerSupervisionRequestApproval sets the old PlayerSupervisionRequestApproval of the mutation.
+func withPlayerSupervisionRequestApproval(node *PlayerSupervisionRequestApproval) playersupervisionrequestapprovalOption {
+	return func(m *PlayerSupervisionRequestApprovalMutation) {
+		m.oldValue = func(context.Context) (*PlayerSupervisionRequestApproval, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PlayerSupervisionRequestApprovalMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PlayerSupervisionRequestApprovalMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of PlayerSupervisionRequestApproval entities.
+func (m *PlayerSupervisionRequestApprovalMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PlayerSupervisionRequestApprovalMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().PlayerSupervisionRequestApproval.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetApproved sets the "approved" field.
+func (m *PlayerSupervisionRequestApprovalMutation) SetApproved(b bool) {
+	m.approved = &b
+}
+
+// Approved returns the value of the "approved" field in the mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) Approved() (r bool, exists bool) {
+	v := m.approved
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldApproved returns the old "approved" field's value of the PlayerSupervisionRequestApproval entity.
+// If the PlayerSupervisionRequestApproval object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PlayerSupervisionRequestApprovalMutation) OldApproved(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldApproved is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldApproved requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApproved: %w", err)
+	}
+	return oldValue.Approved, nil
+}
+
+// ClearApproved clears the value of the "approved" field.
+func (m *PlayerSupervisionRequestApprovalMutation) ClearApproved() {
+	m.approved = nil
+	m.clearedFields[playersupervisionrequestapproval.FieldApproved] = struct{}{}
+}
+
+// ApprovedCleared returns if the "approved" field was cleared in this mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) ApprovedCleared() bool {
+	_, ok := m.clearedFields[playersupervisionrequestapproval.FieldApproved]
+	return ok
+}
+
+// ResetApproved resets all changes to the "approved" field.
+func (m *PlayerSupervisionRequestApprovalMutation) ResetApproved() {
+	m.approved = nil
+	delete(m.clearedFields, playersupervisionrequestapproval.FieldApproved)
+}
+
+// SetApproverID sets the "approver" edge to the User entity by id.
+func (m *PlayerSupervisionRequestApprovalMutation) SetApproverID(id uuid.UUID) {
+	m.approver = &id
+}
+
+// ClearApprover clears the "approver" edge to the User entity.
+func (m *PlayerSupervisionRequestApprovalMutation) ClearApprover() {
+	m.clearedapprover = true
+}
+
+// ApproverCleared reports if the "approver" edge to the User entity was cleared.
+func (m *PlayerSupervisionRequestApprovalMutation) ApproverCleared() bool {
+	return m.clearedapprover
+}
+
+// ApproverID returns the "approver" edge ID in the mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) ApproverID() (id uuid.UUID, exists bool) {
+	if m.approver != nil {
+		return *m.approver, true
+	}
+	return
+}
+
+// ApproverIDs returns the "approver" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ApproverID instead. It exists only for internal usage by the builders.
+func (m *PlayerSupervisionRequestApprovalMutation) ApproverIDs() (ids []uuid.UUID) {
+	if id := m.approver; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetApprover resets all changes to the "approver" edge.
+func (m *PlayerSupervisionRequestApprovalMutation) ResetApprover() {
+	m.approver = nil
+	m.clearedapprover = false
+}
+
+// SetSupervisionRequestID sets the "supervision_request" edge to the PlayerSupervisionRequest entity by id.
+func (m *PlayerSupervisionRequestApprovalMutation) SetSupervisionRequestID(id uuid.UUID) {
+	m.supervision_request = &id
+}
+
+// ClearSupervisionRequest clears the "supervision_request" edge to the PlayerSupervisionRequest entity.
+func (m *PlayerSupervisionRequestApprovalMutation) ClearSupervisionRequest() {
+	m.clearedsupervision_request = true
+}
+
+// SupervisionRequestCleared reports if the "supervision_request" edge to the PlayerSupervisionRequest entity was cleared.
+func (m *PlayerSupervisionRequestApprovalMutation) SupervisionRequestCleared() bool {
+	return m.clearedsupervision_request
+}
+
+// SupervisionRequestID returns the "supervision_request" edge ID in the mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) SupervisionRequestID() (id uuid.UUID, exists bool) {
+	if m.supervision_request != nil {
+		return *m.supervision_request, true
+	}
+	return
+}
+
+// SupervisionRequestIDs returns the "supervision_request" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SupervisionRequestID instead. It exists only for internal usage by the builders.
+func (m *PlayerSupervisionRequestApprovalMutation) SupervisionRequestIDs() (ids []uuid.UUID) {
+	if id := m.supervision_request; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSupervisionRequest resets all changes to the "supervision_request" edge.
+func (m *PlayerSupervisionRequestApprovalMutation) ResetSupervisionRequest() {
+	m.supervision_request = nil
+	m.clearedsupervision_request = false
+}
+
+// Where appends a list predicates to the PlayerSupervisionRequestApprovalMutation builder.
+func (m *PlayerSupervisionRequestApprovalMutation) Where(ps ...predicate.PlayerSupervisionRequestApproval) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *PlayerSupervisionRequestApprovalMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (PlayerSupervisionRequestApproval).
+func (m *PlayerSupervisionRequestApprovalMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PlayerSupervisionRequestApprovalMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.approved != nil {
+		fields = append(fields, playersupervisionrequestapproval.FieldApproved)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PlayerSupervisionRequestApprovalMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case playersupervisionrequestapproval.FieldApproved:
+		return m.Approved()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PlayerSupervisionRequestApprovalMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case playersupervisionrequestapproval.FieldApproved:
+		return m.OldApproved(ctx)
+	}
+	return nil, fmt.Errorf("unknown PlayerSupervisionRequestApproval field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PlayerSupervisionRequestApprovalMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case playersupervisionrequestapproval.FieldApproved:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetApproved(v)
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequestApproval field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PlayerSupervisionRequestApprovalMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PlayerSupervisionRequestApprovalMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequestApproval numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(playersupervisionrequestapproval.FieldApproved) {
+		fields = append(fields, playersupervisionrequestapproval.FieldApproved)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PlayerSupervisionRequestApprovalMutation) ClearField(name string) error {
+	switch name {
+	case playersupervisionrequestapproval.FieldApproved:
+		m.ClearApproved()
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequestApproval nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PlayerSupervisionRequestApprovalMutation) ResetField(name string) error {
+	switch name {
+	case playersupervisionrequestapproval.FieldApproved:
+		m.ResetApproved()
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequestApproval field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.approver != nil {
+		edges = append(edges, playersupervisionrequestapproval.EdgeApprover)
+	}
+	if m.supervision_request != nil {
+		edges = append(edges, playersupervisionrequestapproval.EdgeSupervisionRequest)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case playersupervisionrequestapproval.EdgeApprover:
+		if id := m.approver; id != nil {
+			return []ent.Value{*id}
+		}
+	case playersupervisionrequestapproval.EdgeSupervisionRequest:
+		if id := m.supervision_request; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedapprover {
+		edges = append(edges, playersupervisionrequestapproval.EdgeApprover)
+	}
+	if m.clearedsupervision_request {
+		edges = append(edges, playersupervisionrequestapproval.EdgeSupervisionRequest)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PlayerSupervisionRequestApprovalMutation) EdgeCleared(name string) bool {
+	switch name {
+	case playersupervisionrequestapproval.EdgeApprover:
+		return m.clearedapprover
+	case playersupervisionrequestapproval.EdgeSupervisionRequest:
+		return m.clearedsupervision_request
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PlayerSupervisionRequestApprovalMutation) ClearEdge(name string) error {
+	switch name {
+	case playersupervisionrequestapproval.EdgeApprover:
+		m.ClearApprover()
+		return nil
+	case playersupervisionrequestapproval.EdgeSupervisionRequest:
+		m.ClearSupervisionRequest()
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequestApproval unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PlayerSupervisionRequestApprovalMutation) ResetEdge(name string) error {
+	switch name {
+	case playersupervisionrequestapproval.EdgeApprover:
+		m.ResetApprover()
+		return nil
+	case playersupervisionrequestapproval.EdgeSupervisionRequest:
+		m.ResetSupervisionRequest()
+		return nil
+	}
+	return fmt.Errorf("unknown PlayerSupervisionRequestApproval edge %s", name)
 }
 
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                 Op
-	typ                string
-	id                 *uuid.UUID
-	name               *string
-	email              *string
-	password           *string
-	avatar_url         *string
-	clearedFields      map[string]struct{}
-	players            map[uuid.UUID]struct{}
-	removedplayers     map[uuid.UUID]struct{}
-	clearedplayers     bool
-	main_player        *uuid.UUID
-	clearedmain_player bool
-	done               bool
-	oldValue           func(context.Context) (*User, error)
-	predicates         []predicate.User
+	op                                   Op
+	typ                                  string
+	id                                   *uuid.UUID
+	name                                 *string
+	email                                *string
+	password                             *string
+	avatar_url                           *string
+	clearedFields                        map[string]struct{}
+	players                              map[uuid.UUID]struct{}
+	removedplayers                       map[uuid.UUID]struct{}
+	clearedplayers                       bool
+	main_player                          *uuid.UUID
+	clearedmain_player                   bool
+	sent_supervision_requests            map[uuid.UUID]struct{}
+	removedsent_supervision_requests     map[uuid.UUID]struct{}
+	clearedsent_supervision_requests     bool
+	supervision_request_approvals        map[uuid.UUID]struct{}
+	removedsupervision_request_approvals map[uuid.UUID]struct{}
+	clearedsupervision_request_approvals bool
+	done                                 bool
+	oldValue                             func(context.Context) (*User, error)
+	predicates                           []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -860,6 +1970,114 @@ func (m *UserMutation) ResetMainPlayer() {
 	m.clearedmain_player = false
 }
 
+// AddSentSupervisionRequestIDs adds the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by ids.
+func (m *UserMutation) AddSentSupervisionRequestIDs(ids ...uuid.UUID) {
+	if m.sent_supervision_requests == nil {
+		m.sent_supervision_requests = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.sent_supervision_requests[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSentSupervisionRequests clears the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity.
+func (m *UserMutation) ClearSentSupervisionRequests() {
+	m.clearedsent_supervision_requests = true
+}
+
+// SentSupervisionRequestsCleared reports if the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity was cleared.
+func (m *UserMutation) SentSupervisionRequestsCleared() bool {
+	return m.clearedsent_supervision_requests
+}
+
+// RemoveSentSupervisionRequestIDs removes the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
+func (m *UserMutation) RemoveSentSupervisionRequestIDs(ids ...uuid.UUID) {
+	if m.removedsent_supervision_requests == nil {
+		m.removedsent_supervision_requests = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.sent_supervision_requests, ids[i])
+		m.removedsent_supervision_requests[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSentSupervisionRequests returns the removed IDs of the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity.
+func (m *UserMutation) RemovedSentSupervisionRequestsIDs() (ids []uuid.UUID) {
+	for id := range m.removedsent_supervision_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SentSupervisionRequestsIDs returns the "sent_supervision_requests" edge IDs in the mutation.
+func (m *UserMutation) SentSupervisionRequestsIDs() (ids []uuid.UUID) {
+	for id := range m.sent_supervision_requests {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSentSupervisionRequests resets all changes to the "sent_supervision_requests" edge.
+func (m *UserMutation) ResetSentSupervisionRequests() {
+	m.sent_supervision_requests = nil
+	m.clearedsent_supervision_requests = false
+	m.removedsent_supervision_requests = nil
+}
+
+// AddSupervisionRequestApprovalIDs adds the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by ids.
+func (m *UserMutation) AddSupervisionRequestApprovalIDs(ids ...uuid.UUID) {
+	if m.supervision_request_approvals == nil {
+		m.supervision_request_approvals = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.supervision_request_approvals[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSupervisionRequestApprovals clears the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity.
+func (m *UserMutation) ClearSupervisionRequestApprovals() {
+	m.clearedsupervision_request_approvals = true
+}
+
+// SupervisionRequestApprovalsCleared reports if the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity was cleared.
+func (m *UserMutation) SupervisionRequestApprovalsCleared() bool {
+	return m.clearedsupervision_request_approvals
+}
+
+// RemoveSupervisionRequestApprovalIDs removes the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
+func (m *UserMutation) RemoveSupervisionRequestApprovalIDs(ids ...uuid.UUID) {
+	if m.removedsupervision_request_approvals == nil {
+		m.removedsupervision_request_approvals = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.supervision_request_approvals, ids[i])
+		m.removedsupervision_request_approvals[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSupervisionRequestApprovals returns the removed IDs of the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity.
+func (m *UserMutation) RemovedSupervisionRequestApprovalsIDs() (ids []uuid.UUID) {
+	for id := range m.removedsupervision_request_approvals {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SupervisionRequestApprovalsIDs returns the "supervision_request_approvals" edge IDs in the mutation.
+func (m *UserMutation) SupervisionRequestApprovalsIDs() (ids []uuid.UUID) {
+	for id := range m.supervision_request_approvals {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSupervisionRequestApprovals resets all changes to the "supervision_request_approvals" edge.
+func (m *UserMutation) ResetSupervisionRequestApprovals() {
+	m.supervision_request_approvals = nil
+	m.clearedsupervision_request_approvals = false
+	m.removedsupervision_request_approvals = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -1029,12 +2247,18 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.players != nil {
 		edges = append(edges, user.EdgePlayers)
 	}
 	if m.main_player != nil {
 		edges = append(edges, user.EdgeMainPlayer)
+	}
+	if m.sent_supervision_requests != nil {
+		edges = append(edges, user.EdgeSentSupervisionRequests)
+	}
+	if m.supervision_request_approvals != nil {
+		edges = append(edges, user.EdgeSupervisionRequestApprovals)
 	}
 	return edges
 }
@@ -1053,15 +2277,33 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 		if id := m.main_player; id != nil {
 			return []ent.Value{*id}
 		}
+	case user.EdgeSentSupervisionRequests:
+		ids := make([]ent.Value, 0, len(m.sent_supervision_requests))
+		for id := range m.sent_supervision_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeSupervisionRequestApprovals:
+		ids := make([]ent.Value, 0, len(m.supervision_request_approvals))
+		for id := range m.supervision_request_approvals {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.removedplayers != nil {
 		edges = append(edges, user.EdgePlayers)
+	}
+	if m.removedsent_supervision_requests != nil {
+		edges = append(edges, user.EdgeSentSupervisionRequests)
+	}
+	if m.removedsupervision_request_approvals != nil {
+		edges = append(edges, user.EdgeSupervisionRequestApprovals)
 	}
 	return edges
 }
@@ -1076,18 +2318,36 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeSentSupervisionRequests:
+		ids := make([]ent.Value, 0, len(m.removedsent_supervision_requests))
+		for id := range m.removedsent_supervision_requests {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeSupervisionRequestApprovals:
+		ids := make([]ent.Value, 0, len(m.removedsupervision_request_approvals))
+		for id := range m.removedsupervision_request_approvals {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 4)
 	if m.clearedplayers {
 		edges = append(edges, user.EdgePlayers)
 	}
 	if m.clearedmain_player {
 		edges = append(edges, user.EdgeMainPlayer)
+	}
+	if m.clearedsent_supervision_requests {
+		edges = append(edges, user.EdgeSentSupervisionRequests)
+	}
+	if m.clearedsupervision_request_approvals {
+		edges = append(edges, user.EdgeSupervisionRequestApprovals)
 	}
 	return edges
 }
@@ -1100,6 +2360,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedplayers
 	case user.EdgeMainPlayer:
 		return m.clearedmain_player
+	case user.EdgeSentSupervisionRequests:
+		return m.clearedsent_supervision_requests
+	case user.EdgeSupervisionRequestApprovals:
+		return m.clearedsupervision_request_approvals
 	}
 	return false
 }
@@ -1124,6 +2388,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeMainPlayer:
 		m.ResetMainPlayer()
+		return nil
+	case user.EdgeSentSupervisionRequests:
+		m.ResetSentSupervisionRequests()
+		return nil
+	case user.EdgeSupervisionRequestApprovals:
+		m.ResetSupervisionRequestApprovals()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

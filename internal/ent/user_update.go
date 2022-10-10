@@ -12,6 +12,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
@@ -103,6 +105,36 @@ func (uu *UserUpdate) SetMainPlayer(p *Player) *UserUpdate {
 	return uu.SetMainPlayerID(p.ID)
 }
 
+// AddSentSupervisionRequestIDs adds the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
+func (uu *UserUpdate) AddSentSupervisionRequestIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddSentSupervisionRequestIDs(ids...)
+	return uu
+}
+
+// AddSentSupervisionRequests adds the "sent_supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (uu *UserUpdate) AddSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.AddSentSupervisionRequestIDs(ids...)
+}
+
+// AddSupervisionRequestApprovalIDs adds the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
+func (uu *UserUpdate) AddSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddSupervisionRequestApprovalIDs(ids...)
+	return uu
+}
+
+// AddSupervisionRequestApprovals adds the "supervision_request_approvals" edges to the PlayerSupervisionRequestApproval entity.
+func (uu *UserUpdate) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.AddSupervisionRequestApprovalIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -133,6 +165,48 @@ func (uu *UserUpdate) RemovePlayers(p ...*Player) *UserUpdate {
 func (uu *UserUpdate) ClearMainPlayer() *UserUpdate {
 	uu.mutation.ClearMainPlayer()
 	return uu
+}
+
+// ClearSentSupervisionRequests clears all "sent_supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (uu *UserUpdate) ClearSentSupervisionRequests() *UserUpdate {
+	uu.mutation.ClearSentSupervisionRequests()
+	return uu
+}
+
+// RemoveSentSupervisionRequestIDs removes the "sent_supervision_requests" edge to PlayerSupervisionRequest entities by IDs.
+func (uu *UserUpdate) RemoveSentSupervisionRequestIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemoveSentSupervisionRequestIDs(ids...)
+	return uu
+}
+
+// RemoveSentSupervisionRequests removes "sent_supervision_requests" edges to PlayerSupervisionRequest entities.
+func (uu *UserUpdate) RemoveSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.RemoveSentSupervisionRequestIDs(ids...)
+}
+
+// ClearSupervisionRequestApprovals clears all "supervision_request_approvals" edges to the PlayerSupervisionRequestApproval entity.
+func (uu *UserUpdate) ClearSupervisionRequestApprovals() *UserUpdate {
+	uu.mutation.ClearSupervisionRequestApprovals()
+	return uu
+}
+
+// RemoveSupervisionRequestApprovalIDs removes the "supervision_request_approvals" edge to PlayerSupervisionRequestApproval entities by IDs.
+func (uu *UserUpdate) RemoveSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemoveSupervisionRequestApprovalIDs(ids...)
+	return uu
+}
+
+// RemoveSupervisionRequestApprovals removes "supervision_request_approvals" edges to PlayerSupervisionRequestApproval entities.
+func (uu *UserUpdate) RemoveSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.RemoveSupervisionRequestApprovalIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -345,6 +419,114 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.SentSupervisionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SentSupervisionRequestsTable,
+			Columns: []string{user.SentSupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedSentSupervisionRequestsIDs(); len(nodes) > 0 && !uu.mutation.SentSupervisionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SentSupervisionRequestsTable,
+			Columns: []string{user.SentSupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.SentSupervisionRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SentSupervisionRequestsTable,
+			Columns: []string{user.SentSupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.SupervisionRequestApprovalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SupervisionRequestApprovalsTable,
+			Columns: []string{user.SupervisionRequestApprovalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequestapproval.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedSupervisionRequestApprovalsIDs(); len(nodes) > 0 && !uu.mutation.SupervisionRequestApprovalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SupervisionRequestApprovalsTable,
+			Columns: []string{user.SupervisionRequestApprovalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequestapproval.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.SupervisionRequestApprovalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SupervisionRequestApprovalsTable,
+			Columns: []string{user.SupervisionRequestApprovalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequestapproval.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -438,6 +620,36 @@ func (uuo *UserUpdateOne) SetMainPlayer(p *Player) *UserUpdateOne {
 	return uuo.SetMainPlayerID(p.ID)
 }
 
+// AddSentSupervisionRequestIDs adds the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
+func (uuo *UserUpdateOne) AddSentSupervisionRequestIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddSentSupervisionRequestIDs(ids...)
+	return uuo
+}
+
+// AddSentSupervisionRequests adds the "sent_supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (uuo *UserUpdateOne) AddSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.AddSentSupervisionRequestIDs(ids...)
+}
+
+// AddSupervisionRequestApprovalIDs adds the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
+func (uuo *UserUpdateOne) AddSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddSupervisionRequestApprovalIDs(ids...)
+	return uuo
+}
+
+// AddSupervisionRequestApprovals adds the "supervision_request_approvals" edges to the PlayerSupervisionRequestApproval entity.
+func (uuo *UserUpdateOne) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.AddSupervisionRequestApprovalIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -468,6 +680,48 @@ func (uuo *UserUpdateOne) RemovePlayers(p ...*Player) *UserUpdateOne {
 func (uuo *UserUpdateOne) ClearMainPlayer() *UserUpdateOne {
 	uuo.mutation.ClearMainPlayer()
 	return uuo
+}
+
+// ClearSentSupervisionRequests clears all "sent_supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (uuo *UserUpdateOne) ClearSentSupervisionRequests() *UserUpdateOne {
+	uuo.mutation.ClearSentSupervisionRequests()
+	return uuo
+}
+
+// RemoveSentSupervisionRequestIDs removes the "sent_supervision_requests" edge to PlayerSupervisionRequest entities by IDs.
+func (uuo *UserUpdateOne) RemoveSentSupervisionRequestIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemoveSentSupervisionRequestIDs(ids...)
+	return uuo
+}
+
+// RemoveSentSupervisionRequests removes "sent_supervision_requests" edges to PlayerSupervisionRequest entities.
+func (uuo *UserUpdateOne) RemoveSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.RemoveSentSupervisionRequestIDs(ids...)
+}
+
+// ClearSupervisionRequestApprovals clears all "supervision_request_approvals" edges to the PlayerSupervisionRequestApproval entity.
+func (uuo *UserUpdateOne) ClearSupervisionRequestApprovals() *UserUpdateOne {
+	uuo.mutation.ClearSupervisionRequestApprovals()
+	return uuo
+}
+
+// RemoveSupervisionRequestApprovalIDs removes the "supervision_request_approvals" edge to PlayerSupervisionRequestApproval entities by IDs.
+func (uuo *UserUpdateOne) RemoveSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemoveSupervisionRequestApprovalIDs(ids...)
+	return uuo
+}
+
+// RemoveSupervisionRequestApprovals removes "supervision_request_approvals" edges to PlayerSupervisionRequestApproval entities.
+func (uuo *UserUpdateOne) RemoveSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.RemoveSupervisionRequestApprovalIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -702,6 +956,114 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.SentSupervisionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SentSupervisionRequestsTable,
+			Columns: []string{user.SentSupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedSentSupervisionRequestsIDs(); len(nodes) > 0 && !uuo.mutation.SentSupervisionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SentSupervisionRequestsTable,
+			Columns: []string{user.SentSupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.SentSupervisionRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SentSupervisionRequestsTable,
+			Columns: []string{user.SentSupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.SupervisionRequestApprovalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SupervisionRequestApprovalsTable,
+			Columns: []string{user.SupervisionRequestApprovalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequestapproval.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedSupervisionRequestApprovalsIDs(); len(nodes) > 0 && !uuo.mutation.SupervisionRequestApprovalsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SupervisionRequestApprovalsTable,
+			Columns: []string{user.SupervisionRequestApprovalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequestapproval.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.SupervisionRequestApprovalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SupervisionRequestApprovalsTable,
+			Columns: []string{user.SupervisionRequestApprovalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
 		}

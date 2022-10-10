@@ -28,6 +28,60 @@ var (
 			},
 		},
 	}
+	// PlayerSupervisionRequestsColumns holds the columns for the "player_supervision_requests" table.
+	PlayerSupervisionRequestsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "message", Type: field.TypeString, Nullable: true},
+		{Name: "player_supervision_requests", Type: field.TypeUUID},
+		{Name: "user_sent_supervision_requests", Type: field.TypeUUID},
+	}
+	// PlayerSupervisionRequestsTable holds the schema information for the "player_supervision_requests" table.
+	PlayerSupervisionRequestsTable = &schema.Table{
+		Name:       "player_supervision_requests",
+		Columns:    PlayerSupervisionRequestsColumns,
+		PrimaryKey: []*schema.Column{PlayerSupervisionRequestsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "player_supervision_requests_players_supervision_requests",
+				Columns:    []*schema.Column{PlayerSupervisionRequestsColumns[2]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "player_supervision_requests_users_sent_supervision_requests",
+				Columns:    []*schema.Column{PlayerSupervisionRequestsColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// PlayerSupervisionRequestApprovalsColumns holds the columns for the "player_supervision_request_approvals" table.
+	PlayerSupervisionRequestApprovalsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "approved", Type: field.TypeBool, Nullable: true},
+		{Name: "player_supervision_request_approvals", Type: field.TypeUUID},
+		{Name: "user_supervision_request_approvals", Type: field.TypeUUID},
+	}
+	// PlayerSupervisionRequestApprovalsTable holds the schema information for the "player_supervision_request_approvals" table.
+	PlayerSupervisionRequestApprovalsTable = &schema.Table{
+		Name:       "player_supervision_request_approvals",
+		Columns:    PlayerSupervisionRequestApprovalsColumns,
+		PrimaryKey: []*schema.Column{PlayerSupervisionRequestApprovalsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "player_supervision_request_approvals_player_supervision_requests_approvals",
+				Columns:    []*schema.Column{PlayerSupervisionRequestApprovalsColumns[2]},
+				RefColumns: []*schema.Column{PlayerSupervisionRequestsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "player_supervision_request_approvals_users_supervision_request_approvals",
+				Columns:    []*schema.Column{PlayerSupervisionRequestApprovalsColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -70,6 +124,8 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		PlayersTable,
+		PlayerSupervisionRequestsTable,
+		PlayerSupervisionRequestApprovalsTable,
 		UsersTable,
 		UserPlayersTable,
 	}
@@ -77,6 +133,10 @@ var (
 
 func init() {
 	PlayersTable.ForeignKeys[0].RefTable = UsersTable
+	PlayerSupervisionRequestsTable.ForeignKeys[0].RefTable = PlayersTable
+	PlayerSupervisionRequestsTable.ForeignKeys[1].RefTable = UsersTable
+	PlayerSupervisionRequestApprovalsTable.ForeignKeys[0].RefTable = PlayerSupervisionRequestsTable
+	PlayerSupervisionRequestApprovalsTable.ForeignKeys[1].RefTable = UsersTable
 	UserPlayersTable.ForeignKeys[0].RefTable = UsersTable
 	UserPlayersTable.ForeignKeys[1].RefTable = PlayersTable
 }

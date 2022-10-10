@@ -31,13 +31,16 @@ type PlayerEdges struct {
 	Owner *User `json:"owner,omitempty"`
 	// Supervisors holds the value of the supervisors edge.
 	Supervisors []*User `json:"supervisors,omitempty"`
+	// SupervisionRequests holds the value of the supervision_requests edge.
+	SupervisionRequests []*PlayerSupervisionRequest `json:"supervision_requests,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]map[string]int
+	totalCount [3]map[string]int
 
-	namedSupervisors map[string][]*User
+	namedSupervisors         map[string][]*User
+	namedSupervisionRequests map[string][]*PlayerSupervisionRequest
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -60,6 +63,15 @@ func (e PlayerEdges) SupervisorsOrErr() ([]*User, error) {
 		return e.Supervisors, nil
 	}
 	return nil, &NotLoadedError{edge: "supervisors"}
+}
+
+// SupervisionRequestsOrErr returns the SupervisionRequests value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlayerEdges) SupervisionRequestsOrErr() ([]*PlayerSupervisionRequest, error) {
+	if e.loadedTypes[2] {
+		return e.SupervisionRequests, nil
+	}
+	return nil, &NotLoadedError{edge: "supervision_requests"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -122,6 +134,11 @@ func (pl *Player) QuerySupervisors() *UserQuery {
 	return (&PlayerClient{config: pl.config}).QuerySupervisors(pl)
 }
 
+// QuerySupervisionRequests queries the "supervision_requests" edge of the Player entity.
+func (pl *Player) QuerySupervisionRequests() *PlayerSupervisionRequestQuery {
+	return (&PlayerClient{config: pl.config}).QuerySupervisionRequests(pl)
+}
+
 // Update returns a builder for updating this Player.
 // Note that you need to call Player.Unwrap() before calling this method if this Player
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -172,6 +189,30 @@ func (pl *Player) appendNamedSupervisors(name string, edges ...*User) {
 		pl.Edges.namedSupervisors[name] = []*User{}
 	} else {
 		pl.Edges.namedSupervisors[name] = append(pl.Edges.namedSupervisors[name], edges...)
+	}
+}
+
+// NamedSupervisionRequests returns the SupervisionRequests named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (pl *Player) NamedSupervisionRequests(name string) ([]*PlayerSupervisionRequest, error) {
+	if pl.Edges.namedSupervisionRequests == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := pl.Edges.namedSupervisionRequests[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (pl *Player) appendNamedSupervisionRequests(name string, edges ...*PlayerSupervisionRequest) {
+	if pl.Edges.namedSupervisionRequests == nil {
+		pl.Edges.namedSupervisionRequests = make(map[string][]*PlayerSupervisionRequest)
+	}
+	if len(edges) == 0 {
+		pl.Edges.namedSupervisionRequests[name] = []*PlayerSupervisionRequest{}
+	} else {
+		pl.Edges.namedSupervisionRequests[name] = append(pl.Edges.namedSupervisionRequests[name], edges...)
 	}
 }
 
