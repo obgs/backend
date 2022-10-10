@@ -14,12 +14,12 @@ import (
 
 // CreatePlayer is the resolver for the createPlayer field.
 func (r *mutationResolver) CreatePlayer(ctx context.Context, input model.CreatePlayerInput) (*ent.Player, error) {
-	owner, err := auth.UserFromContext(ctx)
+	supervisor, err := auth.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return ent.FromContext(ctx).Player.Create().SetName(input.Name).SetOwner(owner).Save(ctx)
+	return ent.FromContext(ctx).Player.Create().SetName(input.Name).AddSupervisors(supervisor).Save(ctx)
 }
 
 // Mutation returns generated.MutationResolver implementation.
