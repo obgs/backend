@@ -16,7 +16,6 @@ import (
 
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
 	"github.com/open-boardgame-stats/backend/internal/filestorage"
 	"github.com/open-boardgame-stats/backend/internal/graphql/resolver"
 )
@@ -36,12 +35,6 @@ var serverCmd = &cobra.Command{
 			log.Fatalf("failed to open connection to postgres: %v", err)
 		}
 		ctx := context.Background()
-		if err := client.Schema.Create(
-			ctx,
-			migrate.WithGlobalUniqueID(true),
-		); err != nil {
-			log.Fatalf("failed to migrate schema: %v", err)
-		}
 
 		fileUploadService, err := filestorage.NewFileStorageService(
 			config.S3AccessKeyID,
