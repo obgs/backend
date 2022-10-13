@@ -1,3 +1,4 @@
 schema:
   - "internal/graphql/schema/**/*.gql"
   - "internal/graphql/schema/**/*.graphql"
+  - "internal/graphql/base.graphql"

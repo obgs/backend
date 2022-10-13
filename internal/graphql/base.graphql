@@ -1,0 +1,3 @@
+# These are here just to make the graphql-vscode extension to work
+type Mutation
+type Query
