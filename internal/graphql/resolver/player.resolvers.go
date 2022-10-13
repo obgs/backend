@@ -72,11 +72,6 @@ func (r *mutationResolver) RequestPlayerSupervision(ctx context.Context, input *
 
 // ResolvePlayerSupervisionRequest is the resolver for the resolvePlayerSupervisionRequest field.
 func (r *mutationResolver) ResolvePlayerSupervisionRequest(ctx context.Context, input model.ResolvePlayerSupervisionRequestInput) (bool, error) {
-	u, err := auth.UserFromContext(ctx)
-	if err != nil {
-		return false, err
-	}
-
 	tx, err := r.client.BeginTx(ctx, nil)
 	if err != nil {
 		return false, err
@@ -86,7 +81,7 @@ func (r *mutationResolver) ResolvePlayerSupervisionRequest(ctx context.Context, 
 	if !input.Approved {
 		err = deleteRequestAndApprovals(ctx, tx, input.RequestID)
 	} else {
-		err = handleSupervisionRequestApproval(ctx, tx, input.RequestID, u)
+		err = handleSupervisionRequestApproval(ctx, tx, input.RequestID)
 	}
 	if err != nil {
 		return false, err

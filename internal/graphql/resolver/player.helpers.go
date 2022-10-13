@@ -28,20 +28,30 @@ func deleteRequestAndApprovals(ctx context.Context, tx *ent.Tx, requestID uuid.U
 	return nil
 }
 
-func addSupervisor(ctx context.Context, tx *ent.Tx, requestID uuid.UUID, supervisor *ent.User) error {
-	err := deleteRequestAndApprovals(ctx, tx, requestID)
+func addSupervisor(ctx context.Context, tx *ent.Tx, requestID uuid.UUID) error {
+	request, err := tx.PlayerSupervisionRequest.Get(ctx, requestID)
 	if err != nil {
 		return err
 	}
 
-	return tx.Player.Update().Where(
+	supervisor, err := request.Sender(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Player.Update().Where(
 		player.HasSupervisionRequestsWith(
 			playersupervisionrequest.ID(requestID),
 		),
 	).AddSupervisors(supervisor).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return deleteRequestAndApprovals(ctx, tx, requestID)
 }
 
-func handleSupervisionRequestApproval(ctx context.Context, tx *ent.Tx, requestID uuid.UUID, supervisor *ent.User) error {
+func handleSupervisionRequestApproval(ctx context.Context, tx *ent.Tx, requestID uuid.UUID) error {
 	// approve the request
 	_, err := tx.PlayerSupervisionRequestApproval.Update().Where(
 		playersupervisionrequestapproval.HasSupervisionRequestWith(
@@ -68,7 +78,7 @@ func handleSupervisionRequestApproval(ctx context.Context, tx *ent.Tx, requestID
 
 	// if all approvals are done, we add the new supervisor and delete the request
 	if notApprovedCount == 0 {
-		return addSupervisor(ctx, tx, requestID, supervisor)
+		return addSupervisor(ctx, tx, requestID)
 	}
 
 	return nil
