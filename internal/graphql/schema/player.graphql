@@ -2,6 +2,23 @@ input CreatePlayerInput {
   name: String!
 }
 
+input RequestPlayerSupervisionInput {
+  playerId: ID!
+  message: String
+}
+
+input ResolvePlayerSupervisionRequestInput {
+  requestId: ID!
+  approved: Boolean!
+}
+
 extend type Mutation {
   createPlayer(input: CreatePlayerInput!): Player! @authenticated
+  requestPlayerSupervision(
+    input: RequestPlayerSupervisionInput
+  ): PlayerSupervisionRequest! @authenticated
+
+  resolvePlayerSupervisionRequest(
+    input: ResolvePlayerSupervisionRequestInput!
+  ): Boolean! @authenticated
 }

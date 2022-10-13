@@ -49,8 +49,10 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		CreatePlayer func(childComplexity int, input model.CreatePlayerInput) int
-		UpdateUser   func(childComplexity int, id uuid.UUID, input ent.UpdateUserInput) int
+		CreatePlayer                    func(childComplexity int, input model.CreatePlayerInput) int
+		RequestPlayerSupervision        func(childComplexity int, input *model.RequestPlayerSupervisionInput) int
+		ResolvePlayerSupervisionRequest func(childComplexity int, input model.ResolvePlayerSupervisionRequestInput) int
+		UpdateUser                      func(childComplexity int, id uuid.UUID, input ent.UpdateUserInput) int
 	}
 
 	PageInfo struct {
@@ -127,6 +129,8 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreatePlayer(ctx context.Context, input model.CreatePlayerInput) (*ent.Player, error)
+	RequestPlayerSupervision(ctx context.Context, input *model.RequestPlayerSupervisionInput) (*ent.PlayerSupervisionRequest, error)
+	ResolvePlayerSupervisionRequest(ctx context.Context, input model.ResolvePlayerSupervisionRequestInput) (bool, error)
 	UpdateUser(ctx context.Context, id uuid.UUID, input ent.UpdateUserInput) (*ent.User, error)
 }
 type QueryResolver interface {
@@ -164,6 +168,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreatePlayer(childComplexity, args["input"].(model.CreatePlayerInput)), true
+
+	case "Mutation.requestPlayerSupervision":
+		if e.complexity.Mutation.RequestPlayerSupervision == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_requestPlayerSupervision_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RequestPlayerSupervision(childComplexity, args["input"].(*model.RequestPlayerSupervisionInput)), true
+
+	case "Mutation.resolvePlayerSupervisionRequest":
+		if e.complexity.Mutation.ResolvePlayerSupervisionRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resolvePlayerSupervisionRequest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ResolvePlayerSupervisionRequest(childComplexity, args["input"].(model.ResolvePlayerSupervisionRequestInput)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -496,6 +524,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputPlayerSupervisionRequestApprovalWhereInput,
 		ec.unmarshalInputPlayerSupervisionRequestWhereInput,
 		ec.unmarshalInputPlayerWhereInput,
+		ec.unmarshalInputRequestPlayerSupervisionInput,
+		ec.unmarshalInputResolvePlayerSupervisionRequestInput,
 		ec.unmarshalInputUpdateUserInput,
 		ec.unmarshalInputUserWhereInput,
 	)
@@ -875,8 +905,25 @@ input UserWhereInput {
   name: String!
 }
 
+input RequestPlayerSupervisionInput {
+  playerId: ID!
+  message: String
+}
+
+input ResolvePlayerSupervisionRequestInput {
+  requestId: ID!
+  approved: Boolean!
+}
+
 extend type Mutation {
   createPlayer(input: CreatePlayerInput!): Player! @authenticated
+  requestPlayerSupervision(
+    input: RequestPlayerSupervisionInput
+  ): PlayerSupervisionRequest! @authenticated
+
+  resolvePlayerSupervisionRequest(
+    input: ResolvePlayerSupervisionRequestInput!
+  ): Boolean! @authenticated
 }
 `, BuiltIn: false},
 	{Name: "../schema/user.graphql", Input: `extend type Mutation {
@@ -901,6 +948,36 @@ func (ec *executionContext) field_Mutation_createPlayer_args(ctx context.Context
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreatePlayerInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreatePlayerInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_requestPlayerSupervision_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.RequestPlayerSupervisionInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalORequestPlayerSupervisionInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐRequestPlayerSupervisionInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_resolvePlayerSupervisionRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.ResolvePlayerSupervisionRequestInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNResolvePlayerSupervisionRequestInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐResolvePlayerSupervisionRequestInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1199,6 +1276,168 @@ func (ec *executionContext) fieldContext_Mutation_createPlayer(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createPlayer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_requestPlayerSupervision(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_requestPlayerSupervision(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().RequestPlayerSupervision(rctx, fc.Args["input"].(*model.RequestPlayerSupervisionInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Authenticated == nil {
+				return nil, errors.New("directive authenticated is not implemented")
+			}
+			return ec.directives.Authenticated(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*ent.PlayerSupervisionRequest); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/open-boardgame-stats/backend/internal/ent.PlayerSupervisionRequest`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.PlayerSupervisionRequest)
+	fc.Result = res
+	return ec.marshalNPlayerSupervisionRequest2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequest(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_requestPlayerSupervision(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PlayerSupervisionRequest_id(ctx, field)
+			case "message":
+				return ec.fieldContext_PlayerSupervisionRequest_message(ctx, field)
+			case "sender":
+				return ec.fieldContext_PlayerSupervisionRequest_sender(ctx, field)
+			case "player":
+				return ec.fieldContext_PlayerSupervisionRequest_player(ctx, field)
+			case "approvals":
+				return ec.fieldContext_PlayerSupervisionRequest_approvals(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PlayerSupervisionRequest", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_requestPlayerSupervision_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resolvePlayerSupervisionRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_resolvePlayerSupervisionRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ResolvePlayerSupervisionRequest(rctx, fc.Args["input"].(model.ResolvePlayerSupervisionRequestInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Authenticated == nil {
+				return nil, errors.New("directive authenticated is not implemented")
+			}
+			return ec.directives.Authenticated(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resolvePlayerSupervisionRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resolvePlayerSupervisionRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -5872,6 +6111,78 @@ func (ec *executionContext) unmarshalInputPlayerWhereInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRequestPlayerSupervisionInput(ctx context.Context, obj interface{}) (model.RequestPlayerSupervisionInput, error) {
+	var it model.RequestPlayerSupervisionInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"playerId", "message"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "playerId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("playerId"))
+			it.PlayerID, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message"))
+			it.Message, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputResolvePlayerSupervisionRequestInput(ctx context.Context, obj interface{}) (model.ResolvePlayerSupervisionRequestInput, error) {
+	var it model.ResolvePlayerSupervisionRequestInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"requestId", "approved"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "requestId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestId"))
+			it.RequestID, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "approved":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("approved"))
+			it.Approved, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, obj interface{}) (ent.UpdateUserInput, error) {
 	var it ent.UpdateUserInput
 	asMap := map[string]interface{}{}
@@ -6372,6 +6683,24 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createPlayer(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "requestPlayerSupervision":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_requestPlayerSupervision(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "resolvePlayerSupervisionRequest":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resolvePlayerSupervisionRequest(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -7586,6 +7915,10 @@ func (ec *executionContext) marshalNPlayerConnection2ᚖgithubᚗcomᚋopenᚑbo
 	return ec._PlayerConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNPlayerSupervisionRequest2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequest(ctx context.Context, sel ast.SelectionSet, v ent.PlayerSupervisionRequest) graphql.Marshaler {
+	return ec._PlayerSupervisionRequest(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNPlayerSupervisionRequest2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerSupervisionRequest(ctx context.Context, sel ast.SelectionSet, v *ent.PlayerSupervisionRequest) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -7619,6 +7952,11 @@ func (ec *executionContext) unmarshalNPlayerSupervisionRequestWhereInput2ᚖgith
 func (ec *executionContext) unmarshalNPlayerWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPlayerWhereInput(ctx context.Context, v interface{}) (*ent.PlayerWhereInput, error) {
 	res, err := ec.unmarshalInputPlayerWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNResolvePlayerSupervisionRequestInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐResolvePlayerSupervisionRequestInput(ctx context.Context, v interface{}) (model.ResolvePlayerSupervisionRequestInput, error) {
+	res, err := ec.unmarshalInputResolvePlayerSupervisionRequestInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -8323,6 +8661,14 @@ func (ec *executionContext) unmarshalOPlayerWhereInput2ᚖgithubᚗcomᚋopenᚑ
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputPlayerWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalORequestPlayerSupervisionInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐRequestPlayerSupervisionInput(ctx context.Context, v interface{}) (*model.RequestPlayerSupervisionInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputRequestPlayerSupervisionInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
