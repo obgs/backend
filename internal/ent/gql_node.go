@@ -186,7 +186,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     u.ID,
 		Type:   "User",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(u.Name); err != nil {
@@ -230,16 +230,6 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	err = u.QueryMainPlayer().
 		Select(player.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[2] = &Edge{
-		Type: "PlayerSupervisionRequest",
-		Name: "sent_supervision_requests",
-	}
-	err = u.QuerySentSupervisionRequests().
-		Select(playersupervisionrequest.FieldID).
-		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}

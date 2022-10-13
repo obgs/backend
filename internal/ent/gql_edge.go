@@ -83,11 +83,3 @@ func (u *User) MainPlayer(ctx context.Context) (*Player, error) {
 	}
 	return result, MaskNotFound(err)
 }
-
-func (u *User) SentSupervisionRequests(ctx context.Context) ([]*PlayerSupervisionRequest, error) {
-	result, err := u.Edges.SentSupervisionRequestsOrErr()
-	if IsNotLoaded(err) {
-		result, err = u.QuerySentSupervisionRequests().All(ctx)
-	}
-	return result, err
-}

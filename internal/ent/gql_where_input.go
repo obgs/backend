@@ -688,10 +688,6 @@ type UserWhereInput struct {
 	// "main_player" edge predicates.
 	HasMainPlayer     *bool               `json:"hasMainPlayer,omitempty"`
 	HasMainPlayerWith []*PlayerWhereInput `json:"hasMainPlayerWith,omitempty"`
-
-	// "sent_supervision_requests" edge predicates.
-	HasSentSupervisionRequests     *bool                                 `json:"hasSentSupervisionRequests,omitempty"`
-	HasSentSupervisionRequestsWith []*PlayerSupervisionRequestWhereInput `json:"hasSentSupervisionRequestsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -903,24 +899,6 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasMainPlayerWith(with...))
-	}
-	if i.HasSentSupervisionRequests != nil {
-		p := user.HasSentSupervisionRequests()
-		if !*i.HasSentSupervisionRequests {
-			p = user.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasSentSupervisionRequestsWith) > 0 {
-		with := make([]predicate.PlayerSupervisionRequest, 0, len(i.HasSentSupervisionRequestsWith))
-		for _, w := range i.HasSentSupervisionRequestsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasSentSupervisionRequestsWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, user.HasSentSupervisionRequestsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

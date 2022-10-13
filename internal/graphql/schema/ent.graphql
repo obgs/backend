@@ -231,7 +231,6 @@ type User implements Node {
   avatarURL: String!
   players: [Player!]
   mainPlayer: Player
-  sentSupervisionRequests: [PlayerSupervisionRequest!]
 }
 """A connection to a list of items."""
 type UserConnection {
@@ -300,7 +299,4 @@ input UserWhereInput {
   """main_player edge predicates"""
   hasMainPlayer: Boolean
   hasMainPlayerWith: [PlayerWhereInput!]
-  """sent_supervision_requests edge predicates"""
-  hasSentSupervisionRequests: Boolean
-  hasSentSupervisionRequestsWith: [PlayerSupervisionRequestWhereInput!]
 }

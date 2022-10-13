@@ -35,7 +35,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("players", Player.Type),
 		edge.To("main_player", Player.Type).Unique(),
 		edge.To("sent_supervision_requests", PlayerSupervisionRequest.Type).Annotations(
-			entgql.Skip(entgql.SkipMutationUpdateInput),
+			entgql.Skip(entgql.SkipAll),
 		),
 		edge.To("supervision_request_approvals", PlayerSupervisionRequestApproval.Type).Annotations(
 			entgql.Skip(entgql.SkipAll),

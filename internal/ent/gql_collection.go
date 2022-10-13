@@ -283,18 +283,6 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			u.withMainPlayer = query
-		case "sentSupervisionRequests", "sent_supervision_requests":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = &PlayerSupervisionRequestQuery{config: u.config}
-			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
-				return err
-			}
-			u.WithNamedSentSupervisionRequests(alias, func(wq *PlayerSupervisionRequestQuery) {
-				*wq = *query
-			})
 		}
 	}
 	return nil
