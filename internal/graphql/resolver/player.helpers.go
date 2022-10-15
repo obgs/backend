@@ -8,6 +8,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
 func deleteRequestAndApprovals(ctx context.Context, tx *ent.Tx, requestID uuid.UUID) error {
@@ -51,11 +52,14 @@ func addSupervisor(ctx context.Context, tx *ent.Tx, requestID uuid.UUID) error {
 	return deleteRequestAndApprovals(ctx, tx, requestID)
 }
 
-func handleSupervisionRequestApproval(ctx context.Context, tx *ent.Tx, requestID uuid.UUID) error {
+func handleSupervisionRequestApproval(ctx context.Context, tx *ent.Tx, approverID, requestID uuid.UUID) error {
 	// approve the request
 	_, err := tx.PlayerSupervisionRequestApproval.Update().Where(
 		playersupervisionrequestapproval.HasSupervisionRequestWith(
 			playersupervisionrequest.ID(requestID),
+		),
+		playersupervisionrequestapproval.HasApproverWith(
+			user.ID(approverID),
 		),
 	).SetApproved(true).Save(ctx)
 	if err != nil {

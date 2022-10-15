@@ -8,6 +8,7 @@ import (
 
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
@@ -34,25 +35,39 @@ func (r *mutationResolver) RequestPlayerSupervision(ctx context.Context, input *
 		return nil, err
 	}
 
-	player, err := tx.Player.Get(ctx, input.PlayerID)
+	p, err := tx.Player.Query().Where(
+		player.ID(input.PlayerID),
+	).WithOwner().Only(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	currentSupervisors, err := tx.Player.QuerySupervisors(player).All(ctx)
+	currentSupervisors, err := tx.Player.QuerySupervisors(p).All(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	request, err := tx.PlayerSupervisionRequest.Create().SetPlayer(player).SetSender(user).SetMessage(*input.Message).Save(ctx)
+	request, err := tx.PlayerSupervisionRequest.Create().SetPlayer(p).SetSender(user).SetMessage(*input.Message).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	approvals := make([]*ent.PlayerSupervisionRequestApprovalCreate, len(currentSupervisors))
+	owner := p.Edges.Owner
+	approvalCount := len(currentSupervisors)
+	if owner != nil {
+		approvalCount++
+	}
+
+	approvals := make([]*ent.PlayerSupervisionRequestApprovalCreate, approvalCount)
 	for i, supervisor := range currentSupervisors {
 		approvals[i] = tx.PlayerSupervisionRequestApproval.Create().
 			SetApprover(supervisor).
+			SetSupervisionRequest(request)
+	}
+
+	if owner != nil {
+		approvals[approvalCount-1] = tx.PlayerSupervisionRequestApproval.Create().
+			SetApprover(owner).
 			SetSupervisionRequest(request)
 	}
 
@@ -72,6 +87,11 @@ func (r *mutationResolver) RequestPlayerSupervision(ctx context.Context, input *
 
 // ResolvePlayerSupervisionRequest is the resolver for the resolvePlayerSupervisionRequest field.
 func (r *mutationResolver) ResolvePlayerSupervisionRequest(ctx context.Context, input model.ResolvePlayerSupervisionRequestInput) (bool, error) {
+	u, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+
 	tx, err := r.client.BeginTx(ctx, nil)
 	if err != nil {
 		return false, err
@@ -81,7 +101,7 @@ func (r *mutationResolver) ResolvePlayerSupervisionRequest(ctx context.Context, 
 	if !input.Approved {
 		err = deleteRequestAndApprovals(ctx, tx, input.RequestID)
 	} else {
-		err = handleSupervisionRequestApproval(ctx, tx, input.RequestID)
+		err = handleSupervisionRequestApproval(ctx, tx, u.ID, input.RequestID)
 	}
 	if err != nil {
 		return false, err
