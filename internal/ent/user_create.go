@@ -11,6 +11,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -107,6 +109,36 @@ func (uc *UserCreate) SetNillableMainPlayerID(id *uuid.UUID) *UserCreate {
 // SetMainPlayer sets the "main_player" edge to the Player entity.
 func (uc *UserCreate) SetMainPlayer(p *Player) *UserCreate {
 	return uc.SetMainPlayerID(p.ID)
+}
+
+// AddSentSupervisionRequestIDs adds the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
+func (uc *UserCreate) AddSentSupervisionRequestIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddSentSupervisionRequestIDs(ids...)
+	return uc
+}
+
+// AddSentSupervisionRequests adds the "sent_supervision_requests" edges to the PlayerSupervisionRequest entity.
+func (uc *UserCreate) AddSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uc.AddSentSupervisionRequestIDs(ids...)
+}
+
+// AddSupervisionRequestApprovalIDs adds the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
+func (uc *UserCreate) AddSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddSupervisionRequestApprovalIDs(ids...)
+	return uc
+}
+
+// AddSupervisionRequestApprovals adds the "supervision_request_approvals" edges to the PlayerSupervisionRequestApproval entity.
+func (uc *UserCreate) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uc.AddSupervisionRequestApprovalIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -322,6 +354,44 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.SentSupervisionRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SentSupervisionRequestsTable,
+			Columns: []string{user.SentSupervisionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.SupervisionRequestApprovalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SupervisionRequestApprovalsTable,
+			Columns: []string{user.SupervisionRequestApprovalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
 		}

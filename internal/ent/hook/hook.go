@@ -22,6 +22,32 @@ func (f PlayerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return f(ctx, mv)
 }
 
+// The PlayerSupervisionRequestFunc type is an adapter to allow the use of ordinary
+// function as PlayerSupervisionRequest mutator.
+type PlayerSupervisionRequestFunc func(context.Context, *ent.PlayerSupervisionRequestMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PlayerSupervisionRequestFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.PlayerSupervisionRequestMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerSupervisionRequestMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The PlayerSupervisionRequestApprovalFunc type is an adapter to allow the use of ordinary
+// function as PlayerSupervisionRequestApproval mutator.
+type PlayerSupervisionRequestApprovalFunc func(context.Context, *ent.PlayerSupervisionRequestApprovalMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PlayerSupervisionRequestApprovalFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.PlayerSupervisionRequestApprovalMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerSupervisionRequestApprovalMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)

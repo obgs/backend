@@ -23,6 +23,10 @@ const (
 	EdgePlayers = "players"
 	// EdgeMainPlayer holds the string denoting the main_player edge name in mutations.
 	EdgeMainPlayer = "main_player"
+	// EdgeSentSupervisionRequests holds the string denoting the sent_supervision_requests edge name in mutations.
+	EdgeSentSupervisionRequests = "sent_supervision_requests"
+	// EdgeSupervisionRequestApprovals holds the string denoting the supervision_request_approvals edge name in mutations.
+	EdgeSupervisionRequestApprovals = "supervision_request_approvals"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PlayersTable is the table that holds the players relation/edge. The primary key declared below.
@@ -37,6 +41,20 @@ const (
 	MainPlayerInverseTable = "players"
 	// MainPlayerColumn is the table column denoting the main_player relation/edge.
 	MainPlayerColumn = "user_main_player"
+	// SentSupervisionRequestsTable is the table that holds the sent_supervision_requests relation/edge.
+	SentSupervisionRequestsTable = "player_supervision_requests"
+	// SentSupervisionRequestsInverseTable is the table name for the PlayerSupervisionRequest entity.
+	// It exists in this package in order to avoid circular dependency with the "playersupervisionrequest" package.
+	SentSupervisionRequestsInverseTable = "player_supervision_requests"
+	// SentSupervisionRequestsColumn is the table column denoting the sent_supervision_requests relation/edge.
+	SentSupervisionRequestsColumn = "user_sent_supervision_requests"
+	// SupervisionRequestApprovalsTable is the table that holds the supervision_request_approvals relation/edge.
+	SupervisionRequestApprovalsTable = "player_supervision_request_approvals"
+	// SupervisionRequestApprovalsInverseTable is the table name for the PlayerSupervisionRequestApproval entity.
+	// It exists in this package in order to avoid circular dependency with the "playersupervisionrequestapproval" package.
+	SupervisionRequestApprovalsInverseTable = "player_supervision_request_approvals"
+	// SupervisionRequestApprovalsColumn is the table column denoting the supervision_request_approvals relation/edge.
+	SupervisionRequestApprovalsColumn = "user_supervision_request_approvals"
 )
 
 // Columns holds all SQL columns for user fields.

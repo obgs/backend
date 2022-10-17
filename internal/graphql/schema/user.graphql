@@ -1,3 +1,8 @@
+extend type User {
+  sentSupervisionRequests: [PlayerSupervisionRequest!]! @authenticated
+  receivedSupervisionRequests: [PlayerSupervisionRequest!]! @authenticated
+}
+
 extend type Mutation {
   updateUser(id: ID!, input: UpdateUserInput!): User!
 }

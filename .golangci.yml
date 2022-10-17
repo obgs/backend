@@ -19,6 +19,9 @@ issues:
   exclude-rules:
     - path: "internal/graphql/resolver/*.*.go"
       text: "line is .* characters"
+    - path: "internal/graphql/resolver/*.*.go"
+      linters:
+        - gofumpt
 
 linters:
   enable-all: true

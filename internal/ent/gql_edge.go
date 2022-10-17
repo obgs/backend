@@ -20,6 +20,54 @@ func (pl *Player) Supervisors(ctx context.Context) ([]*User, error) {
 	return result, err
 }
 
+func (pl *Player) SupervisionRequests(ctx context.Context) ([]*PlayerSupervisionRequest, error) {
+	result, err := pl.Edges.SupervisionRequestsOrErr()
+	if IsNotLoaded(err) {
+		result, err = pl.QuerySupervisionRequests().All(ctx)
+	}
+	return result, err
+}
+
+func (psr *PlayerSupervisionRequest) Sender(ctx context.Context) (*User, error) {
+	result, err := psr.Edges.SenderOrErr()
+	if IsNotLoaded(err) {
+		result, err = psr.QuerySender().Only(ctx)
+	}
+	return result, err
+}
+
+func (psr *PlayerSupervisionRequest) Player(ctx context.Context) (*Player, error) {
+	result, err := psr.Edges.PlayerOrErr()
+	if IsNotLoaded(err) {
+		result, err = psr.QueryPlayer().Only(ctx)
+	}
+	return result, err
+}
+
+func (psr *PlayerSupervisionRequest) Approvals(ctx context.Context) ([]*PlayerSupervisionRequestApproval, error) {
+	result, err := psr.Edges.ApprovalsOrErr()
+	if IsNotLoaded(err) {
+		result, err = psr.QueryApprovals().All(ctx)
+	}
+	return result, err
+}
+
+func (psra *PlayerSupervisionRequestApproval) Approver(ctx context.Context) (*User, error) {
+	result, err := psra.Edges.ApproverOrErr()
+	if IsNotLoaded(err) {
+		result, err = psra.QueryApprover().Only(ctx)
+	}
+	return result, err
+}
+
+func (psra *PlayerSupervisionRequestApproval) SupervisionRequest(ctx context.Context) (*PlayerSupervisionRequest, error) {
+	result, err := psra.Edges.SupervisionRequestOrErr()
+	if IsNotLoaded(err) {
+		result, err = psra.QuerySupervisionRequest().Only(ctx)
+	}
+	return result, err
+}
+
 func (u *User) Players(ctx context.Context) ([]*Player, error) {
 	result, err := u.Edges.PlayersOrErr()
 	if IsNotLoaded(err) {

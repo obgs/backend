@@ -2,6 +2,20 @@
 
 package model
 
+import (
+	"github.com/google/uuid"
+)
+
 type CreatePlayerInput struct {
 	Name string `json:"name"`
+}
+
+type RequestPlayerSupervisionInput struct {
+	PlayerID uuid.UUID `json:"playerId"`
+	Message  *string   `json:"message"`
+}
+
+type ResolvePlayerSupervisionRequestInput struct {
+	RequestID uuid.UUID `json:"requestId"`
+	Approved  bool      `json:"approved"`
 }

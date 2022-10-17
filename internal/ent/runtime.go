@@ -5,6 +5,8 @@ package ent
 import (
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
@@ -23,6 +25,18 @@ func init() {
 	playerDescID := playerFields[0].Descriptor()
 	// player.DefaultID holds the default value on creation for the id field.
 	player.DefaultID = playerDescID.Default.(func() uuid.UUID)
+	playersupervisionrequestFields := schema.PlayerSupervisionRequest{}.Fields()
+	_ = playersupervisionrequestFields
+	// playersupervisionrequestDescID is the schema descriptor for id field.
+	playersupervisionrequestDescID := playersupervisionrequestFields[0].Descriptor()
+	// playersupervisionrequest.DefaultID holds the default value on creation for the id field.
+	playersupervisionrequest.DefaultID = playersupervisionrequestDescID.Default.(func() uuid.UUID)
+	playersupervisionrequestapprovalFields := schema.PlayerSupervisionRequestApproval{}.Fields()
+	_ = playersupervisionrequestapprovalFields
+	// playersupervisionrequestapprovalDescID is the schema descriptor for id field.
+	playersupervisionrequestapprovalDescID := playersupervisionrequestapprovalFields[0].Descriptor()
+	// playersupervisionrequestapproval.DefaultID holds the default value on creation for the id field.
+	playersupervisionrequestapproval.DefaultID = playersupervisionrequestapprovalDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescName is the schema descriptor for name field.

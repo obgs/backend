@@ -13,6 +13,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
@@ -20,17 +22,21 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	limit            *int
-	offset           *int
-	unique           *bool
-	order            []OrderFunc
-	fields           []string
-	predicates       []predicate.User
-	withPlayers      *PlayerQuery
-	withMainPlayer   *PlayerQuery
-	modifiers        []func(*sql.Selector)
-	loadTotal        []func(context.Context, []*User) error
-	withNamedPlayers map[string]*PlayerQuery
+	limit                                *int
+	offset                               *int
+	unique                               *bool
+	order                                []OrderFunc
+	fields                               []string
+	predicates                           []predicate.User
+	withPlayers                          *PlayerQuery
+	withMainPlayer                       *PlayerQuery
+	withSentSupervisionRequests          *PlayerSupervisionRequestQuery
+	withSupervisionRequestApprovals      *PlayerSupervisionRequestApprovalQuery
+	modifiers                            []func(*sql.Selector)
+	loadTotal                            []func(context.Context, []*User) error
+	withNamedPlayers                     map[string]*PlayerQuery
+	withNamedSentSupervisionRequests     map[string]*PlayerSupervisionRequestQuery
+	withNamedSupervisionRequestApprovals map[string]*PlayerSupervisionRequestApprovalQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -104,6 +110,50 @@ func (uq *UserQuery) QueryMainPlayer() *PlayerQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(player.Table, player.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, user.MainPlayerTable, user.MainPlayerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySentSupervisionRequests chains the current query on the "sent_supervision_requests" edge.
+func (uq *UserQuery) QuerySentSupervisionRequests() *PlayerSupervisionRequestQuery {
+	query := &PlayerSupervisionRequestQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(playersupervisionrequest.Table, playersupervisionrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SentSupervisionRequestsTable, user.SentSupervisionRequestsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySupervisionRequestApprovals chains the current query on the "supervision_request_approvals" edge.
+func (uq *UserQuery) QuerySupervisionRequestApprovals() *PlayerSupervisionRequestApprovalQuery {
+	query := &PlayerSupervisionRequestApprovalQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SupervisionRequestApprovalsTable, user.SupervisionRequestApprovalsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -287,13 +337,15 @@ func (uq *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:         uq.config,
-		limit:          uq.limit,
-		offset:         uq.offset,
-		order:          append([]OrderFunc{}, uq.order...),
-		predicates:     append([]predicate.User{}, uq.predicates...),
-		withPlayers:    uq.withPlayers.Clone(),
-		withMainPlayer: uq.withMainPlayer.Clone(),
+		config:                          uq.config,
+		limit:                           uq.limit,
+		offset:                          uq.offset,
+		order:                           append([]OrderFunc{}, uq.order...),
+		predicates:                      append([]predicate.User{}, uq.predicates...),
+		withPlayers:                     uq.withPlayers.Clone(),
+		withMainPlayer:                  uq.withMainPlayer.Clone(),
+		withSentSupervisionRequests:     uq.withSentSupervisionRequests.Clone(),
+		withSupervisionRequestApprovals: uq.withSupervisionRequestApprovals.Clone(),
 		// clone intermediate query.
 		sql:    uq.sql.Clone(),
 		path:   uq.path,
@@ -320,6 +372,28 @@ func (uq *UserQuery) WithMainPlayer(opts ...func(*PlayerQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withMainPlayer = query
+	return uq
+}
+
+// WithSentSupervisionRequests tells the query-builder to eager-load the nodes that are connected to
+// the "sent_supervision_requests" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithSentSupervisionRequests(opts ...func(*PlayerSupervisionRequestQuery)) *UserQuery {
+	query := &PlayerSupervisionRequestQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withSentSupervisionRequests = query
+	return uq
+}
+
+// WithSupervisionRequestApprovals tells the query-builder to eager-load the nodes that are connected to
+// the "supervision_request_approvals" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithSupervisionRequestApprovals(opts ...func(*PlayerSupervisionRequestApprovalQuery)) *UserQuery {
+	query := &PlayerSupervisionRequestApprovalQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withSupervisionRequestApprovals = query
 	return uq
 }
 
@@ -391,9 +465,11 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [4]bool{
 			uq.withPlayers != nil,
 			uq.withMainPlayer != nil,
+			uq.withSentSupervisionRequests != nil,
+			uq.withSupervisionRequestApprovals != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -430,10 +506,42 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := uq.withSentSupervisionRequests; query != nil {
+		if err := uq.loadSentSupervisionRequests(ctx, query, nodes,
+			func(n *User) { n.Edges.SentSupervisionRequests = []*PlayerSupervisionRequest{} },
+			func(n *User, e *PlayerSupervisionRequest) {
+				n.Edges.SentSupervisionRequests = append(n.Edges.SentSupervisionRequests, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withSupervisionRequestApprovals; query != nil {
+		if err := uq.loadSupervisionRequestApprovals(ctx, query, nodes,
+			func(n *User) { n.Edges.SupervisionRequestApprovals = []*PlayerSupervisionRequestApproval{} },
+			func(n *User, e *PlayerSupervisionRequestApproval) {
+				n.Edges.SupervisionRequestApprovals = append(n.Edges.SupervisionRequestApprovals, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range uq.withNamedPlayers {
 		if err := uq.loadPlayers(ctx, query, nodes,
 			func(n *User) { n.appendNamedPlayers(name) },
 			func(n *User, e *Player) { n.appendNamedPlayers(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range uq.withNamedSentSupervisionRequests {
+		if err := uq.loadSentSupervisionRequests(ctx, query, nodes,
+			func(n *User) { n.appendNamedSentSupervisionRequests(name) },
+			func(n *User, e *PlayerSupervisionRequest) { n.appendNamedSentSupervisionRequests(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range uq.withNamedSupervisionRequestApprovals {
+		if err := uq.loadSupervisionRequestApprovals(ctx, query, nodes,
+			func(n *User) { n.appendNamedSupervisionRequestApprovals(name) },
+			func(n *User, e *PlayerSupervisionRequestApproval) { n.appendNamedSupervisionRequestApprovals(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -526,6 +634,68 @@ func (uq *UserQuery) loadMainPlayer(ctx context.Context, query *PlayerQuery, nod
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "user_main_player" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadSentSupervisionRequests(ctx context.Context, query *PlayerSupervisionRequestQuery, nodes []*User, init func(*User), assign func(*User, *PlayerSupervisionRequest)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
+		s.Where(sql.InValues(user.SentSupervisionRequestsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_sent_supervision_requests
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_sent_supervision_requests" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_sent_supervision_requests" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadSupervisionRequestApprovals(ctx context.Context, query *PlayerSupervisionRequestApprovalQuery, nodes []*User, init func(*User), assign func(*User, *PlayerSupervisionRequestApproval)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
+		s.Where(sql.InValues(user.SupervisionRequestApprovalsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_supervision_request_approvals
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_supervision_request_approvals" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_supervision_request_approvals" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -643,6 +813,34 @@ func (uq *UserQuery) WithNamedPlayers(name string, opts ...func(*PlayerQuery)) *
 		uq.withNamedPlayers = make(map[string]*PlayerQuery)
 	}
 	uq.withNamedPlayers[name] = query
+	return uq
+}
+
+// WithNamedSentSupervisionRequests tells the query-builder to eager-load the nodes that are connected to the "sent_supervision_requests"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithNamedSentSupervisionRequests(name string, opts ...func(*PlayerSupervisionRequestQuery)) *UserQuery {
+	query := &PlayerSupervisionRequestQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if uq.withNamedSentSupervisionRequests == nil {
+		uq.withNamedSentSupervisionRequests = make(map[string]*PlayerSupervisionRequestQuery)
+	}
+	uq.withNamedSentSupervisionRequests[name] = query
+	return uq
+}
+
+// WithNamedSupervisionRequestApprovals tells the query-builder to eager-load the nodes that are connected to the "supervision_request_approvals"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithNamedSupervisionRequestApprovals(name string, opts ...func(*PlayerSupervisionRequestApprovalQuery)) *UserQuery {
+	query := &PlayerSupervisionRequestApprovalQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if uq.withNamedSupervisionRequestApprovals == nil {
+		uq.withNamedSupervisionRequestApprovals = make(map[string]*PlayerSupervisionRequestApprovalQuery)
+	}
+	uq.withNamedSupervisionRequestApprovals[name] = query
 	return uq
 }
 

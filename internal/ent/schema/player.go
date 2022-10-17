@@ -27,6 +27,7 @@ func (Player) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("owner", User.Type).Ref("main_player").Unique(),
 		edge.From("supervisors", User.Type).Ref("players"),
+		edge.To("supervision_requests", PlayerSupervisionRequest.Type),
 	}
 }
 

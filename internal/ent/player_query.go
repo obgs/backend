@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
@@ -20,18 +21,20 @@ import (
 // PlayerQuery is the builder for querying Player entities.
 type PlayerQuery struct {
 	config
-	limit                *int
-	offset               *int
-	unique               *bool
-	order                []OrderFunc
-	fields               []string
-	predicates           []predicate.Player
-	withOwner            *UserQuery
-	withSupervisors      *UserQuery
-	withFKs              bool
-	modifiers            []func(*sql.Selector)
-	loadTotal            []func(context.Context, []*Player) error
-	withNamedSupervisors map[string]*UserQuery
+	limit                        *int
+	offset                       *int
+	unique                       *bool
+	order                        []OrderFunc
+	fields                       []string
+	predicates                   []predicate.Player
+	withOwner                    *UserQuery
+	withSupervisors              *UserQuery
+	withSupervisionRequests      *PlayerSupervisionRequestQuery
+	withFKs                      bool
+	modifiers                    []func(*sql.Selector)
+	loadTotal                    []func(context.Context, []*Player) error
+	withNamedSupervisors         map[string]*UserQuery
+	withNamedSupervisionRequests map[string]*PlayerSupervisionRequestQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -105,6 +108,28 @@ func (pq *PlayerQuery) QuerySupervisors() *UserQuery {
 			sqlgraph.From(player.Table, player.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, player.SupervisorsTable, player.SupervisorsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySupervisionRequests chains the current query on the "supervision_requests" edge.
+func (pq *PlayerQuery) QuerySupervisionRequests() *PlayerSupervisionRequestQuery {
+	query := &PlayerSupervisionRequestQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.To(playersupervisionrequest.Table, playersupervisionrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.SupervisionRequestsTable, player.SupervisionRequestsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -288,13 +313,14 @@ func (pq *PlayerQuery) Clone() *PlayerQuery {
 		return nil
 	}
 	return &PlayerQuery{
-		config:          pq.config,
-		limit:           pq.limit,
-		offset:          pq.offset,
-		order:           append([]OrderFunc{}, pq.order...),
-		predicates:      append([]predicate.Player{}, pq.predicates...),
-		withOwner:       pq.withOwner.Clone(),
-		withSupervisors: pq.withSupervisors.Clone(),
+		config:                  pq.config,
+		limit:                   pq.limit,
+		offset:                  pq.offset,
+		order:                   append([]OrderFunc{}, pq.order...),
+		predicates:              append([]predicate.Player{}, pq.predicates...),
+		withOwner:               pq.withOwner.Clone(),
+		withSupervisors:         pq.withSupervisors.Clone(),
+		withSupervisionRequests: pq.withSupervisionRequests.Clone(),
 		// clone intermediate query.
 		sql:    pq.sql.Clone(),
 		path:   pq.path,
@@ -321,6 +347,17 @@ func (pq *PlayerQuery) WithSupervisors(opts ...func(*UserQuery)) *PlayerQuery {
 		opt(query)
 	}
 	pq.withSupervisors = query
+	return pq
+}
+
+// WithSupervisionRequests tells the query-builder to eager-load the nodes that are connected to
+// the "supervision_requests" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithSupervisionRequests(opts ...func(*PlayerSupervisionRequestQuery)) *PlayerQuery {
+	query := &PlayerSupervisionRequestQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withSupervisionRequests = query
 	return pq
 }
 
@@ -393,9 +430,10 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 		nodes       = []*Player{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			pq.withOwner != nil,
 			pq.withSupervisors != nil,
+			pq.withSupervisionRequests != nil,
 		}
 	)
 	if pq.withOwner != nil {
@@ -438,10 +476,26 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 			return nil, err
 		}
 	}
+	if query := pq.withSupervisionRequests; query != nil {
+		if err := pq.loadSupervisionRequests(ctx, query, nodes,
+			func(n *Player) { n.Edges.SupervisionRequests = []*PlayerSupervisionRequest{} },
+			func(n *Player, e *PlayerSupervisionRequest) {
+				n.Edges.SupervisionRequests = append(n.Edges.SupervisionRequests, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range pq.withNamedSupervisors {
 		if err := pq.loadSupervisors(ctx, query, nodes,
 			func(n *Player) { n.appendNamedSupervisors(name) },
 			func(n *Player, e *User) { n.appendNamedSupervisors(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range pq.withNamedSupervisionRequests {
+		if err := pq.loadSupervisionRequests(ctx, query, nodes,
+			func(n *Player) { n.appendNamedSupervisionRequests(name) },
+			func(n *Player, e *PlayerSupervisionRequest) { n.appendNamedSupervisionRequests(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -537,6 +591,37 @@ func (pq *PlayerQuery) loadSupervisors(ctx context.Context, query *UserQuery, no
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (pq *PlayerQuery) loadSupervisionRequests(ctx context.Context, query *PlayerSupervisionRequestQuery, nodes []*Player, init func(*Player), assign func(*Player, *PlayerSupervisionRequest)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Player)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
+		s.Where(sql.InValues(player.SupervisionRequestsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.player_supervision_requests
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "player_supervision_requests" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "player_supervision_requests" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }
@@ -652,6 +737,20 @@ func (pq *PlayerQuery) WithNamedSupervisors(name string, opts ...func(*UserQuery
 		pq.withNamedSupervisors = make(map[string]*UserQuery)
 	}
 	pq.withNamedSupervisors[name] = query
+	return pq
+}
+
+// WithNamedSupervisionRequests tells the query-builder to eager-load the nodes that are connected to the "supervision_requests"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithNamedSupervisionRequests(name string, opts ...func(*PlayerSupervisionRequestQuery)) *PlayerQuery {
+	query := &PlayerSupervisionRequestQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if pq.withNamedSupervisionRequests == nil {
+		pq.withNamedSupervisionRequests = make(map[string]*PlayerSupervisionRequestQuery)
+	}
+	pq.withNamedSupervisionRequests[name] = query
 	return pq
 }
 

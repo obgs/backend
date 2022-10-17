@@ -16,6 +16,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/vmihailenco/msgpack/v5"
@@ -471,6 +473,468 @@ func (pl *Player) ToEdge(order *PlayerOrder) *PlayerEdge {
 	return &PlayerEdge{
 		Node:   pl,
 		Cursor: order.Field.toCursor(pl),
+	}
+}
+
+// PlayerSupervisionRequestEdge is the edge representation of PlayerSupervisionRequest.
+type PlayerSupervisionRequestEdge struct {
+	Node   *PlayerSupervisionRequest `json:"node"`
+	Cursor Cursor                    `json:"cursor"`
+}
+
+// PlayerSupervisionRequestConnection is the connection containing edges to PlayerSupervisionRequest.
+type PlayerSupervisionRequestConnection struct {
+	Edges      []*PlayerSupervisionRequestEdge `json:"edges"`
+	PageInfo   PageInfo                        `json:"pageInfo"`
+	TotalCount int                             `json:"totalCount"`
+}
+
+func (c *PlayerSupervisionRequestConnection) build(nodes []*PlayerSupervisionRequest, pager *playersupervisionrequestPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *PlayerSupervisionRequest
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *PlayerSupervisionRequest {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *PlayerSupervisionRequest {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*PlayerSupervisionRequestEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &PlayerSupervisionRequestEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// PlayerSupervisionRequestPaginateOption enables pagination customization.
+type PlayerSupervisionRequestPaginateOption func(*playersupervisionrequestPager) error
+
+// WithPlayerSupervisionRequestOrder configures pagination ordering.
+func WithPlayerSupervisionRequestOrder(order *PlayerSupervisionRequestOrder) PlayerSupervisionRequestPaginateOption {
+	if order == nil {
+		order = DefaultPlayerSupervisionRequestOrder
+	}
+	o := *order
+	return func(pager *playersupervisionrequestPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultPlayerSupervisionRequestOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithPlayerSupervisionRequestFilter configures pagination filter.
+func WithPlayerSupervisionRequestFilter(filter func(*PlayerSupervisionRequestQuery) (*PlayerSupervisionRequestQuery, error)) PlayerSupervisionRequestPaginateOption {
+	return func(pager *playersupervisionrequestPager) error {
+		if filter == nil {
+			return errors.New("PlayerSupervisionRequestQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type playersupervisionrequestPager struct {
+	order  *PlayerSupervisionRequestOrder
+	filter func(*PlayerSupervisionRequestQuery) (*PlayerSupervisionRequestQuery, error)
+}
+
+func newPlayerSupervisionRequestPager(opts []PlayerSupervisionRequestPaginateOption) (*playersupervisionrequestPager, error) {
+	pager := &playersupervisionrequestPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultPlayerSupervisionRequestOrder
+	}
+	return pager, nil
+}
+
+func (p *playersupervisionrequestPager) applyFilter(query *PlayerSupervisionRequestQuery) (*PlayerSupervisionRequestQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *playersupervisionrequestPager) toCursor(psr *PlayerSupervisionRequest) Cursor {
+	return p.order.Field.toCursor(psr)
+}
+
+func (p *playersupervisionrequestPager) applyCursors(query *PlayerSupervisionRequestQuery, after, before *Cursor) *PlayerSupervisionRequestQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultPlayerSupervisionRequestOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *playersupervisionrequestPager) applyOrder(query *PlayerSupervisionRequestQuery, reverse bool) *PlayerSupervisionRequestQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultPlayerSupervisionRequestOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultPlayerSupervisionRequestOrder.Field.field))
+	}
+	return query
+}
+
+func (p *playersupervisionrequestPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultPlayerSupervisionRequestOrder.Field {
+			b.Comma().Ident(DefaultPlayerSupervisionRequestOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to PlayerSupervisionRequest.
+func (psr *PlayerSupervisionRequestQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...PlayerSupervisionRequestPaginateOption,
+) (*PlayerSupervisionRequestConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newPlayerSupervisionRequestPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if psr, err = pager.applyFilter(psr); err != nil {
+		return nil, err
+	}
+	conn := &PlayerSupervisionRequestConnection{Edges: []*PlayerSupervisionRequestEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			if conn.TotalCount, err = psr.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+
+	psr = pager.applyCursors(psr, after, before)
+	psr = pager.applyOrder(psr, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		psr.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := psr.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := psr.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// PlayerSupervisionRequestOrderField defines the ordering field of PlayerSupervisionRequest.
+type PlayerSupervisionRequestOrderField struct {
+	field    string
+	toCursor func(*PlayerSupervisionRequest) Cursor
+}
+
+// PlayerSupervisionRequestOrder defines the ordering of PlayerSupervisionRequest.
+type PlayerSupervisionRequestOrder struct {
+	Direction OrderDirection                      `json:"direction"`
+	Field     *PlayerSupervisionRequestOrderField `json:"field"`
+}
+
+// DefaultPlayerSupervisionRequestOrder is the default ordering of PlayerSupervisionRequest.
+var DefaultPlayerSupervisionRequestOrder = &PlayerSupervisionRequestOrder{
+	Direction: OrderDirectionAsc,
+	Field: &PlayerSupervisionRequestOrderField{
+		field: playersupervisionrequest.FieldID,
+		toCursor: func(psr *PlayerSupervisionRequest) Cursor {
+			return Cursor{ID: psr.ID}
+		},
+	},
+}
+
+// ToEdge converts PlayerSupervisionRequest into PlayerSupervisionRequestEdge.
+func (psr *PlayerSupervisionRequest) ToEdge(order *PlayerSupervisionRequestOrder) *PlayerSupervisionRequestEdge {
+	if order == nil {
+		order = DefaultPlayerSupervisionRequestOrder
+	}
+	return &PlayerSupervisionRequestEdge{
+		Node:   psr,
+		Cursor: order.Field.toCursor(psr),
+	}
+}
+
+// PlayerSupervisionRequestApprovalEdge is the edge representation of PlayerSupervisionRequestApproval.
+type PlayerSupervisionRequestApprovalEdge struct {
+	Node   *PlayerSupervisionRequestApproval `json:"node"`
+	Cursor Cursor                            `json:"cursor"`
+}
+
+// PlayerSupervisionRequestApprovalConnection is the connection containing edges to PlayerSupervisionRequestApproval.
+type PlayerSupervisionRequestApprovalConnection struct {
+	Edges      []*PlayerSupervisionRequestApprovalEdge `json:"edges"`
+	PageInfo   PageInfo                                `json:"pageInfo"`
+	TotalCount int                                     `json:"totalCount"`
+}
+
+func (c *PlayerSupervisionRequestApprovalConnection) build(nodes []*PlayerSupervisionRequestApproval, pager *playersupervisionrequestapprovalPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *PlayerSupervisionRequestApproval
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *PlayerSupervisionRequestApproval {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *PlayerSupervisionRequestApproval {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*PlayerSupervisionRequestApprovalEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &PlayerSupervisionRequestApprovalEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// PlayerSupervisionRequestApprovalPaginateOption enables pagination customization.
+type PlayerSupervisionRequestApprovalPaginateOption func(*playersupervisionrequestapprovalPager) error
+
+// WithPlayerSupervisionRequestApprovalOrder configures pagination ordering.
+func WithPlayerSupervisionRequestApprovalOrder(order *PlayerSupervisionRequestApprovalOrder) PlayerSupervisionRequestApprovalPaginateOption {
+	if order == nil {
+		order = DefaultPlayerSupervisionRequestApprovalOrder
+	}
+	o := *order
+	return func(pager *playersupervisionrequestapprovalPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultPlayerSupervisionRequestApprovalOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithPlayerSupervisionRequestApprovalFilter configures pagination filter.
+func WithPlayerSupervisionRequestApprovalFilter(filter func(*PlayerSupervisionRequestApprovalQuery) (*PlayerSupervisionRequestApprovalQuery, error)) PlayerSupervisionRequestApprovalPaginateOption {
+	return func(pager *playersupervisionrequestapprovalPager) error {
+		if filter == nil {
+			return errors.New("PlayerSupervisionRequestApprovalQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type playersupervisionrequestapprovalPager struct {
+	order  *PlayerSupervisionRequestApprovalOrder
+	filter func(*PlayerSupervisionRequestApprovalQuery) (*PlayerSupervisionRequestApprovalQuery, error)
+}
+
+func newPlayerSupervisionRequestApprovalPager(opts []PlayerSupervisionRequestApprovalPaginateOption) (*playersupervisionrequestapprovalPager, error) {
+	pager := &playersupervisionrequestapprovalPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultPlayerSupervisionRequestApprovalOrder
+	}
+	return pager, nil
+}
+
+func (p *playersupervisionrequestapprovalPager) applyFilter(query *PlayerSupervisionRequestApprovalQuery) (*PlayerSupervisionRequestApprovalQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *playersupervisionrequestapprovalPager) toCursor(psra *PlayerSupervisionRequestApproval) Cursor {
+	return p.order.Field.toCursor(psra)
+}
+
+func (p *playersupervisionrequestapprovalPager) applyCursors(query *PlayerSupervisionRequestApprovalQuery, after, before *Cursor) *PlayerSupervisionRequestApprovalQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultPlayerSupervisionRequestApprovalOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *playersupervisionrequestapprovalPager) applyOrder(query *PlayerSupervisionRequestApprovalQuery, reverse bool) *PlayerSupervisionRequestApprovalQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultPlayerSupervisionRequestApprovalOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultPlayerSupervisionRequestApprovalOrder.Field.field))
+	}
+	return query
+}
+
+func (p *playersupervisionrequestapprovalPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultPlayerSupervisionRequestApprovalOrder.Field {
+			b.Comma().Ident(DefaultPlayerSupervisionRequestApprovalOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to PlayerSupervisionRequestApproval.
+func (psra *PlayerSupervisionRequestApprovalQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...PlayerSupervisionRequestApprovalPaginateOption,
+) (*PlayerSupervisionRequestApprovalConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newPlayerSupervisionRequestApprovalPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if psra, err = pager.applyFilter(psra); err != nil {
+		return nil, err
+	}
+	conn := &PlayerSupervisionRequestApprovalConnection{Edges: []*PlayerSupervisionRequestApprovalEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			if conn.TotalCount, err = psra.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+
+	psra = pager.applyCursors(psra, after, before)
+	psra = pager.applyOrder(psra, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		psra.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := psra.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := psra.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// PlayerSupervisionRequestApprovalOrderField defines the ordering field of PlayerSupervisionRequestApproval.
+type PlayerSupervisionRequestApprovalOrderField struct {
+	field    string
+	toCursor func(*PlayerSupervisionRequestApproval) Cursor
+}
+
+// PlayerSupervisionRequestApprovalOrder defines the ordering of PlayerSupervisionRequestApproval.
+type PlayerSupervisionRequestApprovalOrder struct {
+	Direction OrderDirection                              `json:"direction"`
+	Field     *PlayerSupervisionRequestApprovalOrderField `json:"field"`
+}
+
+// DefaultPlayerSupervisionRequestApprovalOrder is the default ordering of PlayerSupervisionRequestApproval.
+var DefaultPlayerSupervisionRequestApprovalOrder = &PlayerSupervisionRequestApprovalOrder{
+	Direction: OrderDirectionAsc,
+	Field: &PlayerSupervisionRequestApprovalOrderField{
+		field: playersupervisionrequestapproval.FieldID,
+		toCursor: func(psra *PlayerSupervisionRequestApproval) Cursor {
+			return Cursor{ID: psra.ID}
+		},
+	},
+}
+
+// ToEdge converts PlayerSupervisionRequestApproval into PlayerSupervisionRequestApprovalEdge.
+func (psra *PlayerSupervisionRequestApproval) ToEdge(order *PlayerSupervisionRequestApprovalOrder) *PlayerSupervisionRequestApprovalEdge {
+	if order == nil {
+		order = DefaultPlayerSupervisionRequestApprovalOrder
+	}
+	return &PlayerSupervisionRequestApprovalEdge{
+		Node:   psra,
+		Cursor: order.Field.toCursor(psra),
 	}
 }
 
