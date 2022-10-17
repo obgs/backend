@@ -37,7 +37,5 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 // User returns generated.UserResolver implementation.
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
-type (
-	queryResolver struct{ *Resolver }
-	userResolver  struct{ *Resolver }
-)
+type queryResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }
