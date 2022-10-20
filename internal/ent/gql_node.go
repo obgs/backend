@@ -11,6 +11,9 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
+	"github.com/open-boardgame-stats/backend/internal/ent/group"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -42,6 +45,135 @@ type Edge struct {
 	Type string      `json:"type,omitempty"` // edge type.
 	Name string      `json:"name,omitempty"` // edge name.
 	IDs  []uuid.UUID `json:"ids,omitempty"`  // node ids (where this edge point to).
+}
+
+func (gr *Group) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     gr.ID,
+		Type:   "Group",
+		Fields: make([]*Field, 3),
+		Edges:  make([]*Edge, 2),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(gr.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(gr.Description); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "description",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(gr.LogoURL); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "string",
+		Name:  "logo_url",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "GroupSettings",
+		Name: "settings",
+	}
+	err = gr.QuerySettings().
+		Select(groupsettings.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "GroupMembership",
+		Name: "members",
+	}
+	err = gr.QueryMembers().
+		Select(groupmembership.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func (gm *GroupMembership) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     gm.ID,
+		Type:   "GroupMembership",
+		Fields: make([]*Field, 1),
+		Edges:  make([]*Edge, 2),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(gm.Role); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "enums.Role",
+		Name:  "role",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Group",
+		Name: "group",
+	}
+	err = gm.QueryGroup().
+		Select(group.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "User",
+		Name: "user",
+	}
+	err = gm.QueryUser().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func (gs *GroupSettings) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     gs.ID,
+		Type:   "GroupSettings",
+		Fields: make([]*Field, 3),
+		Edges:  make([]*Edge, 0),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(gs.Visibility); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "groupsettings.Visibility",
+		Name:  "visibility",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(gs.JoinPolicy); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "groupsettings.JoinPolicy",
+		Name:  "join_policy",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(gs.MinimumRoleToInvite); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "enums.Role",
+		Name:  "minimum_role_to_invite",
+		Value: string(buf),
+	}
+	return node, nil
 }
 
 func (pl *Player) Node(ctx context.Context) (node *Node, err error) {
@@ -186,7 +318,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     u.ID,
 		Type:   "User",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(u.Name); err != nil {
@@ -230,6 +362,16 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	err = u.QueryMainPlayer().
 		Select(player.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "GroupMembership",
+		Name: "group_memberships",
+	}
+	err = u.QueryGroupMemberships().
+		Select(groupmembership.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -302,6 +444,42 @@ func (c *Client) Noder(ctx context.Context, id uuid.UUID, opts ...NodeOption) (_
 
 func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, error) {
 	switch table {
+	case group.Table:
+		query := c.Group.Query().
+			Where(group.ID(id))
+		query, err := query.CollectFields(ctx, "Group")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case groupmembership.Table:
+		query := c.GroupMembership.Query().
+			Where(groupmembership.ID(id))
+		query, err := query.CollectFields(ctx, "GroupMembership")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case groupsettings.Table:
+		query := c.GroupSettings.Query().
+			Where(groupsettings.ID(id))
+		query, err := query.CollectFields(ctx, "GroupSettings")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case player.Table:
 		query := c.Player.Query().
 			Where(player.ID(id))
@@ -423,6 +601,54 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case group.Table:
+		query := c.Group.Query().
+			Where(group.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "Group")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case groupmembership.Table:
+		query := c.GroupMembership.Query().
+			Where(groupmembership.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "GroupMembership")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case groupsettings.Table:
+		query := c.GroupSettings.Query().
+			Where(groupsettings.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "GroupSettings")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case player.Table:
 		query := c.Player.Query().
 			Where(player.IDIn(ids...))

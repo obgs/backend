@@ -40,6 +40,9 @@ func (User) Edges() []ent.Edge {
 		edge.To("supervision_request_approvals", PlayerSupervisionRequestApproval.Type).Annotations(
 			entgql.Skip(entgql.SkipAll),
 		),
+		edge.To("group_memberships", GroupMembership.Type).Annotations(
+			entgql.Skip(entgql.SkipMutationUpdateInput),
+		),
 	}
 }
 

@@ -9,6 +9,45 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent"
 )
 
+// The GroupFunc type is an adapter to allow the use of ordinary
+// function as Group mutator.
+type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.GroupMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The GroupMembershipFunc type is an adapter to allow the use of ordinary
+// function as GroupMembership mutator.
+type GroupMembershipFunc func(context.Context, *ent.GroupMembershipMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GroupMembershipFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.GroupMembershipMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMembershipMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The GroupSettingsFunc type is an adapter to allow the use of ordinary
+// function as GroupSettings mutator.
+type GroupSettingsFunc func(context.Context, *ent.GroupSettingsMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GroupSettingsFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.GroupSettingsMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupSettingsMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The PlayerFunc type is an adapter to allow the use of ordinary
 // function as Player mutator.
 type PlayerFunc func(context.Context, *ent.PlayerMutation) (ent.Value, error)

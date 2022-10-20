@@ -7,7 +7,12 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/open-boardgame-stats/backend/internal/ent/group"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 )
 
@@ -19,6 +24,26 @@ func (r *queryResolver) Node(ctx context.Context, id uuid.UUID) (ent.Noder, erro
 // Nodes is the resolver for the nodes field.
 func (r *queryResolver) Nodes(ctx context.Context, ids []uuid.UUID) ([]ent.Noder, error) {
 	return r.client.Noders(ctx, ids)
+}
+
+// Groups is the resolver for the groups field.
+func (r *queryResolver) Groups(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.GroupWhereInput) (*ent.GroupConnection, error) {
+	u, _ := auth.UserFromContext(ctx)
+
+	return r.client.Group.Query().Paginate(ctx, after, first, before, last,
+		ent.WithGroupFilter(where.Filter),
+		ent.WithGroupFilter(func(q *ent.GroupQuery) (*ent.GroupQuery, error) {
+			// we need to show only public groups, or, if the request is authenticated, the groups the user is a member of
+			p := group.HasSettingsWith(
+				groupsettings.VisibilityEQ(groupsettings.VisibilityPublic),
+			)
+			if u != nil {
+				p = group.Or(p, group.HasMembersWith(predicate.GroupMembership(user.ID(u.ID))))
+			}
+
+			return q.Where(p), nil
+		}),
+	)
 }
 
 // Players is the resolver for the players field.
@@ -37,5 +62,7 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 // User returns generated.UserResolver implementation.
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
-type queryResolver struct{ *Resolver }
-type userResolver struct{ *Resolver }
+type (
+	queryResolver struct{ *Resolver }
+	userResolver  struct{ *Resolver }
+)

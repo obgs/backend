@@ -27,6 +27,8 @@ const (
 	EdgeSentSupervisionRequests = "sent_supervision_requests"
 	// EdgeSupervisionRequestApprovals holds the string denoting the supervision_request_approvals edge name in mutations.
 	EdgeSupervisionRequestApprovals = "supervision_request_approvals"
+	// EdgeGroupMemberships holds the string denoting the group_memberships edge name in mutations.
+	EdgeGroupMemberships = "group_memberships"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PlayersTable is the table that holds the players relation/edge. The primary key declared below.
@@ -55,6 +57,13 @@ const (
 	SupervisionRequestApprovalsInverseTable = "player_supervision_request_approvals"
 	// SupervisionRequestApprovalsColumn is the table column denoting the supervision_request_approvals relation/edge.
 	SupervisionRequestApprovalsColumn = "user_supervision_request_approvals"
+	// GroupMembershipsTable is the table that holds the group_memberships relation/edge.
+	GroupMembershipsTable = "group_memberships"
+	// GroupMembershipsInverseTable is the table name for the GroupMembership entity.
+	// It exists in this package in order to avoid circular dependency with the "groupmembership" package.
+	GroupMembershipsInverseTable = "group_memberships"
+	// GroupMembershipsColumn is the table column denoting the group_memberships relation/edge.
+	GroupMembershipsColumn = "user_group_memberships"
 )
 
 // Columns holds all SQL columns for user fields.

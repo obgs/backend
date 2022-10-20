@@ -4,7 +4,18 @@ package model
 
 import (
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/enums"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 )
+
+type CreateGroupInput struct {
+	Name                string                   `json:"name"`
+	Description         *string                  `json:"description"`
+	LogoURL             string                   `json:"logoUrl"`
+	Visibility          groupsettings.Visibility `json:"visibility"`
+	JoinPolicy          groupsettings.JoinPolicy `json:"joinPolicy"`
+	MinimumRoleToInvite *enums.Role              `json:"minimumRoleToInvite"`
+}
 
 type CreatePlayerInput struct {
 	Name string `json:"name"`
