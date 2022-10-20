@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -135,6 +136,21 @@ func (uu *UserUpdate) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequ
 	return uu.AddSupervisionRequestApprovalIDs(ids...)
 }
 
+// AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
+func (uu *UserUpdate) AddGroupMembershipIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddGroupMembershipIDs(ids...)
+	return uu
+}
+
+// AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
+func (uu *UserUpdate) AddGroupMemberships(g ...*GroupMembership) *UserUpdate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uu.AddGroupMembershipIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -207,6 +223,27 @@ func (uu *UserUpdate) RemoveSupervisionRequestApprovals(p ...*PlayerSupervisionR
 		ids[i] = p[i].ID
 	}
 	return uu.RemoveSupervisionRequestApprovalIDs(ids...)
+}
+
+// ClearGroupMemberships clears all "group_memberships" edges to the GroupMembership entity.
+func (uu *UserUpdate) ClearGroupMemberships() *UserUpdate {
+	uu.mutation.ClearGroupMemberships()
+	return uu
+}
+
+// RemoveGroupMembershipIDs removes the "group_memberships" edge to GroupMembership entities by IDs.
+func (uu *UserUpdate) RemoveGroupMembershipIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemoveGroupMembershipIDs(ids...)
+	return uu
+}
+
+// RemoveGroupMemberships removes "group_memberships" edges to GroupMembership entities.
+func (uu *UserUpdate) RemoveGroupMemberships(g ...*GroupMembership) *UserUpdate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uu.RemoveGroupMembershipIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -527,6 +564,60 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.GroupMembershipsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GroupMembershipsTable,
+			Columns: []string{user.GroupMembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembership.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedGroupMembershipsIDs(); len(nodes) > 0 && !uu.mutation.GroupMembershipsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GroupMembershipsTable,
+			Columns: []string{user.GroupMembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembership.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GroupMembershipsTable,
+			Columns: []string{user.GroupMembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembership.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -650,6 +741,21 @@ func (uuo *UserUpdateOne) AddSupervisionRequestApprovals(p ...*PlayerSupervision
 	return uuo.AddSupervisionRequestApprovalIDs(ids...)
 }
 
+// AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
+func (uuo *UserUpdateOne) AddGroupMembershipIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddGroupMembershipIDs(ids...)
+	return uuo
+}
+
+// AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
+func (uuo *UserUpdateOne) AddGroupMemberships(g ...*GroupMembership) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uuo.AddGroupMembershipIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -722,6 +828,27 @@ func (uuo *UserUpdateOne) RemoveSupervisionRequestApprovals(p ...*PlayerSupervis
 		ids[i] = p[i].ID
 	}
 	return uuo.RemoveSupervisionRequestApprovalIDs(ids...)
+}
+
+// ClearGroupMemberships clears all "group_memberships" edges to the GroupMembership entity.
+func (uuo *UserUpdateOne) ClearGroupMemberships() *UserUpdateOne {
+	uuo.mutation.ClearGroupMemberships()
+	return uuo
+}
+
+// RemoveGroupMembershipIDs removes the "group_memberships" edge to GroupMembership entities by IDs.
+func (uuo *UserUpdateOne) RemoveGroupMembershipIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemoveGroupMembershipIDs(ids...)
+	return uuo
+}
+
+// RemoveGroupMemberships removes "group_memberships" edges to GroupMembership entities.
+func (uuo *UserUpdateOne) RemoveGroupMemberships(g ...*GroupMembership) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uuo.RemoveGroupMembershipIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -1064,6 +1191,60 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: playersupervisionrequestapproval.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.GroupMembershipsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GroupMembershipsTable,
+			Columns: []string{user.GroupMembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembership.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedGroupMembershipsIDs(); len(nodes) > 0 && !uuo.mutation.GroupMembershipsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GroupMembershipsTable,
+			Columns: []string{user.GroupMembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembership.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GroupMembershipsTable,
+			Columns: []string{user.GroupMembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembership.FieldID,
 				},
 			},
 		}

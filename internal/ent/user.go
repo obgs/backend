@@ -40,15 +40,18 @@ type UserEdges struct {
 	SentSupervisionRequests []*PlayerSupervisionRequest `json:"sent_supervision_requests,omitempty"`
 	// SupervisionRequestApprovals holds the value of the supervision_request_approvals edge.
 	SupervisionRequestApprovals []*PlayerSupervisionRequestApproval `json:"supervision_request_approvals,omitempty"`
+	// GroupMemberships holds the value of the group_memberships edge.
+	GroupMemberships []*GroupMembership `json:"group_memberships,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]map[string]int
+	totalCount [3]map[string]int
 
 	namedPlayers                     map[string][]*Player
 	namedSentSupervisionRequests     map[string][]*PlayerSupervisionRequest
 	namedSupervisionRequestApprovals map[string][]*PlayerSupervisionRequestApproval
+	namedGroupMemberships            map[string][]*GroupMembership
 }
 
 // PlayersOrErr returns the Players value or an error if the edge
@@ -89,6 +92,15 @@ func (e UserEdges) SupervisionRequestApprovalsOrErr() ([]*PlayerSupervisionReque
 		return e.SupervisionRequestApprovals, nil
 	}
 	return nil, &NotLoadedError{edge: "supervision_request_approvals"}
+}
+
+// GroupMembershipsOrErr returns the GroupMemberships value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GroupMembershipsOrErr() ([]*GroupMembership, error) {
+	if e.loadedTypes[4] {
+		return e.GroupMemberships, nil
+	}
+	return nil, &NotLoadedError{edge: "group_memberships"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -168,6 +180,11 @@ func (u *User) QuerySentSupervisionRequests() *PlayerSupervisionRequestQuery {
 // QuerySupervisionRequestApprovals queries the "supervision_request_approvals" edge of the User entity.
 func (u *User) QuerySupervisionRequestApprovals() *PlayerSupervisionRequestApprovalQuery {
 	return (&UserClient{config: u.config}).QuerySupervisionRequestApprovals(u)
+}
+
+// QueryGroupMemberships queries the "group_memberships" edge of the User entity.
+func (u *User) QueryGroupMemberships() *GroupMembershipQuery {
+	return (&UserClient{config: u.config}).QueryGroupMemberships(u)
 }
 
 // Update returns a builder for updating this User.
@@ -276,6 +293,30 @@ func (u *User) appendNamedSupervisionRequestApprovals(name string, edges ...*Pla
 		u.Edges.namedSupervisionRequestApprovals[name] = []*PlayerSupervisionRequestApproval{}
 	} else {
 		u.Edges.namedSupervisionRequestApprovals[name] = append(u.Edges.namedSupervisionRequestApprovals[name], edges...)
+	}
+}
+
+// NamedGroupMemberships returns the GroupMemberships named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (u *User) NamedGroupMemberships(name string) ([]*GroupMembership, error) {
+	if u.Edges.namedGroupMemberships == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := u.Edges.namedGroupMemberships[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (u *User) appendNamedGroupMemberships(name string, edges ...*GroupMembership) {
+	if u.Edges.namedGroupMemberships == nil {
+		u.Edges.namedGroupMemberships = make(map[string][]*GroupMembership)
+	}
+	if len(edges) == 0 {
+		u.Edges.namedGroupMemberships[name] = []*GroupMembership{}
+	} else {
+		u.Edges.namedGroupMemberships[name] = append(u.Edges.namedGroupMemberships[name], edges...)
 	}
 }
 

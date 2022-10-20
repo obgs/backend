@@ -4,6 +4,9 @@ package ent
 
 import (
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/group"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -15,6 +18,36 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	groupFields := schema.Group{}.Fields()
+	_ = groupFields
+	// groupDescName is the schema descriptor for name field.
+	groupDescName := groupFields[1].Descriptor()
+	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	group.NameValidator = groupDescName.Validators[0].(func(string) error)
+	// groupDescDescription is the schema descriptor for description field.
+	groupDescDescription := groupFields[2].Descriptor()
+	// group.DefaultDescription holds the default value on creation for the description field.
+	group.DefaultDescription = groupDescDescription.Default.(string)
+	// groupDescLogoURL is the schema descriptor for logo_url field.
+	groupDescLogoURL := groupFields[3].Descriptor()
+	// group.LogoURLValidator is a validator for the "logo_url" field. It is called by the builders before save.
+	group.LogoURLValidator = groupDescLogoURL.Validators[0].(func(string) error)
+	// groupDescID is the schema descriptor for id field.
+	groupDescID := groupFields[0].Descriptor()
+	// group.DefaultID holds the default value on creation for the id field.
+	group.DefaultID = groupDescID.Default.(func() uuid.UUID)
+	groupmembershipFields := schema.GroupMembership{}.Fields()
+	_ = groupmembershipFields
+	// groupmembershipDescID is the schema descriptor for id field.
+	groupmembershipDescID := groupmembershipFields[0].Descriptor()
+	// groupmembership.DefaultID holds the default value on creation for the id field.
+	groupmembership.DefaultID = groupmembershipDescID.Default.(func() uuid.UUID)
+	groupsettingsFields := schema.GroupSettings{}.Fields()
+	_ = groupsettingsFields
+	// groupsettingsDescID is the schema descriptor for id field.
+	groupsettingsDescID := groupsettingsFields[0].Descriptor()
+	// groupsettings.DefaultID holds the default value on creation for the id field.
+	groupsettings.DefaultID = groupsettingsDescID.Default.(func() uuid.UUID)
 	playerFields := schema.Player{}.Fields()
 	_ = playerFields
 	// playerDescName is the schema descriptor for name field.

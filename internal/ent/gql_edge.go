@@ -4,6 +4,38 @@ package ent
 
 import "context"
 
+func (gr *Group) Settings(ctx context.Context) (*GroupSettings, error) {
+	result, err := gr.Edges.SettingsOrErr()
+	if IsNotLoaded(err) {
+		result, err = gr.QuerySettings().Only(ctx)
+	}
+	return result, err
+}
+
+func (gr *Group) Members(ctx context.Context) ([]*GroupMembership, error) {
+	result, err := gr.Edges.MembersOrErr()
+	if IsNotLoaded(err) {
+		result, err = gr.QueryMembers().All(ctx)
+	}
+	return result, err
+}
+
+func (gm *GroupMembership) Group(ctx context.Context) (*Group, error) {
+	result, err := gm.Edges.GroupOrErr()
+	if IsNotLoaded(err) {
+		result, err = gm.QueryGroup().Only(ctx)
+	}
+	return result, err
+}
+
+func (gm *GroupMembership) User(ctx context.Context) (*User, error) {
+	result, err := gm.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = gm.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (pl *Player) Owner(ctx context.Context) (*User, error) {
 	result, err := pl.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {
@@ -82,4 +114,12 @@ func (u *User) MainPlayer(ctx context.Context) (*Player, error) {
 		result, err = u.QueryMainPlayer().Only(ctx)
 	}
 	return result, MaskNotFound(err)
+}
+
+func (u *User) GroupMemberships(ctx context.Context) ([]*GroupMembership, error) {
+	result, err := u.Edges.GroupMembershipsOrErr()
+	if IsNotLoaded(err) {
+		result, err = u.QueryGroupMemberships().All(ctx)
+	}
+	return result, err
 }

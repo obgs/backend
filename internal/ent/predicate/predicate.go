@@ -6,6 +6,15 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Group is the predicate function for group builders.
+type Group func(*sql.Selector)
+
+// GroupMembership is the predicate function for groupmembership builders.
+type GroupMembership func(*sql.Selector)
+
+// GroupSettings is the predicate function for groupsettings builders.
+type GroupSettings func(*sql.Selector)
+
 // Player is the predicate function for player builders.
 type Player func(*sql.Selector)
 

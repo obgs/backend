@@ -9,7 +9,6 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
-	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
 
@@ -115,8 +114,3 @@ func (r *mutationResolver) ResolvePlayerSupervisionRequest(ctx context.Context, 
 
 	return true, nil
 }
-
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
-type mutationResolver struct{ *Resolver }

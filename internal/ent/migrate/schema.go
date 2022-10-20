@@ -8,6 +8,68 @@ import (
 )
 
 var (
+	// GroupsColumns holds the columns for the "groups" table.
+	GroupsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString, Default: ""},
+		{Name: "logo_url", Type: field.TypeString},
+	}
+	// GroupsTable holds the schema information for the "groups" table.
+	GroupsTable = &schema.Table{
+		Name:       "groups",
+		Columns:    GroupsColumns,
+		PrimaryKey: []*schema.Column{GroupsColumns[0]},
+	}
+	// GroupMembershipsColumns holds the columns for the "group_memberships" table.
+	GroupMembershipsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"owner", "admin", "member"}},
+		{Name: "group_members", Type: field.TypeUUID},
+		{Name: "user_group_memberships", Type: field.TypeUUID},
+	}
+	// GroupMembershipsTable holds the schema information for the "group_memberships" table.
+	GroupMembershipsTable = &schema.Table{
+		Name:       "group_memberships",
+		Columns:    GroupMembershipsColumns,
+		PrimaryKey: []*schema.Column{GroupMembershipsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "group_memberships_groups_members",
+				Columns:    []*schema.Column{GroupMembershipsColumns[2]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "group_memberships_users_group_memberships",
+				Columns:    []*schema.Column{GroupMembershipsColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// GroupSettingsColumns holds the columns for the "group_settings" table.
+	GroupSettingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"PUBLIC", "PRIVATE"}, Default: "PUBLIC"},
+		{Name: "join_policy", Type: field.TypeEnum, Enums: []string{"OPEN", "INVITE_ONLY", "APPLICATION_ONLY", "INVITE_OR_APPLICATION"}, Default: "OPEN"},
+		{Name: "minimum_role_to_invite", Type: field.TypeEnum, Nullable: true, Enums: []string{"owner", "admin", "member"}},
+		{Name: "group_settings", Type: field.TypeUUID, Unique: true, Nullable: true},
+	}
+	// GroupSettingsTable holds the schema information for the "group_settings" table.
+	GroupSettingsTable = &schema.Table{
+		Name:       "group_settings",
+		Columns:    GroupSettingsColumns,
+		PrimaryKey: []*schema.Column{GroupSettingsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "group_settings_groups_settings",
+				Columns:    []*schema.Column{GroupSettingsColumns[4]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// PlayersColumns holds the columns for the "players" table.
 	PlayersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -123,6 +185,9 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		GroupsTable,
+		GroupMembershipsTable,
+		GroupSettingsTable,
 		PlayersTable,
 		PlayerSupervisionRequestsTable,
 		PlayerSupervisionRequestApprovalsTable,
@@ -132,6 +197,9 @@ var (
 )
 
 func init() {
+	GroupMembershipsTable.ForeignKeys[0].RefTable = GroupsTable
+	GroupMembershipsTable.ForeignKeys[1].RefTable = UsersTable
+	GroupSettingsTable.ForeignKeys[0].RefTable = GroupsTable
 	PlayersTable.ForeignKeys[0].RefTable = UsersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[0].RefTable = PlayersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[1].RefTable = UsersTable

@@ -10,6 +10,194 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (gr *GroupQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return gr, nil
+	}
+	if err := gr.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return gr, nil
+}
+
+func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "settings":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &GroupSettingsQuery{config: gr.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			gr.withSettings = query
+		case "members":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &GroupMembershipQuery{config: gr.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			gr.WithNamedMembers(alias, func(wq *GroupMembershipQuery) {
+				*wq = *query
+			})
+		}
+	}
+	return nil
+}
+
+type groupPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []GroupPaginateOption
+}
+
+func newGroupPaginateArgs(rv map[string]interface{}) *groupPaginateArgs {
+	args := &groupPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*GroupWhereInput); ok {
+		args.opts = append(args.opts, WithGroupFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (gm *GroupMembershipQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupMembershipQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return gm, nil
+	}
+	if err := gm.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return gm, nil
+}
+
+func (gm *GroupMembershipQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "group":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &GroupQuery{config: gm.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			gm.withGroup = query
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &UserQuery{config: gm.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			gm.withUser = query
+		}
+	}
+	return nil
+}
+
+type groupmembershipPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []GroupMembershipPaginateOption
+}
+
+func newGroupMembershipPaginateArgs(rv map[string]interface{}) *groupmembershipPaginateArgs {
+	args := &groupmembershipPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*GroupMembershipWhereInput); ok {
+		args.opts = append(args.opts, WithGroupMembershipFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (gs *GroupSettingsQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupSettingsQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return gs, nil
+	}
+	if err := gs.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return gs, nil
+}
+
+func (gs *GroupSettingsQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	return nil
+}
+
+type groupsettingsPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []GroupSettingsPaginateOption
+}
+
+func newGroupSettingsPaginateArgs(rv map[string]interface{}) *groupsettingsPaginateArgs {
+	args := &groupsettingsPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*GroupSettingsWhereInput); ok {
+		args.opts = append(args.opts, WithGroupSettingsFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (pl *PlayerQuery) CollectFields(ctx context.Context, satisfies ...string) (*PlayerQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -283,6 +471,18 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			u.withMainPlayer = query
+		case "groupMemberships", "group_memberships":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &GroupMembershipQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.WithNamedGroupMemberships(alias, func(wq *GroupMembershipQuery) {
+				*wq = *query
+			})
 		}
 	}
 	return nil

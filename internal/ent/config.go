@@ -24,6 +24,9 @@ type config struct {
 
 // hooks per client, for fast access.
 type hooks struct {
+	Group                            []ent.Hook
+	GroupMembership                  []ent.Hook
+	GroupSettings                    []ent.Hook
 	Player                           []ent.Hook
 	PlayerSupervisionRequest         []ent.Hook
 	PlayerSupervisionRequestApproval []ent.Hook

@@ -11,6 +11,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
 
+	"github.com/open-boardgame-stats/backend/internal/ent/group"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -26,6 +29,12 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Group is the client for interacting with the Group builders.
+	Group *GroupClient
+	// GroupMembership is the client for interacting with the GroupMembership builders.
+	GroupMembership *GroupMembershipClient
+	// GroupSettings is the client for interacting with the GroupSettings builders.
+	GroupSettings *GroupSettingsClient
 	// Player is the client for interacting with the Player builders.
 	Player *PlayerClient
 	// PlayerSupervisionRequest is the client for interacting with the PlayerSupervisionRequest builders.
@@ -47,6 +56,9 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Group = NewGroupClient(c.config)
+	c.GroupMembership = NewGroupMembershipClient(c.config)
+	c.GroupSettings = NewGroupSettingsClient(c.config)
 	c.Player = NewPlayerClient(c.config)
 	c.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(c.config)
 	c.PlayerSupervisionRequestApproval = NewPlayerSupervisionRequestApprovalClient(c.config)
@@ -84,6 +96,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                              ctx,
 		config:                           cfg,
+		Group:                            NewGroupClient(cfg),
+		GroupMembership:                  NewGroupMembershipClient(cfg),
+		GroupSettings:                    NewGroupSettingsClient(cfg),
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
 		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
@@ -107,6 +122,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                              ctx,
 		config:                           cfg,
+		Group:                            NewGroupClient(cfg),
+		GroupMembership:                  NewGroupMembershipClient(cfg),
+		GroupSettings:                    NewGroupSettingsClient(cfg),
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
 		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
@@ -117,7 +135,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Player.
+//		Group.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -139,10 +157,363 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Group.Use(hooks...)
+	c.GroupMembership.Use(hooks...)
+	c.GroupSettings.Use(hooks...)
 	c.Player.Use(hooks...)
 	c.PlayerSupervisionRequest.Use(hooks...)
 	c.PlayerSupervisionRequestApproval.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// GroupClient is a client for the Group schema.
+type GroupClient struct {
+	config
+}
+
+// NewGroupClient returns a client for the Group from the given config.
+func NewGroupClient(c config) *GroupClient {
+	return &GroupClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `group.Hooks(f(g(h())))`.
+func (c *GroupClient) Use(hooks ...Hook) {
+	c.hooks.Group = append(c.hooks.Group, hooks...)
+}
+
+// Create returns a builder for creating a Group entity.
+func (c *GroupClient) Create() *GroupCreate {
+	mutation := newGroupMutation(c.config, OpCreate)
+	return &GroupCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Group entities.
+func (c *GroupClient) CreateBulk(builders ...*GroupCreate) *GroupCreateBulk {
+	return &GroupCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Group.
+func (c *GroupClient) Update() *GroupUpdate {
+	mutation := newGroupMutation(c.config, OpUpdate)
+	return &GroupUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GroupClient) UpdateOne(gr *Group) *GroupUpdateOne {
+	mutation := newGroupMutation(c.config, OpUpdateOne, withGroup(gr))
+	return &GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GroupClient) UpdateOneID(id uuid.UUID) *GroupUpdateOne {
+	mutation := newGroupMutation(c.config, OpUpdateOne, withGroupID(id))
+	return &GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Group.
+func (c *GroupClient) Delete() *GroupDelete {
+	mutation := newGroupMutation(c.config, OpDelete)
+	return &GroupDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GroupClient) DeleteOne(gr *Group) *GroupDeleteOne {
+	return c.DeleteOneID(gr.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *GroupClient) DeleteOneID(id uuid.UUID) *GroupDeleteOne {
+	builder := c.Delete().Where(group.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GroupDeleteOne{builder}
+}
+
+// Query returns a query builder for Group.
+func (c *GroupClient) Query() *GroupQuery {
+	return &GroupQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Group entity by its id.
+func (c *GroupClient) Get(ctx context.Context, id uuid.UUID) (*Group, error) {
+	return c.Query().Where(group.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GroupClient) GetX(ctx context.Context, id uuid.UUID) *Group {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySettings queries the settings edge of a Group.
+func (c *GroupClient) QuerySettings(gr *Group) *GroupSettingsQuery {
+	query := &GroupSettingsQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := gr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(groupsettings.Table, groupsettings.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, group.SettingsTable, group.SettingsColumn),
+		)
+		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMembers queries the members edge of a Group.
+func (c *GroupClient) QueryMembers(gr *Group) *GroupMembershipQuery {
+	query := &GroupMembershipQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := gr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.MembersTable, group.MembersColumn),
+		)
+		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GroupClient) Hooks() []Hook {
+	return c.hooks.Group
+}
+
+// GroupMembershipClient is a client for the GroupMembership schema.
+type GroupMembershipClient struct {
+	config
+}
+
+// NewGroupMembershipClient returns a client for the GroupMembership from the given config.
+func NewGroupMembershipClient(c config) *GroupMembershipClient {
+	return &GroupMembershipClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `groupmembership.Hooks(f(g(h())))`.
+func (c *GroupMembershipClient) Use(hooks ...Hook) {
+	c.hooks.GroupMembership = append(c.hooks.GroupMembership, hooks...)
+}
+
+// Create returns a builder for creating a GroupMembership entity.
+func (c *GroupMembershipClient) Create() *GroupMembershipCreate {
+	mutation := newGroupMembershipMutation(c.config, OpCreate)
+	return &GroupMembershipCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GroupMembership entities.
+func (c *GroupMembershipClient) CreateBulk(builders ...*GroupMembershipCreate) *GroupMembershipCreateBulk {
+	return &GroupMembershipCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GroupMembership.
+func (c *GroupMembershipClient) Update() *GroupMembershipUpdate {
+	mutation := newGroupMembershipMutation(c.config, OpUpdate)
+	return &GroupMembershipUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GroupMembershipClient) UpdateOne(gm *GroupMembership) *GroupMembershipUpdateOne {
+	mutation := newGroupMembershipMutation(c.config, OpUpdateOne, withGroupMembership(gm))
+	return &GroupMembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GroupMembershipClient) UpdateOneID(id uuid.UUID) *GroupMembershipUpdateOne {
+	mutation := newGroupMembershipMutation(c.config, OpUpdateOne, withGroupMembershipID(id))
+	return &GroupMembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GroupMembership.
+func (c *GroupMembershipClient) Delete() *GroupMembershipDelete {
+	mutation := newGroupMembershipMutation(c.config, OpDelete)
+	return &GroupMembershipDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GroupMembershipClient) DeleteOne(gm *GroupMembership) *GroupMembershipDeleteOne {
+	return c.DeleteOneID(gm.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *GroupMembershipClient) DeleteOneID(id uuid.UUID) *GroupMembershipDeleteOne {
+	builder := c.Delete().Where(groupmembership.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GroupMembershipDeleteOne{builder}
+}
+
+// Query returns a query builder for GroupMembership.
+func (c *GroupMembershipClient) Query() *GroupMembershipQuery {
+	return &GroupMembershipQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a GroupMembership entity by its id.
+func (c *GroupMembershipClient) Get(ctx context.Context, id uuid.UUID) (*GroupMembership, error) {
+	return c.Query().Where(groupmembership.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GroupMembershipClient) GetX(ctx context.Context, id uuid.UUID) *GroupMembership {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a GroupMembership.
+func (c *GroupMembershipClient) QueryGroup(gm *GroupMembership) *GroupQuery {
+	query := &GroupQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := gm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, groupmembership.GroupTable, groupmembership.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(gm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a GroupMembership.
+func (c *GroupMembershipClient) QueryUser(gm *GroupMembership) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := gm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, groupmembership.UserTable, groupmembership.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(gm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GroupMembershipClient) Hooks() []Hook {
+	return c.hooks.GroupMembership
+}
+
+// GroupSettingsClient is a client for the GroupSettings schema.
+type GroupSettingsClient struct {
+	config
+}
+
+// NewGroupSettingsClient returns a client for the GroupSettings from the given config.
+func NewGroupSettingsClient(c config) *GroupSettingsClient {
+	return &GroupSettingsClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `groupsettings.Hooks(f(g(h())))`.
+func (c *GroupSettingsClient) Use(hooks ...Hook) {
+	c.hooks.GroupSettings = append(c.hooks.GroupSettings, hooks...)
+}
+
+// Create returns a builder for creating a GroupSettings entity.
+func (c *GroupSettingsClient) Create() *GroupSettingsCreate {
+	mutation := newGroupSettingsMutation(c.config, OpCreate)
+	return &GroupSettingsCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GroupSettings entities.
+func (c *GroupSettingsClient) CreateBulk(builders ...*GroupSettingsCreate) *GroupSettingsCreateBulk {
+	return &GroupSettingsCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GroupSettings.
+func (c *GroupSettingsClient) Update() *GroupSettingsUpdate {
+	mutation := newGroupSettingsMutation(c.config, OpUpdate)
+	return &GroupSettingsUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GroupSettingsClient) UpdateOne(gs *GroupSettings) *GroupSettingsUpdateOne {
+	mutation := newGroupSettingsMutation(c.config, OpUpdateOne, withGroupSettings(gs))
+	return &GroupSettingsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GroupSettingsClient) UpdateOneID(id uuid.UUID) *GroupSettingsUpdateOne {
+	mutation := newGroupSettingsMutation(c.config, OpUpdateOne, withGroupSettingsID(id))
+	return &GroupSettingsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GroupSettings.
+func (c *GroupSettingsClient) Delete() *GroupSettingsDelete {
+	mutation := newGroupSettingsMutation(c.config, OpDelete)
+	return &GroupSettingsDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GroupSettingsClient) DeleteOne(gs *GroupSettings) *GroupSettingsDeleteOne {
+	return c.DeleteOneID(gs.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *GroupSettingsClient) DeleteOneID(id uuid.UUID) *GroupSettingsDeleteOne {
+	builder := c.Delete().Where(groupsettings.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GroupSettingsDeleteOne{builder}
+}
+
+// Query returns a query builder for GroupSettings.
+func (c *GroupSettingsClient) Query() *GroupSettingsQuery {
+	return &GroupSettingsQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a GroupSettings entity by its id.
+func (c *GroupSettingsClient) Get(ctx context.Context, id uuid.UUID) (*GroupSettings, error) {
+	return c.Query().Where(groupsettings.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GroupSettingsClient) GetX(ctx context.Context, id uuid.UUID) *GroupSettings {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a GroupSettings.
+func (c *GroupSettingsClient) QueryGroup(gs *GroupSettings) *GroupQuery {
+	query := &GroupQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := gs.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(groupsettings.Table, groupsettings.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, groupsettings.GroupTable, groupsettings.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(gs.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GroupSettingsClient) Hooks() []Hook {
+	return c.hooks.GroupSettings
 }
 
 // PlayerClient is a client for the Player schema.
@@ -685,6 +1056,22 @@ func (c *UserClient) QuerySupervisionRequestApprovals(u *User) *PlayerSupervisio
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.SupervisionRequestApprovalsTable, user.SupervisionRequestApprovalsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroupMemberships queries the group_memberships edge of a User.
+func (c *UserClient) QueryGroupMemberships(u *User) *GroupMembershipQuery {
+	query := &GroupMembershipQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GroupMembershipsTable, user.GroupMembershipsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -139,6 +140,21 @@ func (uc *UserCreate) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequ
 		ids[i] = p[i].ID
 	}
 	return uc.AddSupervisionRequestApprovalIDs(ids...)
+}
+
+// AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
+func (uc *UserCreate) AddGroupMembershipIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddGroupMembershipIDs(ids...)
+	return uc
+}
+
+// AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
+func (uc *UserCreate) AddGroupMemberships(g ...*GroupMembership) *UserCreate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uc.AddGroupMembershipIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -392,6 +408,25 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: playersupervisionrequestapproval.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GroupMembershipsTable,
+			Columns: []string{user.GroupMembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembership.FieldID,
 				},
 			},
 		}
