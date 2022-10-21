@@ -55,7 +55,7 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		ID          func(childComplexity int) int
 		LogoURL     func(childComplexity int) int
-		Members     func(childComplexity int) int
+		Members     func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.GroupMembershipWhereInput) int
 		Name        func(childComplexity int) int
 		Settings    func(childComplexity int) int
 	}
@@ -76,6 +76,17 @@ type ComplexityRoot struct {
 		ID    func(childComplexity int) int
 		Role  func(childComplexity int) int
 		User  func(childComplexity int) int
+	}
+
+	GroupMembershipConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	GroupMembershipEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
 	}
 
 	GroupSettings struct {
@@ -230,7 +241,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Group.Members(childComplexity), true
+		args, err := ec.field_Group_members_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Group.Members(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["where"].(*ent.GroupMembershipWhereInput)), true
 
 	case "Group.name":
 		if e.complexity.Group.Name == nil {
@@ -308,6 +324,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.GroupMembership.User(childComplexity), true
+
+	case "GroupMembershipConnection.edges":
+		if e.complexity.GroupMembershipConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.GroupMembershipConnection.Edges(childComplexity), true
+
+	case "GroupMembershipConnection.pageInfo":
+		if e.complexity.GroupMembershipConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.GroupMembershipConnection.PageInfo(childComplexity), true
+
+	case "GroupMembershipConnection.totalCount":
+		if e.complexity.GroupMembershipConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.GroupMembershipConnection.TotalCount(childComplexity), true
+
+	case "GroupMembershipEdge.cursor":
+		if e.complexity.GroupMembershipEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.GroupMembershipEdge.Cursor(childComplexity), true
+
+	case "GroupMembershipEdge.node":
+		if e.complexity.GroupMembershipEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.GroupMembershipEdge.Node(childComplexity), true
 
 	case "GroupSettings.id":
 		if e.complexity.GroupSettings.ID == nil {
@@ -825,7 +876,22 @@ type Group implements Node {
   description: String!
   logoURL: String!
   settings: GroupSettings!
-  members: [GroupMembership!]
+  members(
+    """Returns the elements in the list that come after the specified cursor."""
+    after: Cursor
+
+    """Returns the first _n_ elements from the list."""
+    first: Int
+
+    """Returns the elements in the list that come before the specified cursor."""
+    before: Cursor
+
+    """Returns the last _n_ elements from the list."""
+    last: Int
+
+    """Filtering options for GroupMemberships returned from the connection."""
+    where: GroupMembershipWhereInput
+  ): GroupMembershipConnection!
 }
 """A connection to a list of items."""
 type GroupConnection {
@@ -848,6 +914,22 @@ type GroupMembership implements Node {
   role: GroupMembershipRole!
   group: Group!
   user: User!
+}
+"""A connection to a list of items."""
+type GroupMembershipConnection {
+  """A list of edges."""
+  edges: [GroupMembershipEdge]
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+  """Identifies the total count of items in the connection."""
+  totalCount: Int!
+}
+"""An edge in a connection."""
+type GroupMembershipEdge {
+  """The item at the end of the edge."""
+  node: GroupMembership
+  """A cursor for use in pagination."""
+  cursor: Cursor!
 }
 """GroupMembershipRole is enum for the field role"""
 enum GroupMembershipRole @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/enums.Role") {
@@ -1345,6 +1427,57 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Group_members_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *ent.Cursor
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg0, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg1
+	var arg2 *ent.Cursor
+	if tmp, ok := rawArgs["before"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+		arg2, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["before"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg3
+	var arg4 *ent.GroupMembershipWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg4, err = ec.unmarshalOGroupMembershipWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembershipWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg4
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1910,18 +2043,21 @@ func (ec *executionContext) _Group_members(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Members(ctx)
+		return obj.Members(ctx, fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["last"].(*int), fc.Args["where"].(*ent.GroupMembershipWhereInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.GroupMembership)
+	res := resTmp.(*ent.GroupMembershipConnection)
 	fc.Result = res
-	return ec.marshalOGroupMembership2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembershipᚄ(ctx, field.Selections, res)
+	return ec.marshalNGroupMembershipConnection2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembershipConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Group_members(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1932,17 +2068,26 @@ func (ec *executionContext) fieldContext_Group_members(ctx context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_GroupMembership_id(ctx, field)
-			case "role":
-				return ec.fieldContext_GroupMembership_role(ctx, field)
-			case "group":
-				return ec.fieldContext_GroupMembership_group(ctx, field)
-			case "user":
-				return ec.fieldContext_GroupMembership_user(ctx, field)
+			case "edges":
+				return ec.fieldContext_GroupMembershipConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_GroupMembershipConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_GroupMembershipConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type GroupMembership", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type GroupMembershipConnection", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Group_members_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -2396,6 +2541,246 @@ func (ec *executionContext) fieldContext_GroupMembership_user(ctx context.Contex
 				return ec.fieldContext_User_receivedSupervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GroupMembershipConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.GroupMembershipConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GroupMembershipConnection_edges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.GroupMembershipEdge)
+	fc.Result = res
+	return ec.marshalOGroupMembershipEdge2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembershipEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GroupMembershipConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GroupMembershipConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_GroupMembershipEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_GroupMembershipEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GroupMembershipEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GroupMembershipConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.GroupMembershipConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GroupMembershipConnection_pageInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GroupMembershipConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GroupMembershipConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GroupMembershipConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.GroupMembershipConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GroupMembershipConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GroupMembershipConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GroupMembershipConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GroupMembershipEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.GroupMembershipEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GroupMembershipEdge_node(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.GroupMembership)
+	fc.Result = res
+	return ec.marshalOGroupMembership2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembership(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GroupMembershipEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GroupMembershipEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_GroupMembership_id(ctx, field)
+			case "role":
+				return ec.fieldContext_GroupMembership_role(ctx, field)
+			case "group":
+				return ec.fieldContext_GroupMembership_group(ctx, field)
+			case "user":
+				return ec.fieldContext_GroupMembership_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GroupMembership", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GroupMembershipEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.GroupMembershipEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GroupMembershipEdge_cursor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.Cursor)
+	fc.Result = res
+	return ec.marshalNCursor2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GroupMembershipEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GroupMembershipEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
 		},
 	}
 	return fc, nil
@@ -9108,6 +9493,9 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Group_members(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -9261,6 +9649,77 @@ func (ec *executionContext) _GroupMembership(ctx context.Context, sel ast.Select
 				return innerFunc(ctx)
 
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var groupMembershipConnectionImplementors = []string{"GroupMembershipConnection"}
+
+func (ec *executionContext) _GroupMembershipConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.GroupMembershipConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, groupMembershipConnectionImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GroupMembershipConnection")
+		case "edges":
+
+			out.Values[i] = ec._GroupMembershipConnection_edges(ctx, field, obj)
+
+		case "pageInfo":
+
+			out.Values[i] = ec._GroupMembershipConnection_pageInfo(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalCount":
+
+			out.Values[i] = ec._GroupMembershipConnection_totalCount(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var groupMembershipEdgeImplementors = []string{"GroupMembershipEdge"}
+
+func (ec *executionContext) _GroupMembershipEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.GroupMembershipEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, groupMembershipEdgeImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GroupMembershipEdge")
+		case "node":
+
+			out.Values[i] = ec._GroupMembershipEdge_node(ctx, field, obj)
+
+		case "cursor":
+
+			out.Values[i] = ec._GroupMembershipEdge_cursor(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10556,6 +11015,16 @@ func (ec *executionContext) marshalNGroupMembership2ᚖgithubᚗcomᚋopenᚑboa
 	return ec._GroupMembership(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNGroupMembershipConnection2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembershipConnection(ctx context.Context, sel ast.SelectionSet, v *ent.GroupMembershipConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GroupMembershipConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNGroupMembershipRole2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋenumsᚐRole(ctx context.Context, v interface{}) (enums.Role, error) {
 	var res enums.Role
 	err := res.UnmarshalGQL(v)
@@ -11279,6 +11748,61 @@ func (ec *executionContext) marshalOGroupMembership2ᚕᚖgithubᚗcomᚋopenᚑ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalOGroupMembership2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembership(ctx context.Context, sel ast.SelectionSet, v *ent.GroupMembership) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._GroupMembership(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOGroupMembershipEdge2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembershipEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.GroupMembershipEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOGroupMembershipEdge2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembershipEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOGroupMembershipEdge2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupMembershipEdge(ctx context.Context, sel ast.SelectionSet, v *ent.GroupMembershipEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._GroupMembershipEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOGroupMembershipRole2ᚕgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋenumsᚐRoleᚄ(ctx context.Context, v interface{}) ([]enums.Role, error) {
