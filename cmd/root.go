@@ -25,6 +25,7 @@ type Config struct {
 	S3Endpoint              string `mapstructure:"S3_ENDPOINT"`
 	S3Bucket                string `mapstructure:"S3_BUCKET"`
 	UsingMinio              bool   `mapstructure:"USING_MINIO"`
+	EntDebug                bool   `mapstructure:"ENT_DEBUG"`
 }
 
 var config Config

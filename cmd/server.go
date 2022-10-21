@@ -29,8 +29,13 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Starts the gql server",
 	Run: func(cmd *cobra.Command, args []string) {
+		options := []ent.Option{}
+		if config.EntDebug {
+			options = append(options, ent.Debug())
+		}
+
 		client, err := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-			config.DBAddress, config.DBPort, config.DBUser, config.DBPass, config.DBName))
+			config.DBAddress, config.DBPort, config.DBUser, config.DBPass, config.DBName), options...)
 		if err != nil {
 			log.Fatalf("failed to open connection to postgres: %v", err)
 		}
