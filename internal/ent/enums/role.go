@@ -26,7 +26,7 @@ func (r Role) String() string {
 }
 
 func (r Role) MarshalGQL(w io.Writer) {
-	_, _ = w.Write([]byte(r.String()))
+	_, _ = w.Write([]byte(`"` + r.String() + `"`))
 }
 
 func (r *Role) UnmarshalGQL(v interface{}) error {
