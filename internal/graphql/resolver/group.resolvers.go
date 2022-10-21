@@ -15,14 +15,8 @@ import (
 
 // CreateGroup is the resolver for the createGroup field.
 func (r *mutationResolver) CreateGroup(ctx context.Context, input model.CreateGroupInput) (*ent.Group, error) {
-	tx, err := r.client.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	// create group settings
-	s, err := tx.GroupSettings.Create().
+	s, err := r.client.GroupSettings.Create().
 		SetVisibility(input.Visibility).
 		SetJoinPolicy(input.JoinPolicy).
 		SetMinimumRoleToInvite(*input.MinimumRoleToInvite).
@@ -32,7 +26,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.CreateGr
 	}
 
 	// create the group
-	g, err := tx.Group.Create().
+	g, err := r.client.Group.Create().
 		SetSettings(s).
 		SetName(input.Name).
 		SetDescription(*input.Description).
@@ -48,7 +42,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.CreateGr
 	}
 
 	// add the user as the owner
-	_, err = tx.GroupMembership.Create().
+	_, err = r.client.GroupMembership.Create().
 		SetGroup(g).
 		SetUser(u).
 		SetRole(enums.RoleOwner).
@@ -57,7 +51,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.CreateGr
 		return nil, err
 	}
 
-	return g, tx.Commit()
+	return g, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

@@ -29,24 +29,19 @@ func (r *mutationResolver) RequestPlayerSupervision(ctx context.Context, input *
 		return nil, err
 	}
 
-	tx, err := r.client.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	p, err := tx.Player.Query().Where(
+	p, err := r.client.Player.Query().Where(
 		player.ID(input.PlayerID),
 	).WithOwner().Only(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	currentSupervisors, err := tx.Player.QuerySupervisors(p).All(ctx)
+	currentSupervisors, err := r.client.Player.QuerySupervisors(p).All(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	request, err := tx.PlayerSupervisionRequest.Create().SetPlayer(p).SetSender(user).SetMessage(*input.Message).Save(ctx)
+	request, err := r.client.PlayerSupervisionRequest.Create().SetPlayer(p).SetSender(user).SetMessage(*input.Message).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,25 +54,19 @@ func (r *mutationResolver) RequestPlayerSupervision(ctx context.Context, input *
 
 	approvals := make([]*ent.PlayerSupervisionRequestApprovalCreate, approvalCount)
 	for i, supervisor := range currentSupervisors {
-		approvals[i] = tx.PlayerSupervisionRequestApproval.Create().
+		approvals[i] = r.client.PlayerSupervisionRequestApproval.Create().
 			SetApprover(supervisor).
 			SetSupervisionRequest(request)
 	}
 
 	if owner != nil {
-		approvals[approvalCount-1] = tx.PlayerSupervisionRequestApproval.Create().
+		approvals[approvalCount-1] = r.client.PlayerSupervisionRequestApproval.Create().
 			SetApprover(owner).
 			SetSupervisionRequest(request)
 	}
 
-	_, err = tx.PlayerSupervisionRequestApproval.CreateBulk(approvals...).Save(ctx)
+	_, err = r.client.PlayerSupervisionRequestApproval.CreateBulk(approvals...).Save(ctx)
 	if err != nil {
-		return nil, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		err = tx.Rollback()
 		return nil, err
 	}
 
@@ -91,24 +80,13 @@ func (r *mutationResolver) ResolvePlayerSupervisionRequest(ctx context.Context, 
 		return false, err
 	}
 
-	tx, err := r.client.BeginTx(ctx, nil)
-	if err != nil {
-		return false, err
-	}
-
 	// if the request is rejected, we remove all approvals and delete the request
 	if !input.Approved {
-		err = deleteRequestAndApprovals(ctx, tx, input.RequestID)
+		err = deleteRequestAndApprovals(ctx, r.client, input.RequestID)
 	} else {
-		err = handleSupervisionRequestApproval(ctx, tx, u.ID, input.RequestID)
+		err = handleSupervisionRequestApproval(ctx, r.client, u.ID, input.RequestID)
 	}
 	if err != nil {
-		return false, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		err = tx.Rollback()
 		return false, err
 	}
 
