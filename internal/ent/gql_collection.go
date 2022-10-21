@@ -4,9 +4,13 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
+	"fmt"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/group"
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
@@ -41,8 +45,79 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 				path  = append(path, alias)
 				query = &GroupMembershipQuery{config: gr.config}
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			args := newGroupMembershipPaginateArgs(fieldArgs(ctx, new(GroupMembershipWhereInput), path...))
+			if err := validateFirstLast(args.first, args.last); err != nil {
+				return fmt.Errorf("validate first and last in path %q: %w", path, err)
+			}
+			pager, err := newGroupMembershipPager(args.opts)
+			if err != nil {
+				return fmt.Errorf("create new pager in path %q: %w", path, err)
+			}
+			if query, err = pager.applyFilter(query); err != nil {
 				return err
+			}
+			ignoredEdges := !hasCollectedField(ctx, append(path, edgesField)...)
+			if hasCollectedField(ctx, append(path, totalCountField)...) || hasCollectedField(ctx, append(path, pageInfoField)...) {
+				hasPagination := args.after != nil || args.first != nil || args.before != nil || args.last != nil
+				if hasPagination || ignoredEdges {
+					query := query.Clone()
+					gr.loadTotal = append(gr.loadTotal, func(ctx context.Context, nodes []*Group) error {
+						ids := make([]driver.Value, len(nodes))
+						for i := range nodes {
+							ids[i] = nodes[i].ID
+						}
+						var v []struct {
+							NodeID uuid.UUID `sql:"group_members"`
+							Count  int       `sql:"count"`
+						}
+						query.Where(func(s *sql.Selector) {
+							s.Where(sql.InValues(group.MembersColumn, ids...))
+						})
+						if err := query.GroupBy(group.MembersColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
+							return err
+						}
+						m := make(map[uuid.UUID]int, len(v))
+						for i := range v {
+							m[v[i].NodeID] = v[i].Count
+						}
+						for i := range nodes {
+							n := m[nodes[i].ID]
+							if nodes[i].Edges.totalCount[1] == nil {
+								nodes[i].Edges.totalCount[1] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[1][alias] = n
+						}
+						return nil
+					})
+				} else {
+					gr.loadTotal = append(gr.loadTotal, func(_ context.Context, nodes []*Group) error {
+						for i := range nodes {
+							n := len(nodes[i].Edges.Members)
+							if nodes[i].Edges.totalCount[1] == nil {
+								nodes[i].Edges.totalCount[1] = make(map[string]int)
+							}
+							nodes[i].Edges.totalCount[1][alias] = n
+						}
+						return nil
+					})
+				}
+			}
+			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
+				continue
+			}
+
+			query = pager.applyCursors(query, args.after, args.before)
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				modify := limitRows(group.MembersColumn, limit, pager.orderExpr(args.last != nil))
+				query.modifiers = append(query.modifiers, modify)
+			} else {
+				query = pager.applyOrder(query, args.last != nil)
+			}
+			path = append(path, edgesField, nodeField)
+			if field := collectedField(ctx, path...); field != nil {
+				if err := query.collectField(ctx, op, *field, path, satisfies...); err != nil {
+					return err
+				}
 			}
 			gr.WithNamedMembers(alias, func(wq *GroupMembershipQuery) {
 				*wq = *query

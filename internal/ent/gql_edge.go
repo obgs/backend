@@ -2,7 +2,11 @@
 
 package ent
 
-import "context"
+import (
+	"context"
+
+	"github.com/99designs/gqlgen/graphql"
+)
 
 func (gr *Group) Settings(ctx context.Context) (*GroupSettings, error) {
 	result, err := gr.Edges.SettingsOrErr()
@@ -12,12 +16,24 @@ func (gr *Group) Settings(ctx context.Context) (*GroupSettings, error) {
 	return result, err
 }
 
-func (gr *Group) Members(ctx context.Context) ([]*GroupMembership, error) {
-	result, err := gr.Edges.MembersOrErr()
-	if IsNotLoaded(err) {
-		result, err = gr.QueryMembers().All(ctx)
+func (gr *Group) Members(
+	ctx context.Context, after *Cursor, first *int, before *Cursor, last *int, where *GroupMembershipWhereInput,
+) (*GroupMembershipConnection, error) {
+	opts := []GroupMembershipPaginateOption{
+		WithGroupMembershipFilter(where.Filter),
 	}
-	return result, err
+	alias := graphql.GetFieldContext(ctx).Field.Alias
+	totalCount, hasTotalCount := gr.Edges.totalCount[1][alias]
+	if nodes, err := gr.NamedMembers(alias); err == nil || hasTotalCount {
+		pager, err := newGroupMembershipPager(opts)
+		if err != nil {
+			return nil, err
+		}
+		conn := &GroupMembershipConnection{Edges: []*GroupMembershipEdge{}, TotalCount: totalCount}
+		conn.build(nodes, pager, after, first, before, last)
+		return conn, nil
+	}
+	return gr.QueryMembers().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (gm *GroupMembership) Group(ctx context.Context) (*Group, error) {

@@ -36,7 +36,9 @@ func (Group) Edges() []ent.Edge {
 				entgql.MutationUpdate(),
 			),
 		),
-		edge.To("members", GroupMembership.Type),
+		edge.To("members", GroupMembership.Type).Annotations(
+			entgql.RelayConnection(),
+		),
 	}
 }
 
