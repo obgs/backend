@@ -13,3 +13,4 @@ S3_REGION: eu-east-1
 S3_ENDPOINT: http://localhost:9000
 S3_BUCKET: obgs-dev
 USING_MINIO: true
+ENT_DEBUG: true
