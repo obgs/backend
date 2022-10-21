@@ -10,8 +10,8 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
-	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 )
@@ -38,7 +38,7 @@ func (r *queryResolver) Groups(ctx context.Context, after *ent.Cursor, first *in
 				groupsettings.VisibilityEQ(groupsettings.VisibilityPublic),
 			)
 			if u != nil {
-				p = group.Or(p, group.HasMembersWith(predicate.GroupMembership(user.ID(u.ID))))
+				p = group.Or(p, group.HasMembersWith(groupmembership.HasUserWith(user.ID(u.ID))))
 			}
 
 			return q.Where(p), nil
