@@ -11,8 +11,8 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
-func deleteRequestAndApprovals(ctx context.Context, tx *ent.Tx, requestID uuid.UUID) error {
-	_, err := tx.PlayerSupervisionRequestApproval.Delete().Where(
+func deleteRequestAndApprovals(ctx context.Context, client *ent.Client, requestID uuid.UUID) error {
+	_, err := client.PlayerSupervisionRequestApproval.Delete().Where(
 		playersupervisionrequestapproval.HasSupervisionRequestWith(
 			playersupervisionrequest.ID(requestID),
 		),
@@ -21,7 +21,7 @@ func deleteRequestAndApprovals(ctx context.Context, tx *ent.Tx, requestID uuid.U
 		return err
 	}
 
-	_, err = tx.PlayerSupervisionRequest.Delete().Where(playersupervisionrequest.ID(requestID)).Exec(ctx)
+	_, err = client.PlayerSupervisionRequest.Delete().Where(playersupervisionrequest.ID(requestID)).Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -29,8 +29,8 @@ func deleteRequestAndApprovals(ctx context.Context, tx *ent.Tx, requestID uuid.U
 	return nil
 }
 
-func addSupervisor(ctx context.Context, tx *ent.Tx, requestID uuid.UUID) error {
-	request, err := tx.PlayerSupervisionRequest.Get(ctx, requestID)
+func addSupervisor(ctx context.Context, client *ent.Client, requestID uuid.UUID) error {
+	request, err := client.PlayerSupervisionRequest.Get(ctx, requestID)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func addSupervisor(ctx context.Context, tx *ent.Tx, requestID uuid.UUID) error {
 		return err
 	}
 
-	err = tx.Player.Update().Where(
+	err = client.Player.Update().Where(
 		player.HasSupervisionRequestsWith(
 			playersupervisionrequest.ID(requestID),
 		),
@@ -49,12 +49,12 @@ func addSupervisor(ctx context.Context, tx *ent.Tx, requestID uuid.UUID) error {
 		return err
 	}
 
-	return deleteRequestAndApprovals(ctx, tx, requestID)
+	return deleteRequestAndApprovals(ctx, client, requestID)
 }
 
-func handleSupervisionRequestApproval(ctx context.Context, tx *ent.Tx, approverID, requestID uuid.UUID) error {
+func handleSupervisionRequestApproval(ctx context.Context, client *ent.Client, approverID, requestID uuid.UUID) error {
 	// approve the request
-	_, err := tx.PlayerSupervisionRequestApproval.Update().Where(
+	_, err := client.PlayerSupervisionRequestApproval.Update().Where(
 		playersupervisionrequestapproval.HasSupervisionRequestWith(
 			playersupervisionrequest.ID(requestID),
 		),
@@ -67,7 +67,7 @@ func handleSupervisionRequestApproval(ctx context.Context, tx *ent.Tx, approverI
 	}
 
 	// check if all approvals are done
-	notApprovedCount, err := tx.PlayerSupervisionRequestApproval.Query().Where(
+	notApprovedCount, err := client.PlayerSupervisionRequestApproval.Query().Where(
 		playersupervisionrequestapproval.HasSupervisionRequestWith(
 			playersupervisionrequest.ID(requestID),
 		),
@@ -82,7 +82,7 @@ func handleSupervisionRequestApproval(ctx context.Context, tx *ent.Tx, approverI
 
 	// if all approvals are done, we add the new supervisor and delete the request
 	if notApprovedCount == 0 {
-		return addSupervisor(ctx, tx, requestID)
+		return addSupervisor(ctx, client, requestID)
 	}
 
 	return nil
