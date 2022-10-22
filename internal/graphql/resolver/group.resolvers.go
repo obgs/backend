@@ -9,9 +9,30 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
+	"github.com/open-boardgame-stats/backend/internal/ent/group"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
+
+// IsMember is the resolver for the isMember field.
+func (r *groupResolver) IsMember(ctx context.Context, obj *ent.Group) (bool, error) {
+	u, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return false, nil
+	}
+
+	membership, err := r.client.GroupMembership.Query().Where(
+		groupmembership.HasUserWith(user.ID(u.ID)),
+		groupmembership.HasGroupWith(group.ID(obj.ID)),
+	).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return false, err
+	}
+
+	return membership != nil, nil
+}
 
 // CreateGroup is the resolver for the createGroup field.
 func (r *mutationResolver) CreateGroup(ctx context.Context, input model.CreateGroupInput) (*ent.Group, error) {
