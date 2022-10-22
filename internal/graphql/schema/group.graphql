@@ -8,7 +8,10 @@ input CreateGroupInput {
 }
 
 extend type Group {
-  isMember: Boolean!
+  """
+  Role of the current user in the group
+  """
+  role: GroupMembershipRole
 }
 
 input GroupApplicationInput {

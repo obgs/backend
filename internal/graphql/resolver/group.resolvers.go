@@ -20,11 +20,11 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
 
-// IsMember is the resolver for the isMember field.
-func (r *groupResolver) IsMember(ctx context.Context, obj *ent.Group) (bool, error) {
-	u, err := auth.UserFromContext(ctx)
-	if err != nil {
-		return false, nil
+// Role is the resolver for the role field.
+func (r *groupResolver) Role(ctx context.Context, obj *ent.Group) (*enums.Role, error) {
+	u, _ := auth.UserFromContext(ctx)
+	if u == nil {
+		return nil, nil
 	}
 
 	membership, err := r.client.GroupMembership.Query().Where(
@@ -32,10 +32,13 @@ func (r *groupResolver) IsMember(ctx context.Context, obj *ent.Group) (bool, err
 		groupmembership.HasGroupWith(group.ID(obj.ID)),
 	).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
-		return false, err
+		return nil, err
+	}
+	if membership == nil {
+		return nil, nil
 	}
 
-	return membership != nil, nil
+	return &membership.Role, nil
 }
 
 // CreateGroup is the resolver for the createGroup field.
