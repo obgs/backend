@@ -6,3 +6,6 @@ tasks:
 
   apply_migration:
     - atlas migrate apply --dir file://internal/ent/migrate/migrations --url "postgresql://postgres:postgres@localhost:5432/obgs?sslmode=disable"
+
+  dump_schema:
+    - go run main.go dumpSchema > ../webapp/graphql/schema.json
