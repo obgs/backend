@@ -56,10 +56,10 @@ type ComplexityRoot struct {
 		Applications func(childComplexity int) int
 		Description  func(childComplexity int) int
 		ID           func(childComplexity int) int
-		IsMember     func(childComplexity int) int
 		LogoURL      func(childComplexity int) int
 		Members      func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.GroupMembershipWhereInput) int
 		Name         func(childComplexity int) int
+		Role         func(childComplexity int) int
 		Settings     func(childComplexity int) int
 	}
 
@@ -193,7 +193,7 @@ type ComplexityRoot struct {
 }
 
 type GroupResolver interface {
-	IsMember(ctx context.Context, obj *ent.Group) (bool, error)
+	Role(ctx context.Context, obj *ent.Group) (*enums.Role, error)
 }
 type MutationResolver interface {
 	CreateGroup(ctx context.Context, input model.CreateGroupInput) (*ent.Group, error)
@@ -254,13 +254,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Group.ID(childComplexity), true
 
-	case "Group.isMember":
-		if e.complexity.Group.IsMember == nil {
-			break
-		}
-
-		return e.complexity.Group.IsMember(childComplexity), true
-
 	case "Group.logoURL":
 		if e.complexity.Group.LogoURL == nil {
 			break
@@ -286,6 +279,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Group.Name(childComplexity), true
+
+	case "Group.role":
+		if e.complexity.Group.Role == nil {
+			break
+		}
+
+		return e.complexity.Group.Role(childComplexity), true
 
 	case "Group.settings":
 		if e.complexity.Group.Settings == nil {
@@ -1480,7 +1480,10 @@ input UserWhereInput {
 }
 
 extend type Group {
-  isMember: Boolean!
+  """
+  Role of the current user in the group
+  """
+  role: GroupMembershipRole
 }
 
 input GroupApplicationInput {
@@ -2285,8 +2288,8 @@ func (ec *executionContext) fieldContext_Group_applications(ctx context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Group_isMember(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Group_isMember(ctx, field)
+func (ec *executionContext) _Group_role(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Group_role(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2299,31 +2302,28 @@ func (ec *executionContext) _Group_isMember(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Group().IsMember(rctx, obj)
+		return ec.resolvers.Group().Role(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*enums.Role)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalOGroupMembershipRole2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋenumsᚐRole(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Group_isMember(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Group_role(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Group",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type GroupMembershipRole does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2524,8 +2524,8 @@ func (ec *executionContext) fieldContext_GroupEdge_node(ctx context.Context, fie
 				return ec.fieldContext_Group_members(ctx, field)
 			case "applications":
 				return ec.fieldContext_Group_applications(ctx, field)
-			case "isMember":
-				return ec.fieldContext_Group_isMember(ctx, field)
+			case "role":
+				return ec.fieldContext_Group_role(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -2718,8 +2718,8 @@ func (ec *executionContext) fieldContext_GroupMembership_group(ctx context.Conte
 				return ec.fieldContext_Group_members(ctx, field)
 			case "applications":
 				return ec.fieldContext_Group_applications(ctx, field)
-			case "isMember":
-				return ec.fieldContext_Group_isMember(ctx, field)
+			case "role":
+				return ec.fieldContext_Group_role(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -3000,8 +3000,8 @@ func (ec *executionContext) fieldContext_GroupMembershipApplication_group(ctx co
 				return ec.fieldContext_Group_members(ctx, field)
 			case "applications":
 				return ec.fieldContext_Group_applications(ctx, field)
-			case "isMember":
-				return ec.fieldContext_Group_isMember(ctx, field)
+			case "role":
+				return ec.fieldContext_Group_role(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -3495,8 +3495,8 @@ func (ec *executionContext) fieldContext_Mutation_createGroup(ctx context.Contex
 				return ec.fieldContext_Group_members(ctx, field)
 			case "applications":
 				return ec.fieldContext_Group_applications(ctx, field)
-			case "isMember":
-				return ec.fieldContext_Group_isMember(ctx, field)
+			case "role":
+				return ec.fieldContext_Group_role(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -10253,7 +10253,7 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 				return innerFunc(ctx)
 
 			})
-		case "isMember":
+		case "role":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -10262,10 +10262,7 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Group_isMember(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
+				res = ec._Group_role(ctx, field, obj)
 				return res
 			}
 
