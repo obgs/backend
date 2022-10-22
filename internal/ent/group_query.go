@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 )
@@ -21,17 +22,19 @@ import (
 // GroupQuery is the builder for querying Group entities.
 type GroupQuery struct {
 	config
-	limit            *int
-	offset           *int
-	unique           *bool
-	order            []OrderFunc
-	fields           []string
-	predicates       []predicate.Group
-	withSettings     *GroupSettingsQuery
-	withMembers      *GroupMembershipQuery
-	modifiers        []func(*sql.Selector)
-	loadTotal        []func(context.Context, []*Group) error
-	withNamedMembers map[string]*GroupMembershipQuery
+	limit                 *int
+	offset                *int
+	unique                *bool
+	order                 []OrderFunc
+	fields                []string
+	predicates            []predicate.Group
+	withSettings          *GroupSettingsQuery
+	withMembers           *GroupMembershipQuery
+	withApplications      *GroupMembershipApplicationQuery
+	modifiers             []func(*sql.Selector)
+	loadTotal             []func(context.Context, []*Group) error
+	withNamedMembers      map[string]*GroupMembershipQuery
+	withNamedApplications map[string]*GroupMembershipApplicationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -105,6 +108,28 @@ func (gq *GroupQuery) QueryMembers() *GroupMembershipQuery {
 			sqlgraph.From(group.Table, group.FieldID, selector),
 			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, group.MembersTable, group.MembersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryApplications chains the current query on the "applications" edge.
+func (gq *GroupQuery) QueryApplications() *GroupMembershipApplicationQuery {
+	query := &GroupMembershipApplicationQuery{config: gq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := gq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := gq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, selector),
+			sqlgraph.To(groupmembershipapplication.Table, groupmembershipapplication.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, group.ApplicationsTable, group.ApplicationsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
 		return fromU, nil
@@ -288,13 +313,14 @@ func (gq *GroupQuery) Clone() *GroupQuery {
 		return nil
 	}
 	return &GroupQuery{
-		config:       gq.config,
-		limit:        gq.limit,
-		offset:       gq.offset,
-		order:        append([]OrderFunc{}, gq.order...),
-		predicates:   append([]predicate.Group{}, gq.predicates...),
-		withSettings: gq.withSettings.Clone(),
-		withMembers:  gq.withMembers.Clone(),
+		config:           gq.config,
+		limit:            gq.limit,
+		offset:           gq.offset,
+		order:            append([]OrderFunc{}, gq.order...),
+		predicates:       append([]predicate.Group{}, gq.predicates...),
+		withSettings:     gq.withSettings.Clone(),
+		withMembers:      gq.withMembers.Clone(),
+		withApplications: gq.withApplications.Clone(),
 		// clone intermediate query.
 		sql:    gq.sql.Clone(),
 		path:   gq.path,
@@ -321,6 +347,17 @@ func (gq *GroupQuery) WithMembers(opts ...func(*GroupMembershipQuery)) *GroupQue
 		opt(query)
 	}
 	gq.withMembers = query
+	return gq
+}
+
+// WithApplications tells the query-builder to eager-load the nodes that are connected to
+// the "applications" edge. The optional arguments are used to configure the query builder of the edge.
+func (gq *GroupQuery) WithApplications(opts ...func(*GroupMembershipApplicationQuery)) *GroupQuery {
+	query := &GroupMembershipApplicationQuery{config: gq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	gq.withApplications = query
 	return gq
 }
 
@@ -392,9 +429,10 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 	var (
 		nodes       = []*Group{}
 		_spec       = gq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			gq.withSettings != nil,
 			gq.withMembers != nil,
+			gq.withApplications != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -431,10 +469,24 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 			return nil, err
 		}
 	}
+	if query := gq.withApplications; query != nil {
+		if err := gq.loadApplications(ctx, query, nodes,
+			func(n *Group) { n.Edges.Applications = []*GroupMembershipApplication{} },
+			func(n *Group, e *GroupMembershipApplication) { n.Edges.Applications = append(n.Edges.Applications, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range gq.withNamedMembers {
 		if err := gq.loadMembers(ctx, query, nodes,
 			func(n *Group) { n.appendNamedMembers(name) },
 			func(n *Group, e *GroupMembership) { n.appendNamedMembers(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range gq.withNamedApplications {
+		if err := gq.loadApplications(ctx, query, nodes,
+			func(n *Group) { n.appendNamedApplications(name) },
+			func(n *Group, e *GroupMembershipApplication) { n.appendNamedApplications(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -502,6 +554,64 @@ func (gq *GroupQuery) loadMembers(ctx context.Context, query *GroupMembershipQue
 			return fmt.Errorf(`unexpected foreign-key "group_members" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
+	}
+	return nil
+}
+func (gq *GroupQuery) loadApplications(ctx context.Context, query *GroupMembershipApplicationQuery, nodes []*Group, init func(*Group), assign func(*Group, *GroupMembershipApplication)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Group)
+	nids := make(map[uuid.UUID]map[*Group]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(group.ApplicationsTable)
+		s.Join(joinT).On(s.C(groupmembershipapplication.FieldID), joinT.C(group.ApplicationsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(group.ApplicationsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(group.ApplicationsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]interface{}, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]interface{}{new(uuid.UUID)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []interface{}) error {
+			outValue := *values[0].(*uuid.UUID)
+			inValue := *values[1].(*uuid.UUID)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*Group]struct{}{byID[outValue]: struct{}{}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "applications" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }
@@ -617,6 +727,20 @@ func (gq *GroupQuery) WithNamedMembers(name string, opts ...func(*GroupMembershi
 		gq.withNamedMembers = make(map[string]*GroupMembershipQuery)
 	}
 	gq.withNamedMembers[name] = query
+	return gq
+}
+
+// WithNamedApplications tells the query-builder to eager-load the nodes that are connected to the "applications"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (gq *GroupQuery) WithNamedApplications(name string, opts ...func(*GroupMembershipApplicationQuery)) *GroupQuery {
+	query := &GroupMembershipApplicationQuery{config: gq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if gq.withNamedApplications == nil {
+		gq.withNamedApplications = make(map[string]*GroupMembershipApplicationQuery)
+	}
+	gq.withNamedApplications[name] = query
 	return gq
 }
 

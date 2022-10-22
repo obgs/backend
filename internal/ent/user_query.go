@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -34,12 +35,14 @@ type UserQuery struct {
 	withSentSupervisionRequests          *PlayerSupervisionRequestQuery
 	withSupervisionRequestApprovals      *PlayerSupervisionRequestApprovalQuery
 	withGroupMemberships                 *GroupMembershipQuery
+	withGroupMembershipApplications      *GroupMembershipApplicationQuery
 	modifiers                            []func(*sql.Selector)
 	loadTotal                            []func(context.Context, []*User) error
 	withNamedPlayers                     map[string]*PlayerQuery
 	withNamedSentSupervisionRequests     map[string]*PlayerSupervisionRequestQuery
 	withNamedSupervisionRequestApprovals map[string]*PlayerSupervisionRequestApprovalQuery
 	withNamedGroupMemberships            map[string]*GroupMembershipQuery
+	withNamedGroupMembershipApplications map[string]*GroupMembershipApplicationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -179,6 +182,28 @@ func (uq *UserQuery) QueryGroupMemberships() *GroupMembershipQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.GroupMembershipsTable, user.GroupMembershipsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGroupMembershipApplications chains the current query on the "group_membership_applications" edge.
+func (uq *UserQuery) QueryGroupMembershipApplications() *GroupMembershipApplicationQuery {
+	query := &GroupMembershipApplicationQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(groupmembershipapplication.Table, groupmembershipapplication.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.GroupMembershipApplicationsTable, user.GroupMembershipApplicationsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -372,6 +397,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 		withSentSupervisionRequests:     uq.withSentSupervisionRequests.Clone(),
 		withSupervisionRequestApprovals: uq.withSupervisionRequestApprovals.Clone(),
 		withGroupMemberships:            uq.withGroupMemberships.Clone(),
+		withGroupMembershipApplications: uq.withGroupMembershipApplications.Clone(),
 		// clone intermediate query.
 		sql:    uq.sql.Clone(),
 		path:   uq.path,
@@ -431,6 +457,17 @@ func (uq *UserQuery) WithGroupMemberships(opts ...func(*GroupMembershipQuery)) *
 		opt(query)
 	}
 	uq.withGroupMemberships = query
+	return uq
+}
+
+// WithGroupMembershipApplications tells the query-builder to eager-load the nodes that are connected to
+// the "group_membership_applications" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithGroupMembershipApplications(opts ...func(*GroupMembershipApplicationQuery)) *UserQuery {
+	query := &GroupMembershipApplicationQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withGroupMembershipApplications = query
 	return uq
 }
 
@@ -502,12 +539,13 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			uq.withPlayers != nil,
 			uq.withMainPlayer != nil,
 			uq.withSentSupervisionRequests != nil,
 			uq.withSupervisionRequestApprovals != nil,
 			uq.withGroupMemberships != nil,
+			uq.withGroupMembershipApplications != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -569,6 +607,15 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := uq.withGroupMembershipApplications; query != nil {
+		if err := uq.loadGroupMembershipApplications(ctx, query, nodes,
+			func(n *User) { n.Edges.GroupMembershipApplications = []*GroupMembershipApplication{} },
+			func(n *User, e *GroupMembershipApplication) {
+				n.Edges.GroupMembershipApplications = append(n.Edges.GroupMembershipApplications, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range uq.withNamedPlayers {
 		if err := uq.loadPlayers(ctx, query, nodes,
 			func(n *User) { n.appendNamedPlayers(name) },
@@ -594,6 +641,13 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadGroupMemberships(ctx, query, nodes,
 			func(n *User) { n.appendNamedGroupMemberships(name) },
 			func(n *User, e *GroupMembership) { n.appendNamedGroupMemberships(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range uq.withNamedGroupMembershipApplications {
+		if err := uq.loadGroupMembershipApplications(ctx, query, nodes,
+			func(n *User) { n.appendNamedGroupMembershipApplications(name) },
+			func(n *User, e *GroupMembershipApplication) { n.appendNamedGroupMembershipApplications(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -784,6 +838,64 @@ func (uq *UserQuery) loadGroupMemberships(ctx context.Context, query *GroupMembe
 	}
 	return nil
 }
+func (uq *UserQuery) loadGroupMembershipApplications(ctx context.Context, query *GroupMembershipApplicationQuery, nodes []*User, init func(*User), assign func(*User, *GroupMembershipApplication)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*User)
+	nids := make(map[uuid.UUID]map[*User]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(user.GroupMembershipApplicationsTable)
+		s.Join(joinT).On(s.C(groupmembershipapplication.FieldID), joinT.C(user.GroupMembershipApplicationsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(user.GroupMembershipApplicationsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(user.GroupMembershipApplicationsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]interface{}, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]interface{}{new(uuid.UUID)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []interface{}) error {
+			outValue := *values[0].(*uuid.UUID)
+			inValue := *values[1].(*uuid.UUID)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*User]struct{}{byID[outValue]: struct{}{}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "group_membership_applications" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
 
 func (uq *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := uq.querySpec()
@@ -938,6 +1050,20 @@ func (uq *UserQuery) WithNamedGroupMemberships(name string, opts ...func(*GroupM
 		uq.withNamedGroupMemberships = make(map[string]*GroupMembershipQuery)
 	}
 	uq.withNamedGroupMemberships[name] = query
+	return uq
+}
+
+// WithNamedGroupMembershipApplications tells the query-builder to eager-load the nodes that are connected to the "group_membership_applications"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithNamedGroupMembershipApplications(name string, opts ...func(*GroupMembershipApplicationQuery)) *UserQuery {
+	query := &GroupMembershipApplicationQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if uq.withNamedGroupMembershipApplications == nil {
+		uq.withNamedGroupMembershipApplications = make(map[string]*GroupMembershipApplicationQuery)
+	}
+	uq.withNamedGroupMembershipApplications[name] = query
 	return uq
 }
 

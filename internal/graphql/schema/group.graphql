@@ -11,6 +11,14 @@ extend type Group {
   isMember: Boolean!
 }
 
+input GroupApplicationInput {
+  groupId: ID!
+  message: String
+}
+
 extend type Mutation {
   createGroup(input: CreateGroupInput!): Group! @authenticated
+  joinGroup(groupId: ID!): Boolean! @authenticated
+  applyToGroup(input: GroupApplicationInput!): GroupMembershipApplication!
+    @authenticated
 }

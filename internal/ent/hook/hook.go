@@ -35,6 +35,19 @@ func (f GroupMembershipFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return f(ctx, mv)
 }
 
+// The GroupMembershipApplicationFunc type is an adapter to allow the use of ordinary
+// function as GroupMembershipApplication mutator.
+type GroupMembershipApplicationFunc func(context.Context, *ent.GroupMembershipApplicationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GroupMembershipApplicationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.GroupMembershipApplicationMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMembershipApplicationMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The GroupSettingsFunc type is an adapter to allow the use of ordinary
 // function as GroupSettings mutator.
 type GroupSettingsFunc func(context.Context, *ent.GroupSettingsMutation) (ent.Value, error)

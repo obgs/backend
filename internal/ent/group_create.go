@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 )
 
@@ -86,6 +87,21 @@ func (gc *GroupCreate) AddMembers(g ...*GroupMembership) *GroupCreate {
 		ids[i] = g[i].ID
 	}
 	return gc.AddMemberIDs(ids...)
+}
+
+// AddApplicationIDs adds the "applications" edge to the GroupMembershipApplication entity by IDs.
+func (gc *GroupCreate) AddApplicationIDs(ids ...uuid.UUID) *GroupCreate {
+	gc.mutation.AddApplicationIDs(ids...)
+	return gc
+}
+
+// AddApplications adds the "applications" edges to the GroupMembershipApplication entity.
+func (gc *GroupCreate) AddApplications(g ...*GroupMembershipApplication) *GroupCreate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return gc.AddApplicationIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -289,6 +305,25 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: groupmembership.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := gc.mutation.ApplicationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   group.ApplicationsTable,
+			Columns: group.ApplicationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembershipapplication.FieldID,
 				},
 			},
 		}

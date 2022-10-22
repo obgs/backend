@@ -34,13 +34,16 @@ type GroupEdges struct {
 	Settings *GroupSettings `json:"settings,omitempty"`
 	// Members holds the value of the members edge.
 	Members []*GroupMembership `json:"members,omitempty"`
+	// Applications holds the value of the applications edge.
+	Applications []*GroupMembershipApplication `json:"applications,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]map[string]int
+	totalCount [3]map[string]int
 
-	namedMembers map[string][]*GroupMembership
+	namedMembers      map[string][]*GroupMembership
+	namedApplications map[string][]*GroupMembershipApplication
 }
 
 // SettingsOrErr returns the Settings value or an error if the edge
@@ -63,6 +66,15 @@ func (e GroupEdges) MembersOrErr() ([]*GroupMembership, error) {
 		return e.Members, nil
 	}
 	return nil, &NotLoadedError{edge: "members"}
+}
+
+// ApplicationsOrErr returns the Applications value or an error if the edge
+// was not loaded in eager-loading.
+func (e GroupEdges) ApplicationsOrErr() ([]*GroupMembershipApplication, error) {
+	if e.loadedTypes[2] {
+		return e.Applications, nil
+	}
+	return nil, &NotLoadedError{edge: "applications"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -128,6 +140,11 @@ func (gr *Group) QueryMembers() *GroupMembershipQuery {
 	return (&GroupClient{config: gr.config}).QueryMembers(gr)
 }
 
+// QueryApplications queries the "applications" edge of the Group entity.
+func (gr *Group) QueryApplications() *GroupMembershipApplicationQuery {
+	return (&GroupClient{config: gr.config}).QueryApplications(gr)
+}
+
 // Update returns a builder for updating this Group.
 // Note that you need to call Group.Unwrap() before calling this method if this Group
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -184,6 +201,30 @@ func (gr *Group) appendNamedMembers(name string, edges ...*GroupMembership) {
 		gr.Edges.namedMembers[name] = []*GroupMembership{}
 	} else {
 		gr.Edges.namedMembers[name] = append(gr.Edges.namedMembers[name], edges...)
+	}
+}
+
+// NamedApplications returns the Applications named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (gr *Group) NamedApplications(name string) ([]*GroupMembershipApplication, error) {
+	if gr.Edges.namedApplications == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := gr.Edges.namedApplications[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (gr *Group) appendNamedApplications(name string, edges ...*GroupMembershipApplication) {
+	if gr.Edges.namedApplications == nil {
+		gr.Edges.namedApplications = make(map[string][]*GroupMembershipApplication)
+	}
+	if len(edges) == 0 {
+		gr.Edges.namedApplications[name] = []*GroupMembershipApplication{}
+	} else {
+		gr.Edges.namedApplications[name] = append(gr.Edges.namedApplications[name], edges...)
 	}
 }
 

@@ -21,6 +21,11 @@ type CreatePlayerInput struct {
 	Name string `json:"name"`
 }
 
+type GroupApplicationInput struct {
+	GroupID uuid.UUID `json:"groupId"`
+	Message *string   `json:"message"`
+}
+
 type RequestPlayerSupervisionInput struct {
 	PlayerID uuid.UUID `json:"playerId"`
 	Message  *string   `json:"message"`

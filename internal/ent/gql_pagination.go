@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
@@ -707,6 +708,237 @@ func (gm *GroupMembership) ToEdge(order *GroupMembershipOrder) *GroupMembershipE
 	return &GroupMembershipEdge{
 		Node:   gm,
 		Cursor: order.Field.toCursor(gm),
+	}
+}
+
+// GroupMembershipApplicationEdge is the edge representation of GroupMembershipApplication.
+type GroupMembershipApplicationEdge struct {
+	Node   *GroupMembershipApplication `json:"node"`
+	Cursor Cursor                      `json:"cursor"`
+}
+
+// GroupMembershipApplicationConnection is the connection containing edges to GroupMembershipApplication.
+type GroupMembershipApplicationConnection struct {
+	Edges      []*GroupMembershipApplicationEdge `json:"edges"`
+	PageInfo   PageInfo                          `json:"pageInfo"`
+	TotalCount int                               `json:"totalCount"`
+}
+
+func (c *GroupMembershipApplicationConnection) build(nodes []*GroupMembershipApplication, pager *groupmembershipapplicationPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *GroupMembershipApplication
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *GroupMembershipApplication {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *GroupMembershipApplication {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*GroupMembershipApplicationEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &GroupMembershipApplicationEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// GroupMembershipApplicationPaginateOption enables pagination customization.
+type GroupMembershipApplicationPaginateOption func(*groupmembershipapplicationPager) error
+
+// WithGroupMembershipApplicationOrder configures pagination ordering.
+func WithGroupMembershipApplicationOrder(order *GroupMembershipApplicationOrder) GroupMembershipApplicationPaginateOption {
+	if order == nil {
+		order = DefaultGroupMembershipApplicationOrder
+	}
+	o := *order
+	return func(pager *groupmembershipapplicationPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultGroupMembershipApplicationOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithGroupMembershipApplicationFilter configures pagination filter.
+func WithGroupMembershipApplicationFilter(filter func(*GroupMembershipApplicationQuery) (*GroupMembershipApplicationQuery, error)) GroupMembershipApplicationPaginateOption {
+	return func(pager *groupmembershipapplicationPager) error {
+		if filter == nil {
+			return errors.New("GroupMembershipApplicationQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type groupmembershipapplicationPager struct {
+	order  *GroupMembershipApplicationOrder
+	filter func(*GroupMembershipApplicationQuery) (*GroupMembershipApplicationQuery, error)
+}
+
+func newGroupMembershipApplicationPager(opts []GroupMembershipApplicationPaginateOption) (*groupmembershipapplicationPager, error) {
+	pager := &groupmembershipapplicationPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultGroupMembershipApplicationOrder
+	}
+	return pager, nil
+}
+
+func (p *groupmembershipapplicationPager) applyFilter(query *GroupMembershipApplicationQuery) (*GroupMembershipApplicationQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *groupmembershipapplicationPager) toCursor(gma *GroupMembershipApplication) Cursor {
+	return p.order.Field.toCursor(gma)
+}
+
+func (p *groupmembershipapplicationPager) applyCursors(query *GroupMembershipApplicationQuery, after, before *Cursor) *GroupMembershipApplicationQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultGroupMembershipApplicationOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *groupmembershipapplicationPager) applyOrder(query *GroupMembershipApplicationQuery, reverse bool) *GroupMembershipApplicationQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultGroupMembershipApplicationOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultGroupMembershipApplicationOrder.Field.field))
+	}
+	return query
+}
+
+func (p *groupmembershipapplicationPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultGroupMembershipApplicationOrder.Field {
+			b.Comma().Ident(DefaultGroupMembershipApplicationOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to GroupMembershipApplication.
+func (gma *GroupMembershipApplicationQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...GroupMembershipApplicationPaginateOption,
+) (*GroupMembershipApplicationConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newGroupMembershipApplicationPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if gma, err = pager.applyFilter(gma); err != nil {
+		return nil, err
+	}
+	conn := &GroupMembershipApplicationConnection{Edges: []*GroupMembershipApplicationEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			if conn.TotalCount, err = gma.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+
+	gma = pager.applyCursors(gma, after, before)
+	gma = pager.applyOrder(gma, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		gma.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := gma.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := gma.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// GroupMembershipApplicationOrderField defines the ordering field of GroupMembershipApplication.
+type GroupMembershipApplicationOrderField struct {
+	field    string
+	toCursor func(*GroupMembershipApplication) Cursor
+}
+
+// GroupMembershipApplicationOrder defines the ordering of GroupMembershipApplication.
+type GroupMembershipApplicationOrder struct {
+	Direction OrderDirection                        `json:"direction"`
+	Field     *GroupMembershipApplicationOrderField `json:"field"`
+}
+
+// DefaultGroupMembershipApplicationOrder is the default ordering of GroupMembershipApplication.
+var DefaultGroupMembershipApplicationOrder = &GroupMembershipApplicationOrder{
+	Direction: OrderDirectionAsc,
+	Field: &GroupMembershipApplicationOrderField{
+		field: groupmembershipapplication.FieldID,
+		toCursor: func(gma *GroupMembershipApplication) Cursor {
+			return Cursor{ID: gma.ID}
+		},
+	},
+}
+
+// ToEdge converts GroupMembershipApplication into GroupMembershipApplicationEdge.
+func (gma *GroupMembershipApplication) ToEdge(order *GroupMembershipApplicationOrder) *GroupMembershipApplicationEdge {
+	if order == nil {
+		order = DefaultGroupMembershipApplicationOrder
+	}
+	return &GroupMembershipApplicationEdge{
+		Node:   gma,
+		Cursor: order.Field.toCursor(gma),
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -151,6 +152,21 @@ func (uu *UserUpdate) AddGroupMemberships(g ...*GroupMembership) *UserUpdate {
 	return uu.AddGroupMembershipIDs(ids...)
 }
 
+// AddGroupMembershipApplicationIDs adds the "group_membership_applications" edge to the GroupMembershipApplication entity by IDs.
+func (uu *UserUpdate) AddGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddGroupMembershipApplicationIDs(ids...)
+	return uu
+}
+
+// AddGroupMembershipApplications adds the "group_membership_applications" edges to the GroupMembershipApplication entity.
+func (uu *UserUpdate) AddGroupMembershipApplications(g ...*GroupMembershipApplication) *UserUpdate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uu.AddGroupMembershipApplicationIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -244,6 +260,27 @@ func (uu *UserUpdate) RemoveGroupMemberships(g ...*GroupMembership) *UserUpdate 
 		ids[i] = g[i].ID
 	}
 	return uu.RemoveGroupMembershipIDs(ids...)
+}
+
+// ClearGroupMembershipApplications clears all "group_membership_applications" edges to the GroupMembershipApplication entity.
+func (uu *UserUpdate) ClearGroupMembershipApplications() *UserUpdate {
+	uu.mutation.ClearGroupMembershipApplications()
+	return uu
+}
+
+// RemoveGroupMembershipApplicationIDs removes the "group_membership_applications" edge to GroupMembershipApplication entities by IDs.
+func (uu *UserUpdate) RemoveGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemoveGroupMembershipApplicationIDs(ids...)
+	return uu
+}
+
+// RemoveGroupMembershipApplications removes "group_membership_applications" edges to GroupMembershipApplication entities.
+func (uu *UserUpdate) RemoveGroupMembershipApplications(g ...*GroupMembershipApplication) *UserUpdate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uu.RemoveGroupMembershipApplicationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -618,6 +655,60 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.GroupMembershipApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.GroupMembershipApplicationsTable,
+			Columns: user.GroupMembershipApplicationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembershipapplication.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedGroupMembershipApplicationsIDs(); len(nodes) > 0 && !uu.mutation.GroupMembershipApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.GroupMembershipApplicationsTable,
+			Columns: user.GroupMembershipApplicationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembershipapplication.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.GroupMembershipApplicationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.GroupMembershipApplicationsTable,
+			Columns: user.GroupMembershipApplicationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembershipapplication.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -756,6 +847,21 @@ func (uuo *UserUpdateOne) AddGroupMemberships(g ...*GroupMembership) *UserUpdate
 	return uuo.AddGroupMembershipIDs(ids...)
 }
 
+// AddGroupMembershipApplicationIDs adds the "group_membership_applications" edge to the GroupMembershipApplication entity by IDs.
+func (uuo *UserUpdateOne) AddGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddGroupMembershipApplicationIDs(ids...)
+	return uuo
+}
+
+// AddGroupMembershipApplications adds the "group_membership_applications" edges to the GroupMembershipApplication entity.
+func (uuo *UserUpdateOne) AddGroupMembershipApplications(g ...*GroupMembershipApplication) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uuo.AddGroupMembershipApplicationIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -849,6 +955,27 @@ func (uuo *UserUpdateOne) RemoveGroupMemberships(g ...*GroupMembership) *UserUpd
 		ids[i] = g[i].ID
 	}
 	return uuo.RemoveGroupMembershipIDs(ids...)
+}
+
+// ClearGroupMembershipApplications clears all "group_membership_applications" edges to the GroupMembershipApplication entity.
+func (uuo *UserUpdateOne) ClearGroupMembershipApplications() *UserUpdateOne {
+	uuo.mutation.ClearGroupMembershipApplications()
+	return uuo
+}
+
+// RemoveGroupMembershipApplicationIDs removes the "group_membership_applications" edge to GroupMembershipApplication entities by IDs.
+func (uuo *UserUpdateOne) RemoveGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemoveGroupMembershipApplicationIDs(ids...)
+	return uuo
+}
+
+// RemoveGroupMembershipApplications removes "group_membership_applications" edges to GroupMembershipApplication entities.
+func (uuo *UserUpdateOne) RemoveGroupMembershipApplications(g ...*GroupMembershipApplication) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uuo.RemoveGroupMembershipApplicationIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -1245,6 +1372,60 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: groupmembership.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.GroupMembershipApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.GroupMembershipApplicationsTable,
+			Columns: user.GroupMembershipApplicationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembershipapplication.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedGroupMembershipApplicationsIDs(); len(nodes) > 0 && !uuo.mutation.GroupMembershipApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.GroupMembershipApplicationsTable,
+			Columns: user.GroupMembershipApplicationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembershipapplication.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.GroupMembershipApplicationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.GroupMembershipApplicationsTable,
+			Columns: user.GroupMembershipApplicationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembershipapplication.FieldID,
 				},
 			},
 		}
