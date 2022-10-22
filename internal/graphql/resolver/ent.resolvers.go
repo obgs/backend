@@ -56,13 +56,15 @@ func (r *queryResolver) Users(ctx context.Context, after *ent.Cursor, first *int
 	return r.client.User.Query().Paginate(ctx, after, first, before, last)
 }
 
+// Group returns generated.GroupResolver implementation.
+func (r *Resolver) Group() generated.GroupResolver { return &groupResolver{r} }
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 // User returns generated.UserResolver implementation.
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
-type (
-	queryResolver struct{ *Resolver }
-	userResolver  struct{ *Resolver }
-)
+type groupResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }

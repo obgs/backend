@@ -7,6 +7,10 @@ input CreateGroupInput {
   minimumRoleToInvite: GroupMembershipRole
 }
 
+extend type Group {
+  isMember: Boolean!
+}
+
 extend type Mutation {
   createGroup(input: CreateGroupInput!): Group! @authenticated
 }
