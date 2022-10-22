@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -155,6 +156,21 @@ func (uc *UserCreate) AddGroupMemberships(g ...*GroupMembership) *UserCreate {
 		ids[i] = g[i].ID
 	}
 	return uc.AddGroupMembershipIDs(ids...)
+}
+
+// AddGroupMembershipApplicationIDs adds the "group_membership_applications" edge to the GroupMembershipApplication entity by IDs.
+func (uc *UserCreate) AddGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddGroupMembershipApplicationIDs(ids...)
+	return uc
+}
+
+// AddGroupMembershipApplications adds the "group_membership_applications" edges to the GroupMembershipApplication entity.
+func (uc *UserCreate) AddGroupMembershipApplications(g ...*GroupMembershipApplication) *UserCreate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uc.AddGroupMembershipApplicationIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -427,6 +443,25 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: groupmembership.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.GroupMembershipApplicationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.GroupMembershipApplicationsTable,
+			Columns: user.GroupMembershipApplicationsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: groupmembershipapplication.FieldID,
 				},
 			},
 		}

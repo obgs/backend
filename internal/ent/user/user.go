@@ -29,6 +29,8 @@ const (
 	EdgeSupervisionRequestApprovals = "supervision_request_approvals"
 	// EdgeGroupMemberships holds the string denoting the group_memberships edge name in mutations.
 	EdgeGroupMemberships = "group_memberships"
+	// EdgeGroupMembershipApplications holds the string denoting the group_membership_applications edge name in mutations.
+	EdgeGroupMembershipApplications = "group_membership_applications"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PlayersTable is the table that holds the players relation/edge. The primary key declared below.
@@ -64,6 +66,11 @@ const (
 	GroupMembershipsInverseTable = "group_memberships"
 	// GroupMembershipsColumn is the table column denoting the group_memberships relation/edge.
 	GroupMembershipsColumn = "user_group_memberships"
+	// GroupMembershipApplicationsTable is the table that holds the group_membership_applications relation/edge. The primary key declared below.
+	GroupMembershipApplicationsTable = "user_group_membership_applications"
+	// GroupMembershipApplicationsInverseTable is the table name for the GroupMembershipApplication entity.
+	// It exists in this package in order to avoid circular dependency with the "groupmembershipapplication" package.
+	GroupMembershipApplicationsInverseTable = "group_membership_applications"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -79,6 +86,9 @@ var (
 	// PlayersPrimaryKey and PlayersColumn2 are the table columns denoting the
 	// primary key for the players relation (M2M).
 	PlayersPrimaryKey = []string{"user_id", "player_id"}
+	// GroupMembershipApplicationsPrimaryKey and GroupMembershipApplicationsColumn2 are the table columns denoting the
+	// primary key for the group_membership_applications relation (M2M).
+	GroupMembershipApplicationsPrimaryKey = []string{"user_id", "group_membership_application_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

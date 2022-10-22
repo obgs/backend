@@ -122,6 +122,18 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 			gr.WithNamedMembers(alias, func(wq *GroupMembershipQuery) {
 				*wq = *query
 			})
+		case "applications":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &GroupMembershipApplicationQuery{config: gr.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			gr.WithNamedApplications(alias, func(wq *GroupMembershipApplicationQuery) {
+				*wq = *query
+			})
 		}
 	}
 	return nil
@@ -222,6 +234,77 @@ func newGroupMembershipPaginateArgs(rv map[string]interface{}) *groupmembershipP
 	}
 	if v, ok := rv[whereField].(*GroupMembershipWhereInput); ok {
 		args.opts = append(args.opts, WithGroupMembershipFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (gma *GroupMembershipApplicationQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupMembershipApplicationQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return gma, nil
+	}
+	if err := gma.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return gma, nil
+}
+
+func (gma *GroupMembershipApplicationQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &UserQuery{config: gma.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			gma.WithNamedUser(alias, func(wq *UserQuery) {
+				*wq = *query
+			})
+		case "group":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &GroupQuery{config: gma.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			gma.WithNamedGroup(alias, func(wq *GroupQuery) {
+				*wq = *query
+			})
+		}
+	}
+	return nil
+}
+
+type groupmembershipapplicationPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []GroupMembershipApplicationPaginateOption
+}
+
+func newGroupMembershipApplicationPaginateArgs(rv map[string]interface{}) *groupmembershipapplicationPaginateArgs {
+	args := &groupmembershipapplicationPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
 	}
 	return args
 }
@@ -556,6 +639,18 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			u.WithNamedGroupMemberships(alias, func(wq *GroupMembershipQuery) {
+				*wq = *query
+			})
+		case "groupMembershipApplications", "group_membership_applications":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &GroupMembershipApplicationQuery{config: u.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			u.WithNamedGroupMembershipApplications(alias, func(wq *GroupMembershipApplicationQuery) {
 				*wq = *query
 			})
 		}

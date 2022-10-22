@@ -21,6 +21,8 @@ const (
 	EdgeSettings = "settings"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
 	EdgeMembers = "members"
+	// EdgeApplications holds the string denoting the applications edge name in mutations.
+	EdgeApplications = "applications"
 	// Table holds the table name of the group in the database.
 	Table = "groups"
 	// SettingsTable is the table that holds the settings relation/edge.
@@ -37,6 +39,11 @@ const (
 	MembersInverseTable = "group_memberships"
 	// MembersColumn is the table column denoting the members relation/edge.
 	MembersColumn = "group_members"
+	// ApplicationsTable is the table that holds the applications relation/edge. The primary key declared below.
+	ApplicationsTable = "group_applications"
+	// ApplicationsInverseTable is the table name for the GroupMembershipApplication entity.
+	// It exists in this package in order to avoid circular dependency with the "groupmembershipapplication" package.
+	ApplicationsInverseTable = "group_membership_applications"
 )
 
 // Columns holds all SQL columns for group fields.
@@ -46,6 +53,12 @@ var Columns = []string{
 	FieldDescription,
 	FieldLogoURL,
 }
+
+var (
+	// ApplicationsPrimaryKey and ApplicationsColumn2 are the table columns denoting the
+	// primary key for the applications relation (M2M).
+	ApplicationsPrimaryKey = []string{"group_id", "group_membership_application_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

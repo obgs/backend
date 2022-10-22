@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
@@ -33,6 +34,8 @@ type Client struct {
 	Group *GroupClient
 	// GroupMembership is the client for interacting with the GroupMembership builders.
 	GroupMembership *GroupMembershipClient
+	// GroupMembershipApplication is the client for interacting with the GroupMembershipApplication builders.
+	GroupMembershipApplication *GroupMembershipApplicationClient
 	// GroupSettings is the client for interacting with the GroupSettings builders.
 	GroupSettings *GroupSettingsClient
 	// Player is the client for interacting with the Player builders.
@@ -58,6 +61,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Group = NewGroupClient(c.config)
 	c.GroupMembership = NewGroupMembershipClient(c.config)
+	c.GroupMembershipApplication = NewGroupMembershipApplicationClient(c.config)
 	c.GroupSettings = NewGroupSettingsClient(c.config)
 	c.Player = NewPlayerClient(c.config)
 	c.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(c.config)
@@ -98,6 +102,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		config:                           cfg,
 		Group:                            NewGroupClient(cfg),
 		GroupMembership:                  NewGroupMembershipClient(cfg),
+		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
 		GroupSettings:                    NewGroupSettingsClient(cfg),
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
@@ -124,6 +129,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		config:                           cfg,
 		Group:                            NewGroupClient(cfg),
 		GroupMembership:                  NewGroupMembershipClient(cfg),
+		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
 		GroupSettings:                    NewGroupSettingsClient(cfg),
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
@@ -159,6 +165,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	c.Group.Use(hooks...)
 	c.GroupMembership.Use(hooks...)
+	c.GroupMembershipApplication.Use(hooks...)
 	c.GroupSettings.Use(hooks...)
 	c.Player.Use(hooks...)
 	c.PlayerSupervisionRequest.Use(hooks...)
@@ -276,6 +283,22 @@ func (c *GroupClient) QueryMembers(gr *Group) *GroupMembershipQuery {
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, group.MembersTable, group.MembersColumn),
+		)
+		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApplications queries the applications edge of a Group.
+func (c *GroupClient) QueryApplications(gr *Group) *GroupMembershipApplicationQuery {
+	query := &GroupMembershipApplicationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := gr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(groupmembershipapplication.Table, groupmembershipapplication.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, group.ApplicationsTable, group.ApplicationsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
 		return fromV, nil
@@ -408,6 +431,128 @@ func (c *GroupMembershipClient) QueryUser(gm *GroupMembership) *UserQuery {
 // Hooks returns the client hooks.
 func (c *GroupMembershipClient) Hooks() []Hook {
 	return c.hooks.GroupMembership
+}
+
+// GroupMembershipApplicationClient is a client for the GroupMembershipApplication schema.
+type GroupMembershipApplicationClient struct {
+	config
+}
+
+// NewGroupMembershipApplicationClient returns a client for the GroupMembershipApplication from the given config.
+func NewGroupMembershipApplicationClient(c config) *GroupMembershipApplicationClient {
+	return &GroupMembershipApplicationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `groupmembershipapplication.Hooks(f(g(h())))`.
+func (c *GroupMembershipApplicationClient) Use(hooks ...Hook) {
+	c.hooks.GroupMembershipApplication = append(c.hooks.GroupMembershipApplication, hooks...)
+}
+
+// Create returns a builder for creating a GroupMembershipApplication entity.
+func (c *GroupMembershipApplicationClient) Create() *GroupMembershipApplicationCreate {
+	mutation := newGroupMembershipApplicationMutation(c.config, OpCreate)
+	return &GroupMembershipApplicationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GroupMembershipApplication entities.
+func (c *GroupMembershipApplicationClient) CreateBulk(builders ...*GroupMembershipApplicationCreate) *GroupMembershipApplicationCreateBulk {
+	return &GroupMembershipApplicationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GroupMembershipApplication.
+func (c *GroupMembershipApplicationClient) Update() *GroupMembershipApplicationUpdate {
+	mutation := newGroupMembershipApplicationMutation(c.config, OpUpdate)
+	return &GroupMembershipApplicationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GroupMembershipApplicationClient) UpdateOne(gma *GroupMembershipApplication) *GroupMembershipApplicationUpdateOne {
+	mutation := newGroupMembershipApplicationMutation(c.config, OpUpdateOne, withGroupMembershipApplication(gma))
+	return &GroupMembershipApplicationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GroupMembershipApplicationClient) UpdateOneID(id uuid.UUID) *GroupMembershipApplicationUpdateOne {
+	mutation := newGroupMembershipApplicationMutation(c.config, OpUpdateOne, withGroupMembershipApplicationID(id))
+	return &GroupMembershipApplicationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GroupMembershipApplication.
+func (c *GroupMembershipApplicationClient) Delete() *GroupMembershipApplicationDelete {
+	mutation := newGroupMembershipApplicationMutation(c.config, OpDelete)
+	return &GroupMembershipApplicationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GroupMembershipApplicationClient) DeleteOne(gma *GroupMembershipApplication) *GroupMembershipApplicationDeleteOne {
+	return c.DeleteOneID(gma.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *GroupMembershipApplicationClient) DeleteOneID(id uuid.UUID) *GroupMembershipApplicationDeleteOne {
+	builder := c.Delete().Where(groupmembershipapplication.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GroupMembershipApplicationDeleteOne{builder}
+}
+
+// Query returns a query builder for GroupMembershipApplication.
+func (c *GroupMembershipApplicationClient) Query() *GroupMembershipApplicationQuery {
+	return &GroupMembershipApplicationQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a GroupMembershipApplication entity by its id.
+func (c *GroupMembershipApplicationClient) Get(ctx context.Context, id uuid.UUID) (*GroupMembershipApplication, error) {
+	return c.Query().Where(groupmembershipapplication.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GroupMembershipApplicationClient) GetX(ctx context.Context, id uuid.UUID) *GroupMembershipApplication {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a GroupMembershipApplication.
+func (c *GroupMembershipApplicationClient) QueryUser(gma *GroupMembershipApplication) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := gma.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(groupmembershipapplication.Table, groupmembershipapplication.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, groupmembershipapplication.UserTable, groupmembershipapplication.UserPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(gma.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroup queries the group edge of a GroupMembershipApplication.
+func (c *GroupMembershipApplicationClient) QueryGroup(gma *GroupMembershipApplication) *GroupQuery {
+	query := &GroupQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := gma.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(groupmembershipapplication.Table, groupmembershipapplication.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, groupmembershipapplication.GroupTable, groupmembershipapplication.GroupPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(gma.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GroupMembershipApplicationClient) Hooks() []Hook {
+	return c.hooks.GroupMembershipApplication
 }
 
 // GroupSettingsClient is a client for the GroupSettings schema.
@@ -1072,6 +1217,22 @@ func (c *UserClient) QueryGroupMemberships(u *User) *GroupMembershipQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.GroupMembershipsTable, user.GroupMembershipsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroupMembershipApplications queries the group_membership_applications edge of a User.
+func (c *UserClient) QueryGroupMembershipApplications(u *User) *GroupMembershipApplicationQuery {
+	query := &GroupMembershipApplicationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(groupmembershipapplication.Table, groupmembershipapplication.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.GroupMembershipApplicationsTable, user.GroupMembershipApplicationsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

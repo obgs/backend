@@ -12,6 +12,9 @@ type Group func(*sql.Selector)
 // GroupMembership is the predicate function for groupmembership builders.
 type GroupMembership func(*sql.Selector)
 
+// GroupMembershipApplication is the predicate function for groupmembershipapplication builders.
+type GroupMembershipApplication func(*sql.Selector)
+
 // GroupSettings is the predicate function for groupsettings builders.
 type GroupSettings func(*sql.Selector)
 

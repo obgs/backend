@@ -1,0 +1,6 @@
+-- create "group_membership_applications" table
+CREATE TABLE "group_membership_applications" ("id" uuid NOT NULL, "message" character varying NOT NULL DEFAULT '', PRIMARY KEY ("id"));
+-- create "group_applications" table
+CREATE TABLE "group_applications" ("group_id" uuid NOT NULL, "group_membership_application_id" uuid NOT NULL, PRIMARY KEY ("group_id", "group_membership_application_id"), CONSTRAINT "group_applications_group_id" FOREIGN KEY ("group_id") REFERENCES "groups" ("id") ON DELETE CASCADE, CONSTRAINT "group_applications_group_membership_application_id" FOREIGN KEY ("group_membership_application_id") REFERENCES "group_membership_applications" ("id") ON DELETE CASCADE);
+-- create "user_group_membership_applications" table
+CREATE TABLE "user_group_membership_applications" ("user_id" uuid NOT NULL, "group_membership_application_id" uuid NOT NULL, PRIMARY KEY ("user_id", "group_membership_application_id"), CONSTRAINT "user_group_membership_applications_user_id" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE, CONSTRAINT "user_group_membership_applicat_068874414b92c52124d7d9f3ca1d820e" FOREIGN KEY ("group_membership_application_id") REFERENCES "group_membership_applications" ("id") ON DELETE CASCADE);

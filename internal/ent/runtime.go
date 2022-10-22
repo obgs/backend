@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
@@ -42,6 +43,16 @@ func init() {
 	groupmembershipDescID := groupmembershipFields[0].Descriptor()
 	// groupmembership.DefaultID holds the default value on creation for the id field.
 	groupmembership.DefaultID = groupmembershipDescID.Default.(func() uuid.UUID)
+	groupmembershipapplicationFields := schema.GroupMembershipApplication{}.Fields()
+	_ = groupmembershipapplicationFields
+	// groupmembershipapplicationDescMessage is the schema descriptor for message field.
+	groupmembershipapplicationDescMessage := groupmembershipapplicationFields[1].Descriptor()
+	// groupmembershipapplication.DefaultMessage holds the default value on creation for the message field.
+	groupmembershipapplication.DefaultMessage = groupmembershipapplicationDescMessage.Default.(string)
+	// groupmembershipapplicationDescID is the schema descriptor for id field.
+	groupmembershipapplicationDescID := groupmembershipapplicationFields[0].Descriptor()
+	// groupmembershipapplication.DefaultID holds the default value on creation for the id field.
+	groupmembershipapplication.DefaultID = groupmembershipapplicationDescID.Default.(func() uuid.UUID)
 	groupsettingsFields := schema.GroupSettings{}.Fields()
 	_ = groupsettingsFields
 	// groupsettingsDescID is the schema descriptor for id field.

@@ -39,6 +39,7 @@ func (Group) Edges() []ent.Edge {
 		edge.To("members", GroupMembership.Type).Annotations(
 			entgql.RelayConnection(),
 		),
+		edge.To("applications", GroupMembershipApplication.Type),
 	}
 }
 

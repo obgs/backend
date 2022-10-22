@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
@@ -52,7 +53,7 @@ func (gr *Group) Node(ctx context.Context) (node *Node, err error) {
 		ID:     gr.ID,
 		Type:   "Group",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(gr.Name); err != nil {
@@ -99,6 +100,16 @@ func (gr *Group) Node(ctx context.Context) (node *Node, err error) {
 	if err != nil {
 		return nil, err
 	}
+	node.Edges[2] = &Edge{
+		Type: "GroupMembershipApplication",
+		Name: "applications",
+	}
+	err = gr.QueryApplications().
+		Select(groupmembershipapplication.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
 	return node, nil
 }
 
@@ -134,6 +145,45 @@ func (gm *GroupMembership) Node(ctx context.Context) (node *Node, err error) {
 	}
 	err = gm.QueryUser().
 		Select(user.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func (gma *GroupMembershipApplication) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     gma.ID,
+		Type:   "GroupMembershipApplication",
+		Fields: make([]*Field, 1),
+		Edges:  make([]*Edge, 2),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(gma.Message); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "message",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "User",
+		Name: "user",
+	}
+	err = gma.QueryUser().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Group",
+		Name: "group",
+	}
+	err = gma.QueryGroup().
+		Select(group.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
@@ -318,7 +368,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     u.ID,
 		Type:   "User",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(u.Name); err != nil {
@@ -372,6 +422,16 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	err = u.QueryGroupMemberships().
 		Select(groupmembership.FieldID).
 		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		Type: "GroupMembershipApplication",
+		Name: "group_membership_applications",
+	}
+	err = u.QueryGroupMembershipApplications().
+		Select(groupmembershipapplication.FieldID).
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -460,6 +520,18 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 		query := c.GroupMembership.Query().
 			Where(groupmembership.ID(id))
 		query, err := query.CollectFields(ctx, "GroupMembership")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case groupmembershipapplication.Table:
+		query := c.GroupMembershipApplication.Query().
+			Where(groupmembershipapplication.ID(id))
+		query, err := query.CollectFields(ctx, "GroupMembershipApplication")
 		if err != nil {
 			return nil, err
 		}
@@ -621,6 +693,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.GroupMembership.Query().
 			Where(groupmembership.IDIn(ids...))
 		query, err := query.CollectFields(ctx, "GroupMembership")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case groupmembershipapplication.Table:
+		query := c.GroupMembershipApplication.Query().
+			Where(groupmembershipapplication.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "GroupMembershipApplication")
 		if err != nil {
 			return nil, err
 		}

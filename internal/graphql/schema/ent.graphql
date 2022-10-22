@@ -27,6 +27,7 @@ type Group implements Node {
     """Filtering options for GroupMemberships returned from the connection."""
     where: GroupMembershipWhereInput
   ): GroupMembershipConnection!
+  applications: [GroupMembershipApplication!]
 }
 """A connection to a list of items."""
 type GroupConnection {
@@ -49,6 +50,12 @@ type GroupMembership implements Node {
   role: GroupMembershipRole!
   group: Group!
   user: User!
+}
+type GroupMembershipApplication implements Node {
+  id: ID!
+  message: String!
+  user: [User!]!
+  group: [Group!]!
 }
 """A connection to a list of items."""
 type GroupMembershipConnection {
@@ -428,6 +435,7 @@ type User implements Node {
   players: [Player!]
   mainPlayer: Player
   groupMemberships: [GroupMembership!]
+  groupMembershipApplications: [GroupMembershipApplication!]
 }
 """A connection to a list of items."""
 type UserConnection {

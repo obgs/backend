@@ -36,6 +36,14 @@ func (gr *Group) Members(
 	return gr.QueryMembers().Paginate(ctx, after, first, before, last, opts...)
 }
 
+func (gr *Group) Applications(ctx context.Context) ([]*GroupMembershipApplication, error) {
+	result, err := gr.Edges.ApplicationsOrErr()
+	if IsNotLoaded(err) {
+		result, err = gr.QueryApplications().All(ctx)
+	}
+	return result, err
+}
+
 func (gm *GroupMembership) Group(ctx context.Context) (*Group, error) {
 	result, err := gm.Edges.GroupOrErr()
 	if IsNotLoaded(err) {
@@ -48,6 +56,22 @@ func (gm *GroupMembership) User(ctx context.Context) (*User, error) {
 	result, err := gm.Edges.UserOrErr()
 	if IsNotLoaded(err) {
 		result, err = gm.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (gma *GroupMembershipApplication) User(ctx context.Context) ([]*User, error) {
+	result, err := gma.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = gma.QueryUser().All(ctx)
+	}
+	return result, err
+}
+
+func (gma *GroupMembershipApplication) Group(ctx context.Context) ([]*Group, error) {
+	result, err := gma.Edges.GroupOrErr()
+	if IsNotLoaded(err) {
+		result, err = gma.QueryGroup().All(ctx)
 	}
 	return result, err
 }
@@ -136,6 +160,14 @@ func (u *User) GroupMemberships(ctx context.Context) ([]*GroupMembership, error)
 	result, err := u.Edges.GroupMembershipsOrErr()
 	if IsNotLoaded(err) {
 		result, err = u.QueryGroupMemberships().All(ctx)
+	}
+	return result, err
+}
+
+func (u *User) GroupMembershipApplications(ctx context.Context) ([]*GroupMembershipApplication, error) {
+	result, err := u.Edges.GroupMembershipApplicationsOrErr()
+	if IsNotLoaded(err) {
+		result, err = u.QueryGroupMembershipApplications().All(ctx)
 	}
 	return result, err
 }

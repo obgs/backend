@@ -26,6 +26,7 @@ type config struct {
 type hooks struct {
 	Group                            []ent.Hook
 	GroupMembership                  []ent.Hook
+	GroupMembershipApplication       []ent.Hook
 	GroupSettings                    []ent.Hook
 	Player                           []ent.Hook
 	PlayerSupervisionRequest         []ent.Hook

@@ -16,6 +16,8 @@ type Tx struct {
 	Group *GroupClient
 	// GroupMembership is the client for interacting with the GroupMembership builders.
 	GroupMembership *GroupMembershipClient
+	// GroupMembershipApplication is the client for interacting with the GroupMembershipApplication builders.
+	GroupMembershipApplication *GroupMembershipApplicationClient
 	// GroupSettings is the client for interacting with the GroupSettings builders.
 	GroupSettings *GroupSettingsClient
 	// Player is the client for interacting with the Player builders.
@@ -163,6 +165,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Group = NewGroupClient(tx.config)
 	tx.GroupMembership = NewGroupMembershipClient(tx.config)
+	tx.GroupMembershipApplication = NewGroupMembershipApplicationClient(tx.config)
 	tx.GroupSettings = NewGroupSettingsClient(tx.config)
 	tx.Player = NewPlayerClient(tx.config)
 	tx.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(tx.config)
