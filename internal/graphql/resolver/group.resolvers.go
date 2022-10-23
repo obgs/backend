@@ -41,6 +41,29 @@ func (r *groupResolver) Role(ctx context.Context, obj *ent.Group) (*enums.Role, 
 	return &membership.Role, nil
 }
 
+// Applied is the resolver for the applied field.
+func (r *groupResolver) Applied(ctx context.Context, obj *ent.Group) (*bool, error) {
+	res := false
+	u, _ := auth.UserFromContext(ctx)
+	if u == nil {
+		return &res, nil
+	}
+
+	a, err := r.client.GroupMembershipApplication.Query().Where(
+		groupmembershipapplication.HasUserWith(user.ID(u.ID)),
+		groupmembershipapplication.HasGroupWith(group.ID(obj.ID)),
+	).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	if a != nil {
+		res = true
+	}
+
+	return &res, nil
+}
+
 // CreateGroup is the resolver for the createGroup field.
 func (r *mutationResolver) CreateGroup(ctx context.Context, input model.CreateGroupInput) (*ent.Group, error) {
 	// create group settings
