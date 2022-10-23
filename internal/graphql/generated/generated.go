@@ -54,6 +54,7 @@ type DirectiveRoot struct {
 type ComplexityRoot struct {
 	Group struct {
 		Applications func(childComplexity int) int
+		Applied      func(childComplexity int) int
 		Description  func(childComplexity int) int
 		ID           func(childComplexity int) int
 		LogoURL      func(childComplexity int) int
@@ -194,6 +195,7 @@ type ComplexityRoot struct {
 
 type GroupResolver interface {
 	Role(ctx context.Context, obj *ent.Group) (*enums.Role, error)
+	Applied(ctx context.Context, obj *ent.Group) (*bool, error)
 }
 type MutationResolver interface {
 	CreateGroup(ctx context.Context, input model.CreateGroupInput) (*ent.Group, error)
@@ -239,6 +241,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Group.Applications(childComplexity), true
+
+	case "Group.applied":
+		if e.complexity.Group.Applied == nil {
+			break
+		}
+
+		return e.complexity.Group.Applied(childComplexity), true
 
 	case "Group.description":
 		if e.complexity.Group.Description == nil {
@@ -1484,6 +1493,10 @@ extend type Group {
   Role of the current user in the group
   """
   role: GroupMembershipRole
+  """
+  Shows if the current user already applied to the group
+  """
+  applied: Boolean
 }
 
 input GroupApplicationInput {
@@ -2329,6 +2342,47 @@ func (ec *executionContext) fieldContext_Group_role(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Group_applied(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Group_applied(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Group().Applied(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Group_applied(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Group",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _GroupConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.GroupConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_GroupConnection_edges(ctx, field)
 	if err != nil {
@@ -2526,6 +2580,8 @@ func (ec *executionContext) fieldContext_GroupEdge_node(ctx context.Context, fie
 				return ec.fieldContext_Group_applications(ctx, field)
 			case "role":
 				return ec.fieldContext_Group_role(ctx, field)
+			case "applied":
+				return ec.fieldContext_Group_applied(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -2720,6 +2776,8 @@ func (ec *executionContext) fieldContext_GroupMembership_group(ctx context.Conte
 				return ec.fieldContext_Group_applications(ctx, field)
 			case "role":
 				return ec.fieldContext_Group_role(ctx, field)
+			case "applied":
+				return ec.fieldContext_Group_applied(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -3002,6 +3060,8 @@ func (ec *executionContext) fieldContext_GroupMembershipApplication_group(ctx co
 				return ec.fieldContext_Group_applications(ctx, field)
 			case "role":
 				return ec.fieldContext_Group_role(ctx, field)
+			case "applied":
+				return ec.fieldContext_Group_applied(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -3497,6 +3557,8 @@ func (ec *executionContext) fieldContext_Mutation_createGroup(ctx context.Contex
 				return ec.fieldContext_Group_applications(ctx, field)
 			case "role":
 				return ec.fieldContext_Group_role(ctx, field)
+			case "applied":
+				return ec.fieldContext_Group_applied(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -10263,6 +10325,23 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Group_role(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "applied":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Group_applied(ctx, field, obj)
 				return res
 			}
 

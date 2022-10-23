@@ -12,6 +12,10 @@ extend type Group {
   Role of the current user in the group
   """
   role: GroupMembershipRole
+  """
+  Shows if the current user already applied to the group
+  """
+  applied: Boolean
 }
 
 input GroupApplicationInput {
