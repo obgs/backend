@@ -9,8 +9,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
@@ -67,8 +67,8 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 							ids[i] = nodes[i].ID
 						}
 						var v []struct {
-							NodeID uuid.UUID `sql:"group_members"`
-							Count  int       `sql:"count"`
+							NodeID guidgql.GUID `sql:"group_members"`
+							Count  int          `sql:"count"`
 						}
 						query.Where(func(s *sql.Selector) {
 							s.Where(sql.InValues(group.MembersColumn, ids...))
@@ -76,7 +76,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 						if err := query.GroupBy(group.MembersColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
 							return err
 						}
-						m := make(map[uuid.UUID]int, len(v))
+						m := make(map[guidgql.GUID]int, len(v))
 						for i := range v {
 							m[v[i].NodeID] = v[i].Count
 						}

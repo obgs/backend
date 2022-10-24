@@ -7,17 +7,17 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // GroupSettings is the model entity for the GroupSettings schema.
 type GroupSettings struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID guidgql.GUID `json:"id,omitempty"`
 	// Visibility holds the value of the "visibility" field.
 	Visibility groupsettings.Visibility `json:"visibility,omitempty"`
 	// JoinPolicy holds the value of the "join_policy" field.
@@ -27,7 +27,7 @@ type GroupSettings struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupSettingsQuery when eager-loading is set.
 	Edges          GroupSettingsEdges `json:"edges"`
-	group_settings *uuid.UUID
+	group_settings *guidgql.GUID
 }
 
 // GroupSettingsEdges holds the relations/edges for other nodes in the graph.
@@ -57,12 +57,12 @@ func (*GroupSettings) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case groupsettings.FieldID:
+			values[i] = new(guidgql.GUID)
 		case groupsettings.FieldVisibility, groupsettings.FieldJoinPolicy, groupsettings.FieldMinimumRoleToInvite:
 			values[i] = new(sql.NullString)
-		case groupsettings.FieldID:
-			values[i] = new(uuid.UUID)
 		case groupsettings.ForeignKeys[0]: // group_settings
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type GroupSettings", columns[i])
 		}
@@ -79,7 +79,7 @@ func (gs *GroupSettings) assignValues(columns []string, values []interface{}) er
 	for i := range columns {
 		switch columns[i] {
 		case groupsettings.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*guidgql.GUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				gs.ID = *value
@@ -107,8 +107,8 @@ func (gs *GroupSettings) assignValues(columns []string, values []interface{}) er
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field group_settings", values[i])
 			} else if value.Valid {
-				gs.group_settings = new(uuid.UUID)
-				*gs.group_settings = *value.S.(*uuid.UUID)
+				gs.group_settings = new(guidgql.GUID)
+				*gs.group_settings = *value.S.(*guidgql.GUID)
 			}
 		}
 	}

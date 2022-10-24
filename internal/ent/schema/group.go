@@ -6,7 +6,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // Group holds the schema definition for the Group entity.
@@ -17,7 +17,7 @@ type Group struct {
 // Fields of the Group.
 func (Group) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("groups")),
 		field.String("name").NotEmpty().Unique(),
 		field.String("description").Default("").Annotations(
 			entgql.Skip(entgql.SkipWhereInput),

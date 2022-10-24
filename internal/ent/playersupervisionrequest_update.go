@@ -10,11 +10,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -52,7 +52,7 @@ func (psru *PlayerSupervisionRequestUpdate) ClearMessage() *PlayerSupervisionReq
 }
 
 // SetSenderID sets the "sender" edge to the User entity by ID.
-func (psru *PlayerSupervisionRequestUpdate) SetSenderID(id uuid.UUID) *PlayerSupervisionRequestUpdate {
+func (psru *PlayerSupervisionRequestUpdate) SetSenderID(id guidgql.GUID) *PlayerSupervisionRequestUpdate {
 	psru.mutation.SetSenderID(id)
 	return psru
 }
@@ -63,7 +63,7 @@ func (psru *PlayerSupervisionRequestUpdate) SetSender(u *User) *PlayerSupervisio
 }
 
 // SetPlayerID sets the "player" edge to the Player entity by ID.
-func (psru *PlayerSupervisionRequestUpdate) SetPlayerID(id uuid.UUID) *PlayerSupervisionRequestUpdate {
+func (psru *PlayerSupervisionRequestUpdate) SetPlayerID(id guidgql.GUID) *PlayerSupervisionRequestUpdate {
 	psru.mutation.SetPlayerID(id)
 	return psru
 }
@@ -74,14 +74,14 @@ func (psru *PlayerSupervisionRequestUpdate) SetPlayer(p *Player) *PlayerSupervis
 }
 
 // AddApprovalIDs adds the "approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
-func (psru *PlayerSupervisionRequestUpdate) AddApprovalIDs(ids ...uuid.UUID) *PlayerSupervisionRequestUpdate {
+func (psru *PlayerSupervisionRequestUpdate) AddApprovalIDs(ids ...guidgql.GUID) *PlayerSupervisionRequestUpdate {
 	psru.mutation.AddApprovalIDs(ids...)
 	return psru
 }
 
 // AddApprovals adds the "approvals" edges to the PlayerSupervisionRequestApproval entity.
 func (psru *PlayerSupervisionRequestUpdate) AddApprovals(p ...*PlayerSupervisionRequestApproval) *PlayerSupervisionRequestUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -112,14 +112,14 @@ func (psru *PlayerSupervisionRequestUpdate) ClearApprovals() *PlayerSupervisionR
 }
 
 // RemoveApprovalIDs removes the "approvals" edge to PlayerSupervisionRequestApproval entities by IDs.
-func (psru *PlayerSupervisionRequestUpdate) RemoveApprovalIDs(ids ...uuid.UUID) *PlayerSupervisionRequestUpdate {
+func (psru *PlayerSupervisionRequestUpdate) RemoveApprovalIDs(ids ...guidgql.GUID) *PlayerSupervisionRequestUpdate {
 	psru.mutation.RemoveApprovalIDs(ids...)
 	return psru
 }
 
 // RemoveApprovals removes "approvals" edges to PlayerSupervisionRequestApproval entities.
 func (psru *PlayerSupervisionRequestUpdate) RemoveApprovals(p ...*PlayerSupervisionRequestApproval) *PlayerSupervisionRequestUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -203,7 +203,7 @@ func (psru *PlayerSupervisionRequestUpdate) sqlSave(ctx context.Context) (n int,
 			Table:   playersupervisionrequest.Table,
 			Columns: playersupervisionrequest.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: playersupervisionrequest.FieldID,
 			},
 		},
@@ -237,7 +237,7 @@ func (psru *PlayerSupervisionRequestUpdate) sqlSave(ctx context.Context) (n int,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -253,7 +253,7 @@ func (psru *PlayerSupervisionRequestUpdate) sqlSave(ctx context.Context) (n int,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -272,7 +272,7 @@ func (psru *PlayerSupervisionRequestUpdate) sqlSave(ctx context.Context) (n int,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -288,7 +288,7 @@ func (psru *PlayerSupervisionRequestUpdate) sqlSave(ctx context.Context) (n int,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -307,7 +307,7 @@ func (psru *PlayerSupervisionRequestUpdate) sqlSave(ctx context.Context) (n int,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -323,7 +323,7 @@ func (psru *PlayerSupervisionRequestUpdate) sqlSave(ctx context.Context) (n int,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -342,7 +342,7 @@ func (psru *PlayerSupervisionRequestUpdate) sqlSave(ctx context.Context) (n int,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -392,7 +392,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) ClearMessage() *PlayerSupervisio
 }
 
 // SetSenderID sets the "sender" edge to the User entity by ID.
-func (psruo *PlayerSupervisionRequestUpdateOne) SetSenderID(id uuid.UUID) *PlayerSupervisionRequestUpdateOne {
+func (psruo *PlayerSupervisionRequestUpdateOne) SetSenderID(id guidgql.GUID) *PlayerSupervisionRequestUpdateOne {
 	psruo.mutation.SetSenderID(id)
 	return psruo
 }
@@ -403,7 +403,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) SetSender(u *User) *PlayerSuperv
 }
 
 // SetPlayerID sets the "player" edge to the Player entity by ID.
-func (psruo *PlayerSupervisionRequestUpdateOne) SetPlayerID(id uuid.UUID) *PlayerSupervisionRequestUpdateOne {
+func (psruo *PlayerSupervisionRequestUpdateOne) SetPlayerID(id guidgql.GUID) *PlayerSupervisionRequestUpdateOne {
 	psruo.mutation.SetPlayerID(id)
 	return psruo
 }
@@ -414,14 +414,14 @@ func (psruo *PlayerSupervisionRequestUpdateOne) SetPlayer(p *Player) *PlayerSupe
 }
 
 // AddApprovalIDs adds the "approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
-func (psruo *PlayerSupervisionRequestUpdateOne) AddApprovalIDs(ids ...uuid.UUID) *PlayerSupervisionRequestUpdateOne {
+func (psruo *PlayerSupervisionRequestUpdateOne) AddApprovalIDs(ids ...guidgql.GUID) *PlayerSupervisionRequestUpdateOne {
 	psruo.mutation.AddApprovalIDs(ids...)
 	return psruo
 }
 
 // AddApprovals adds the "approvals" edges to the PlayerSupervisionRequestApproval entity.
 func (psruo *PlayerSupervisionRequestUpdateOne) AddApprovals(p ...*PlayerSupervisionRequestApproval) *PlayerSupervisionRequestUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -452,14 +452,14 @@ func (psruo *PlayerSupervisionRequestUpdateOne) ClearApprovals() *PlayerSupervis
 }
 
 // RemoveApprovalIDs removes the "approvals" edge to PlayerSupervisionRequestApproval entities by IDs.
-func (psruo *PlayerSupervisionRequestUpdateOne) RemoveApprovalIDs(ids ...uuid.UUID) *PlayerSupervisionRequestUpdateOne {
+func (psruo *PlayerSupervisionRequestUpdateOne) RemoveApprovalIDs(ids ...guidgql.GUID) *PlayerSupervisionRequestUpdateOne {
 	psruo.mutation.RemoveApprovalIDs(ids...)
 	return psruo
 }
 
 // RemoveApprovals removes "approvals" edges to PlayerSupervisionRequestApproval entities.
 func (psruo *PlayerSupervisionRequestUpdateOne) RemoveApprovals(p ...*PlayerSupervisionRequestApproval) *PlayerSupervisionRequestUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -556,7 +556,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) sqlSave(ctx context.Context) (_n
 			Table:   playersupervisionrequest.Table,
 			Columns: playersupervisionrequest.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: playersupervisionrequest.FieldID,
 			},
 		},
@@ -607,7 +607,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) sqlSave(ctx context.Context) (_n
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -623,7 +623,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) sqlSave(ctx context.Context) (_n
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -642,7 +642,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) sqlSave(ctx context.Context) (_n
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -658,7 +658,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) sqlSave(ctx context.Context) (_n
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -677,7 +677,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) sqlSave(ctx context.Context) (_n
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -693,7 +693,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) sqlSave(ctx context.Context) (_n
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -712,7 +712,7 @@ func (psruo *PlayerSupervisionRequestUpdateOne) sqlSave(ctx context.Context) (_n
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},

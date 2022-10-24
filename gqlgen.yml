@@ -40,7 +40,7 @@ autobind:
 models:
   ID:
     model:
-      - github.com/open-boardgame-stats/backend/internal/ent/schema/uuidgql.UUID
+      - github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql.GUID
   Node:
     model:
       - github.com/open-boardgame-stats/backend/internal/ent.Noder

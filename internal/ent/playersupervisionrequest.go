@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -17,14 +17,14 @@ import (
 type PlayerSupervisionRequest struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID guidgql.GUID `json:"id,omitempty"`
 	// Message holds the value of the "message" field.
 	Message string `json:"message,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerSupervisionRequestQuery when eager-loading is set.
 	Edges                          PlayerSupervisionRequestEdges `json:"edges"`
-	player_supervision_requests    *uuid.UUID
-	user_sent_supervision_requests *uuid.UUID
+	player_supervision_requests    *guidgql.GUID
+	user_sent_supervision_requests *guidgql.GUID
 }
 
 // PlayerSupervisionRequestEdges holds the relations/edges for other nodes in the graph.
@@ -84,14 +84,14 @@ func (*PlayerSupervisionRequest) scanValues(columns []string) ([]interface{}, er
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case playersupervisionrequest.FieldID:
+			values[i] = new(guidgql.GUID)
 		case playersupervisionrequest.FieldMessage:
 			values[i] = new(sql.NullString)
-		case playersupervisionrequest.FieldID:
-			values[i] = new(uuid.UUID)
 		case playersupervisionrequest.ForeignKeys[0]: // player_supervision_requests
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		case playersupervisionrequest.ForeignKeys[1]: // user_sent_supervision_requests
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type PlayerSupervisionRequest", columns[i])
 		}
@@ -108,7 +108,7 @@ func (psr *PlayerSupervisionRequest) assignValues(columns []string, values []int
 	for i := range columns {
 		switch columns[i] {
 		case playersupervisionrequest.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*guidgql.GUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				psr.ID = *value
@@ -123,15 +123,15 @@ func (psr *PlayerSupervisionRequest) assignValues(columns []string, values []int
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field player_supervision_requests", values[i])
 			} else if value.Valid {
-				psr.player_supervision_requests = new(uuid.UUID)
-				*psr.player_supervision_requests = *value.S.(*uuid.UUID)
+				psr.player_supervision_requests = new(guidgql.GUID)
+				*psr.player_supervision_requests = *value.S.(*guidgql.GUID)
 			}
 		case playersupervisionrequest.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field user_sent_supervision_requests", values[i])
 			} else if value.Valid {
-				psr.user_sent_supervision_requests = new(uuid.UUID)
-				*psr.user_sent_supervision_requests = *value.S.(*uuid.UUID)
+				psr.user_sent_supervision_requests = new(guidgql.GUID)
+				*psr.user_sent_supervision_requests = *value.S.(*guidgql.GUID)
 			}
 		}
 	}

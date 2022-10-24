@@ -11,13 +11,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -235,8 +235,8 @@ func (uq *UserQuery) FirstX(ctx context.Context) *User {
 
 // FirstID returns the first User ID from the query.
 // Returns a *NotFoundError when no User ID was found.
-func (uq *UserQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (uq *UserQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = uq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
@@ -248,7 +248,7 @@ func (uq *UserQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (uq *UserQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (uq *UserQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 	id, err := uq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -286,8 +286,8 @@ func (uq *UserQuery) OnlyX(ctx context.Context) *User {
 // OnlyID is like Only, but returns the only User ID in the query.
 // Returns a *NotSingularError when more than one User ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (uq *UserQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (uq *UserQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = uq.Limit(2).IDs(ctx); err != nil {
 		return
 	}
@@ -303,7 +303,7 @@ func (uq *UserQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (uq *UserQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (uq *UserQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 	id, err := uq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -329,8 +329,8 @@ func (uq *UserQuery) AllX(ctx context.Context) []*User {
 }
 
 // IDs executes the query and returns a list of User IDs.
-func (uq *UserQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
+func (uq *UserQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
+	var ids []guidgql.GUID
 	if err := uq.Select(user.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -338,7 +338,7 @@ func (uq *UserQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (uq *UserQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (uq *UserQuery) IDsX(ctx context.Context) []guidgql.GUID {
 	ids, err := uq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -661,8 +661,8 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 
 func (uq *UserQuery) loadPlayers(ctx context.Context, query *PlayerQuery, nodes []*User, init func(*User), assign func(*User, *Player)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*User)
-	nids := make(map[uuid.UUID]map[*User]struct{})
+	byID := make(map[guidgql.GUID]*User)
+	nids := make(map[guidgql.GUID]map[*User]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -690,11 +690,11 @@ func (uq *UserQuery) loadPlayers(ctx context.Context, query *PlayerQuery, nodes 
 			if err != nil {
 				return nil, err
 			}
-			return append([]interface{}{new(uuid.UUID)}, values...), nil
+			return append([]interface{}{new(guidgql.GUID)}, values...), nil
 		}
 		spec.Assign = func(columns []string, values []interface{}) error {
-			outValue := *values[0].(*uuid.UUID)
-			inValue := *values[1].(*uuid.UUID)
+			outValue := *values[0].(*guidgql.GUID)
+			inValue := *values[1].(*guidgql.GUID)
 			if nids[inValue] == nil {
 				nids[inValue] = map[*User]struct{}{byID[outValue]: struct{}{}}
 				return assign(columns[1:], values[1:])
@@ -719,7 +719,7 @@ func (uq *UserQuery) loadPlayers(ctx context.Context, query *PlayerQuery, nodes 
 }
 func (uq *UserQuery) loadMainPlayer(ctx context.Context, query *PlayerQuery, nodes []*User, init func(*User), assign func(*User, *Player)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[guidgql.GUID]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -747,7 +747,7 @@ func (uq *UserQuery) loadMainPlayer(ctx context.Context, query *PlayerQuery, nod
 }
 func (uq *UserQuery) loadSentSupervisionRequests(ctx context.Context, query *PlayerSupervisionRequestQuery, nodes []*User, init func(*User), assign func(*User, *PlayerSupervisionRequest)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[guidgql.GUID]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -778,7 +778,7 @@ func (uq *UserQuery) loadSentSupervisionRequests(ctx context.Context, query *Pla
 }
 func (uq *UserQuery) loadSupervisionRequestApprovals(ctx context.Context, query *PlayerSupervisionRequestApprovalQuery, nodes []*User, init func(*User), assign func(*User, *PlayerSupervisionRequestApproval)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[guidgql.GUID]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -809,7 +809,7 @@ func (uq *UserQuery) loadSupervisionRequestApprovals(ctx context.Context, query 
 }
 func (uq *UserQuery) loadGroupMemberships(ctx context.Context, query *GroupMembershipQuery, nodes []*User, init func(*User), assign func(*User, *GroupMembership)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[guidgql.GUID]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -840,8 +840,8 @@ func (uq *UserQuery) loadGroupMemberships(ctx context.Context, query *GroupMembe
 }
 func (uq *UserQuery) loadGroupMembershipApplications(ctx context.Context, query *GroupMembershipApplicationQuery, nodes []*User, init func(*User), assign func(*User, *GroupMembershipApplication)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*User)
-	nids := make(map[uuid.UUID]map[*User]struct{})
+	byID := make(map[guidgql.GUID]*User)
+	nids := make(map[guidgql.GUID]map[*User]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -869,11 +869,11 @@ func (uq *UserQuery) loadGroupMembershipApplications(ctx context.Context, query 
 			if err != nil {
 				return nil, err
 			}
-			return append([]interface{}{new(uuid.UUID)}, values...), nil
+			return append([]interface{}{new(guidgql.GUID)}, values...), nil
 		}
 		spec.Assign = func(columns []string, values []interface{}) error {
-			outValue := *values[0].(*uuid.UUID)
-			inValue := *values[1].(*uuid.UUID)
+			outValue := *values[0].(*guidgql.GUID)
+			inValue := *values[1].(*guidgql.GUID)
 			if nids[inValue] == nil {
 				nids[inValue] = map[*User]struct{}{byID[outValue]: struct{}{}}
 				return assign(columns[1:], values[1:])
@@ -923,7 +923,7 @@ func (uq *UserQuery) querySpec() *sqlgraph.QuerySpec {
 			Table:   user.Table,
 			Columns: user.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: user.FieldID,
 			},
 		},

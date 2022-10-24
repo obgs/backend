@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 const (
@@ -69,7 +69,7 @@ func ValidColumn(column string) bool {
 
 var (
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() guidgql.GUID
 )
 
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.

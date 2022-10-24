@@ -10,7 +10,7 @@ import (
 var (
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Default: ""},
 		{Name: "logo_url", Type: field.TypeString},
@@ -23,10 +23,10 @@ var (
 	}
 	// GroupMembershipsColumns holds the columns for the "group_memberships" table.
 	GroupMembershipsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"owner", "admin", "member"}},
-		{Name: "group_members", Type: field.TypeUUID},
-		{Name: "user_group_memberships", Type: field.TypeUUID},
+		{Name: "group_members", Type: field.TypeString},
+		{Name: "user_group_memberships", Type: field.TypeString},
 	}
 	// GroupMembershipsTable holds the schema information for the "group_memberships" table.
 	GroupMembershipsTable = &schema.Table{
@@ -50,7 +50,7 @@ var (
 	}
 	// GroupMembershipApplicationsColumns holds the columns for the "group_membership_applications" table.
 	GroupMembershipApplicationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "message", Type: field.TypeString, Default: ""},
 	}
 	// GroupMembershipApplicationsTable holds the schema information for the "group_membership_applications" table.
@@ -61,11 +61,11 @@ var (
 	}
 	// GroupSettingsColumns holds the columns for the "group_settings" table.
 	GroupSettingsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"PUBLIC", "PRIVATE"}, Default: "PUBLIC"},
 		{Name: "join_policy", Type: field.TypeEnum, Enums: []string{"OPEN", "INVITE_ONLY", "APPLICATION_ONLY", "INVITE_OR_APPLICATION"}, Default: "OPEN"},
 		{Name: "minimum_role_to_invite", Type: field.TypeEnum, Nullable: true, Enums: []string{"owner", "admin", "member"}},
-		{Name: "group_settings", Type: field.TypeUUID, Unique: true, Nullable: true},
+		{Name: "group_settings", Type: field.TypeString, Unique: true, Nullable: true},
 	}
 	// GroupSettingsTable holds the schema information for the "group_settings" table.
 	GroupSettingsTable = &schema.Table{
@@ -83,9 +83,9 @@ var (
 	}
 	// PlayersColumns holds the columns for the "players" table.
 	PlayersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString, Default: ""},
-		{Name: "user_main_player", Type: field.TypeUUID, Unique: true, Nullable: true},
+		{Name: "user_main_player", Type: field.TypeString, Unique: true, Nullable: true},
 	}
 	// PlayersTable holds the schema information for the "players" table.
 	PlayersTable = &schema.Table{
@@ -103,10 +103,10 @@ var (
 	}
 	// PlayerSupervisionRequestsColumns holds the columns for the "player_supervision_requests" table.
 	PlayerSupervisionRequestsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "message", Type: field.TypeString, Nullable: true},
-		{Name: "player_supervision_requests", Type: field.TypeUUID},
-		{Name: "user_sent_supervision_requests", Type: field.TypeUUID},
+		{Name: "player_supervision_requests", Type: field.TypeString},
+		{Name: "user_sent_supervision_requests", Type: field.TypeString},
 	}
 	// PlayerSupervisionRequestsTable holds the schema information for the "player_supervision_requests" table.
 	PlayerSupervisionRequestsTable = &schema.Table{
@@ -130,10 +130,10 @@ var (
 	}
 	// PlayerSupervisionRequestApprovalsColumns holds the columns for the "player_supervision_request_approvals" table.
 	PlayerSupervisionRequestApprovalsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "approved", Type: field.TypeBool, Nullable: true},
-		{Name: "player_supervision_request_approvals", Type: field.TypeUUID},
-		{Name: "user_supervision_request_approvals", Type: field.TypeUUID},
+		{Name: "player_supervision_request_approvals", Type: field.TypeString},
+		{Name: "user_supervision_request_approvals", Type: field.TypeString},
 	}
 	// PlayerSupervisionRequestApprovalsTable holds the schema information for the "player_supervision_request_approvals" table.
 	PlayerSupervisionRequestApprovalsTable = &schema.Table{
@@ -157,7 +157,7 @@ var (
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString, Default: ""},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "password", Type: field.TypeString},
@@ -171,8 +171,8 @@ var (
 	}
 	// GroupApplicationsColumns holds the columns for the "group_applications" table.
 	GroupApplicationsColumns = []*schema.Column{
-		{Name: "group_id", Type: field.TypeUUID},
-		{Name: "group_membership_application_id", Type: field.TypeUUID},
+		{Name: "group_id", Type: field.TypeString},
+		{Name: "group_membership_application_id", Type: field.TypeString},
 	}
 	// GroupApplicationsTable holds the schema information for the "group_applications" table.
 	GroupApplicationsTable = &schema.Table{
@@ -196,8 +196,8 @@ var (
 	}
 	// UserPlayersColumns holds the columns for the "user_players" table.
 	UserPlayersColumns = []*schema.Column{
-		{Name: "user_id", Type: field.TypeUUID},
-		{Name: "player_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeString},
+		{Name: "player_id", Type: field.TypeString},
 	}
 	// UserPlayersTable holds the schema information for the "user_players" table.
 	UserPlayersTable = &schema.Table{
@@ -221,8 +221,8 @@ var (
 	}
 	// UserGroupMembershipApplicationsColumns holds the columns for the "user_group_membership_applications" table.
 	UserGroupMembershipApplicationsColumns = []*schema.Column{
-		{Name: "user_id", Type: field.TypeUUID},
-		{Name: "group_membership_application_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeString},
+		{Name: "group_membership_application_id", Type: field.TypeString},
 	}
 	// UserGroupMembershipApplicationsTable holds the schema information for the "user_group_membership_applications" table.
 	UserGroupMembershipApplicationsTable = &schema.Table{

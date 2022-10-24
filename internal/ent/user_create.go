@@ -9,12 +9,12 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -66,28 +66,28 @@ func (uc *UserCreate) SetNillableAvatarURL(s *string) *UserCreate {
 }
 
 // SetID sets the "id" field.
-func (uc *UserCreate) SetID(u uuid.UUID) *UserCreate {
-	uc.mutation.SetID(u)
+func (uc *UserCreate) SetID(gu guidgql.GUID) *UserCreate {
+	uc.mutation.SetID(gu)
 	return uc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (uc *UserCreate) SetNillableID(u *uuid.UUID) *UserCreate {
-	if u != nil {
-		uc.SetID(*u)
+func (uc *UserCreate) SetNillableID(gu *guidgql.GUID) *UserCreate {
+	if gu != nil {
+		uc.SetID(*gu)
 	}
 	return uc
 }
 
 // AddPlayerIDs adds the "players" edge to the Player entity by IDs.
-func (uc *UserCreate) AddPlayerIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddPlayerIDs(ids ...guidgql.GUID) *UserCreate {
 	uc.mutation.AddPlayerIDs(ids...)
 	return uc
 }
 
 // AddPlayers adds the "players" edges to the Player entity.
 func (uc *UserCreate) AddPlayers(p ...*Player) *UserCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -95,13 +95,13 @@ func (uc *UserCreate) AddPlayers(p ...*Player) *UserCreate {
 }
 
 // SetMainPlayerID sets the "main_player" edge to the Player entity by ID.
-func (uc *UserCreate) SetMainPlayerID(id uuid.UUID) *UserCreate {
+func (uc *UserCreate) SetMainPlayerID(id guidgql.GUID) *UserCreate {
 	uc.mutation.SetMainPlayerID(id)
 	return uc
 }
 
 // SetNillableMainPlayerID sets the "main_player" edge to the Player entity by ID if the given value is not nil.
-func (uc *UserCreate) SetNillableMainPlayerID(id *uuid.UUID) *UserCreate {
+func (uc *UserCreate) SetNillableMainPlayerID(id *guidgql.GUID) *UserCreate {
 	if id != nil {
 		uc = uc.SetMainPlayerID(*id)
 	}
@@ -114,14 +114,14 @@ func (uc *UserCreate) SetMainPlayer(p *Player) *UserCreate {
 }
 
 // AddSentSupervisionRequestIDs adds the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
-func (uc *UserCreate) AddSentSupervisionRequestIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddSentSupervisionRequestIDs(ids ...guidgql.GUID) *UserCreate {
 	uc.mutation.AddSentSupervisionRequestIDs(ids...)
 	return uc
 }
 
 // AddSentSupervisionRequests adds the "sent_supervision_requests" edges to the PlayerSupervisionRequest entity.
 func (uc *UserCreate) AddSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -129,14 +129,14 @@ func (uc *UserCreate) AddSentSupervisionRequests(p ...*PlayerSupervisionRequest)
 }
 
 // AddSupervisionRequestApprovalIDs adds the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
-func (uc *UserCreate) AddSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddSupervisionRequestApprovalIDs(ids ...guidgql.GUID) *UserCreate {
 	uc.mutation.AddSupervisionRequestApprovalIDs(ids...)
 	return uc
 }
 
 // AddSupervisionRequestApprovals adds the "supervision_request_approvals" edges to the PlayerSupervisionRequestApproval entity.
 func (uc *UserCreate) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -144,14 +144,14 @@ func (uc *UserCreate) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequ
 }
 
 // AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
-func (uc *UserCreate) AddGroupMembershipIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddGroupMembershipIDs(ids ...guidgql.GUID) *UserCreate {
 	uc.mutation.AddGroupMembershipIDs(ids...)
 	return uc
 }
 
 // AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
 func (uc *UserCreate) AddGroupMemberships(g ...*GroupMembership) *UserCreate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -159,14 +159,14 @@ func (uc *UserCreate) AddGroupMemberships(g ...*GroupMembership) *UserCreate {
 }
 
 // AddGroupMembershipApplicationIDs adds the "group_membership_applications" edge to the GroupMembershipApplication entity by IDs.
-func (uc *UserCreate) AddGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddGroupMembershipApplicationIDs(ids ...guidgql.GUID) *UserCreate {
 	uc.mutation.AddGroupMembershipApplicationIDs(ids...)
 	return uc
 }
 
 // AddGroupMembershipApplications adds the "group_membership_applications" edges to the GroupMembershipApplication entity.
 func (uc *UserCreate) AddGroupMembershipApplications(g ...*GroupMembershipApplication) *UserCreate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -300,7 +300,7 @@ func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+		if id, ok := _spec.ID.Value.(*guidgql.GUID); ok {
 			_node.ID = *id
 		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
 			return nil, err
@@ -315,7 +315,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec = &sqlgraph.CreateSpec{
 			Table: user.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: user.FieldID,
 			},
 		}
@@ -365,7 +365,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -384,7 +384,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -403,7 +403,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -422,7 +422,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -441,7 +441,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -460,7 +460,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},

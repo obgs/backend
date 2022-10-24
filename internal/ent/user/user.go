@@ -3,7 +3,7 @@
 package user
 
 import (
-	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 const (
@@ -111,5 +111,5 @@ var (
 	// DefaultAvatarURL holds the default value on creation for the "avatar_url" field.
 	DefaultAvatarURL string
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() guidgql.GUID
 )

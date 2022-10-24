@@ -3,7 +3,7 @@
 package playersupervisionrequestapproval
 
 import (
-	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 const (
@@ -65,5 +65,5 @@ func ValidColumn(column string) bool {
 
 var (
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() guidgql.GUID
 )

@@ -9,11 +9,11 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // GroupCreate is the builder for creating a Group entity.
@@ -50,21 +50,21 @@ func (gc *GroupCreate) SetLogoURL(s string) *GroupCreate {
 }
 
 // SetID sets the "id" field.
-func (gc *GroupCreate) SetID(u uuid.UUID) *GroupCreate {
-	gc.mutation.SetID(u)
+func (gc *GroupCreate) SetID(gu guidgql.GUID) *GroupCreate {
+	gc.mutation.SetID(gu)
 	return gc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableID(u *uuid.UUID) *GroupCreate {
-	if u != nil {
-		gc.SetID(*u)
+func (gc *GroupCreate) SetNillableID(gu *guidgql.GUID) *GroupCreate {
+	if gu != nil {
+		gc.SetID(*gu)
 	}
 	return gc
 }
 
 // SetSettingsID sets the "settings" edge to the GroupSettings entity by ID.
-func (gc *GroupCreate) SetSettingsID(id uuid.UUID) *GroupCreate {
+func (gc *GroupCreate) SetSettingsID(id guidgql.GUID) *GroupCreate {
 	gc.mutation.SetSettingsID(id)
 	return gc
 }
@@ -75,14 +75,14 @@ func (gc *GroupCreate) SetSettings(g *GroupSettings) *GroupCreate {
 }
 
 // AddMemberIDs adds the "members" edge to the GroupMembership entity by IDs.
-func (gc *GroupCreate) AddMemberIDs(ids ...uuid.UUID) *GroupCreate {
+func (gc *GroupCreate) AddMemberIDs(ids ...guidgql.GUID) *GroupCreate {
 	gc.mutation.AddMemberIDs(ids...)
 	return gc
 }
 
 // AddMembers adds the "members" edges to the GroupMembership entity.
 func (gc *GroupCreate) AddMembers(g ...*GroupMembership) *GroupCreate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -90,14 +90,14 @@ func (gc *GroupCreate) AddMembers(g ...*GroupMembership) *GroupCreate {
 }
 
 // AddApplicationIDs adds the "applications" edge to the GroupMembershipApplication entity by IDs.
-func (gc *GroupCreate) AddApplicationIDs(ids ...uuid.UUID) *GroupCreate {
+func (gc *GroupCreate) AddApplicationIDs(ids ...guidgql.GUID) *GroupCreate {
 	gc.mutation.AddApplicationIDs(ids...)
 	return gc
 }
 
 // AddApplications adds the "applications" edges to the GroupMembershipApplication entity.
 func (gc *GroupCreate) AddApplications(g ...*GroupMembershipApplication) *GroupCreate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -227,7 +227,7 @@ func (gc *GroupCreate) sqlSave(ctx context.Context) (*Group, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+		if id, ok := _spec.ID.Value.(*guidgql.GUID); ok {
 			_node.ID = *id
 		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
 			return nil, err
@@ -242,7 +242,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec = &sqlgraph.CreateSpec{
 			Table: group.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: group.FieldID,
 			},
 		}
@@ -284,7 +284,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupsettings.FieldID,
 				},
 			},
@@ -303,7 +303,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -322,7 +322,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},

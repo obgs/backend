@@ -72,7 +72,7 @@ func (psrd *PlayerSupervisionRequestDelete) sqlExec(ctx context.Context) (int, e
 		Node: &sqlgraph.NodeSpec{
 			Table: playersupervisionrequest.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: playersupervisionrequest.FieldID,
 			},
 		},

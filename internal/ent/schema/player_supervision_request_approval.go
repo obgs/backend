@@ -4,7 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 type PlayerSupervisionRequestApproval struct {
@@ -13,7 +13,7 @@ type PlayerSupervisionRequestApproval struct {
 
 func (PlayerSupervisionRequestApproval) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("player_supervision_request_approvals")),
 		field.Bool("approved").Optional().Nillable(),
 	}
 }

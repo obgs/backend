@@ -6,7 +6,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 type GroupMembershipApplication struct {
@@ -15,7 +15,7 @@ type GroupMembershipApplication struct {
 
 func (GroupMembershipApplication) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("group_membership_applications")),
 		field.String("message").Default(""),
 	}
 }

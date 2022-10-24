@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -37,21 +37,21 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) SetNillableApproved(b *bool
 }
 
 // SetID sets the "id" field.
-func (psrac *PlayerSupervisionRequestApprovalCreate) SetID(u uuid.UUID) *PlayerSupervisionRequestApprovalCreate {
-	psrac.mutation.SetID(u)
+func (psrac *PlayerSupervisionRequestApprovalCreate) SetID(gu guidgql.GUID) *PlayerSupervisionRequestApprovalCreate {
+	psrac.mutation.SetID(gu)
 	return psrac
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (psrac *PlayerSupervisionRequestApprovalCreate) SetNillableID(u *uuid.UUID) *PlayerSupervisionRequestApprovalCreate {
-	if u != nil {
-		psrac.SetID(*u)
+func (psrac *PlayerSupervisionRequestApprovalCreate) SetNillableID(gu *guidgql.GUID) *PlayerSupervisionRequestApprovalCreate {
+	if gu != nil {
+		psrac.SetID(*gu)
 	}
 	return psrac
 }
 
 // SetApproverID sets the "approver" edge to the User entity by ID.
-func (psrac *PlayerSupervisionRequestApprovalCreate) SetApproverID(id uuid.UUID) *PlayerSupervisionRequestApprovalCreate {
+func (psrac *PlayerSupervisionRequestApprovalCreate) SetApproverID(id guidgql.GUID) *PlayerSupervisionRequestApprovalCreate {
 	psrac.mutation.SetApproverID(id)
 	return psrac
 }
@@ -62,7 +62,7 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) SetApprover(u *User) *Playe
 }
 
 // SetSupervisionRequestID sets the "supervision_request" edge to the PlayerSupervisionRequest entity by ID.
-func (psrac *PlayerSupervisionRequestApprovalCreate) SetSupervisionRequestID(id uuid.UUID) *PlayerSupervisionRequestApprovalCreate {
+func (psrac *PlayerSupervisionRequestApprovalCreate) SetSupervisionRequestID(id guidgql.GUID) *PlayerSupervisionRequestApprovalCreate {
 	psrac.mutation.SetSupervisionRequestID(id)
 	return psrac
 }
@@ -175,7 +175,7 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) sqlSave(ctx context.Context
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+		if id, ok := _spec.ID.Value.(*guidgql.GUID); ok {
 			_node.ID = *id
 		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
 			return nil, err
@@ -190,7 +190,7 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) createSpec() (*PlayerSuperv
 		_spec = &sqlgraph.CreateSpec{
 			Table: playersupervisionrequestapproval.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: playersupervisionrequestapproval.FieldID,
 			},
 		}
@@ -216,7 +216,7 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) createSpec() (*PlayerSuperv
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -236,7 +236,7 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) createSpec() (*PlayerSuperv
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},

@@ -10,11 +10,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // GroupSettingsUpdate is the builder for updating GroupSettings entities.
@@ -79,13 +79,13 @@ func (gsu *GroupSettingsUpdate) ClearMinimumRoleToInvite() *GroupSettingsUpdate 
 }
 
 // SetGroupID sets the "group" edge to the Group entity by ID.
-func (gsu *GroupSettingsUpdate) SetGroupID(id uuid.UUID) *GroupSettingsUpdate {
+func (gsu *GroupSettingsUpdate) SetGroupID(id guidgql.GUID) *GroupSettingsUpdate {
 	gsu.mutation.SetGroupID(id)
 	return gsu
 }
 
 // SetNillableGroupID sets the "group" edge to the Group entity by ID if the given value is not nil.
-func (gsu *GroupSettingsUpdate) SetNillableGroupID(id *uuid.UUID) *GroupSettingsUpdate {
+func (gsu *GroupSettingsUpdate) SetNillableGroupID(id *guidgql.GUID) *GroupSettingsUpdate {
 	if id != nil {
 		gsu = gsu.SetGroupID(*id)
 	}
@@ -194,7 +194,7 @@ func (gsu *GroupSettingsUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Table:   groupsettings.Table,
 			Columns: groupsettings.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupsettings.FieldID,
 			},
 		},
@@ -242,7 +242,7 @@ func (gsu *GroupSettingsUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},
@@ -258,7 +258,7 @@ func (gsu *GroupSettingsUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},
@@ -336,13 +336,13 @@ func (gsuo *GroupSettingsUpdateOne) ClearMinimumRoleToInvite() *GroupSettingsUpd
 }
 
 // SetGroupID sets the "group" edge to the Group entity by ID.
-func (gsuo *GroupSettingsUpdateOne) SetGroupID(id uuid.UUID) *GroupSettingsUpdateOne {
+func (gsuo *GroupSettingsUpdateOne) SetGroupID(id guidgql.GUID) *GroupSettingsUpdateOne {
 	gsuo.mutation.SetGroupID(id)
 	return gsuo
 }
 
 // SetNillableGroupID sets the "group" edge to the Group entity by ID if the given value is not nil.
-func (gsuo *GroupSettingsUpdateOne) SetNillableGroupID(id *uuid.UUID) *GroupSettingsUpdateOne {
+func (gsuo *GroupSettingsUpdateOne) SetNillableGroupID(id *guidgql.GUID) *GroupSettingsUpdateOne {
 	if id != nil {
 		gsuo = gsuo.SetGroupID(*id)
 	}
@@ -464,7 +464,7 @@ func (gsuo *GroupSettingsUpdateOne) sqlSave(ctx context.Context) (_node *GroupSe
 			Table:   groupsettings.Table,
 			Columns: groupsettings.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupsettings.FieldID,
 			},
 		},
@@ -529,7 +529,7 @@ func (gsuo *GroupSettingsUpdateOne) sqlSave(ctx context.Context) (_node *GroupSe
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},
@@ -545,7 +545,7 @@ func (gsuo *GroupSettingsUpdateOne) sqlSave(ctx context.Context) (_node *GroupSe
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},

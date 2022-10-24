@@ -6,7 +6,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // Player holds the schema definition for the Player entity.
@@ -17,7 +17,7 @@ type Player struct {
 // Fields of the Player.
 func (Player) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("players")),
 		field.String("name").Default(""),
 	}
 }

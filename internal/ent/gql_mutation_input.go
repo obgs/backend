@@ -2,17 +2,17 @@
 
 package ent
 
-import "github.com/google/uuid"
+import "github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
 	Name            *string
 	Email           *string
 	AvatarURL       *string
-	AddPlayerIDs    []uuid.UUID
-	RemovePlayerIDs []uuid.UUID
+	AddPlayerIDs    []guidgql.GUID
+	RemovePlayerIDs []guidgql.GUID
 	ClearMainPlayer bool
-	MainPlayerID    *uuid.UUID
+	MainPlayerID    *guidgql.GUID
 }
 
 // Mutate applies the UpdateUserInput on the UserMutation builder.

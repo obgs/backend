@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -17,14 +17,14 @@ import (
 type PlayerSupervisionRequestApproval struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID guidgql.GUID `json:"id,omitempty"`
 	// Approved holds the value of the "approved" field.
 	Approved *bool `json:"approved,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerSupervisionRequestApprovalQuery when eager-loading is set.
 	Edges                                PlayerSupervisionRequestApprovalEdges `json:"edges"`
-	player_supervision_request_approvals *uuid.UUID
-	user_supervision_request_approvals   *uuid.UUID
+	player_supervision_request_approvals *guidgql.GUID
+	user_supervision_request_approvals   *guidgql.GUID
 }
 
 // PlayerSupervisionRequestApprovalEdges holds the relations/edges for other nodes in the graph.
@@ -71,14 +71,14 @@ func (*PlayerSupervisionRequestApproval) scanValues(columns []string) ([]interfa
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case playersupervisionrequestapproval.FieldID:
+			values[i] = new(guidgql.GUID)
 		case playersupervisionrequestapproval.FieldApproved:
 			values[i] = new(sql.NullBool)
-		case playersupervisionrequestapproval.FieldID:
-			values[i] = new(uuid.UUID)
 		case playersupervisionrequestapproval.ForeignKeys[0]: // player_supervision_request_approvals
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		case playersupervisionrequestapproval.ForeignKeys[1]: // user_supervision_request_approvals
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type PlayerSupervisionRequestApproval", columns[i])
 		}
@@ -95,7 +95,7 @@ func (psra *PlayerSupervisionRequestApproval) assignValues(columns []string, val
 	for i := range columns {
 		switch columns[i] {
 		case playersupervisionrequestapproval.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*guidgql.GUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				psra.ID = *value
@@ -111,15 +111,15 @@ func (psra *PlayerSupervisionRequestApproval) assignValues(columns []string, val
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field player_supervision_request_approvals", values[i])
 			} else if value.Valid {
-				psra.player_supervision_request_approvals = new(uuid.UUID)
-				*psra.player_supervision_request_approvals = *value.S.(*uuid.UUID)
+				psra.player_supervision_request_approvals = new(guidgql.GUID)
+				*psra.player_supervision_request_approvals = *value.S.(*guidgql.GUID)
 			}
 		case playersupervisionrequestapproval.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field user_supervision_request_approvals", values[i])
 			} else if value.Valid {
-				psra.user_supervision_request_approvals = new(uuid.UUID)
-				*psra.user_supervision_request_approvals = *value.S.(*uuid.UUID)
+				psra.user_supervision_request_approvals = new(guidgql.GUID)
+				*psra.user_supervision_request_approvals = *value.S.(*guidgql.GUID)
 			}
 		}
 	}

@@ -11,10 +11,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -161,8 +161,8 @@ func (pq *PlayerQuery) FirstX(ctx context.Context) *Player {
 
 // FirstID returns the first Player ID from the query.
 // Returns a *NotFoundError when no Player ID was found.
-func (pq *PlayerQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pq *PlayerQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = pq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
@@ -174,7 +174,7 @@ func (pq *PlayerQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pq *PlayerQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (pq *PlayerQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 	id, err := pq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -212,8 +212,8 @@ func (pq *PlayerQuery) OnlyX(ctx context.Context) *Player {
 // OnlyID is like Only, but returns the only Player ID in the query.
 // Returns a *NotSingularError when more than one Player ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pq *PlayerQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pq *PlayerQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = pq.Limit(2).IDs(ctx); err != nil {
 		return
 	}
@@ -229,7 +229,7 @@ func (pq *PlayerQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pq *PlayerQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (pq *PlayerQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 	id, err := pq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -255,8 +255,8 @@ func (pq *PlayerQuery) AllX(ctx context.Context) []*Player {
 }
 
 // IDs executes the query and returns a list of Player IDs.
-func (pq *PlayerQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
+func (pq *PlayerQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
+	var ids []guidgql.GUID
 	if err := pq.Select(player.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (pq *PlayerQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pq *PlayerQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (pq *PlayerQuery) IDsX(ctx context.Context) []guidgql.GUID {
 	ids, err := pq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -508,8 +508,8 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 }
 
 func (pq *PlayerQuery) loadOwner(ctx context.Context, query *UserQuery, nodes []*Player, init func(*Player), assign func(*Player, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Player)
+	ids := make([]guidgql.GUID, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID][]*Player)
 	for i := range nodes {
 		if nodes[i].user_main_player == nil {
 			continue
@@ -538,8 +538,8 @@ func (pq *PlayerQuery) loadOwner(ctx context.Context, query *UserQuery, nodes []
 }
 func (pq *PlayerQuery) loadSupervisors(ctx context.Context, query *UserQuery, nodes []*Player, init func(*Player), assign func(*Player, *User)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*Player)
-	nids := make(map[uuid.UUID]map[*Player]struct{})
+	byID := make(map[guidgql.GUID]*Player)
+	nids := make(map[guidgql.GUID]map[*Player]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -567,11 +567,11 @@ func (pq *PlayerQuery) loadSupervisors(ctx context.Context, query *UserQuery, no
 			if err != nil {
 				return nil, err
 			}
-			return append([]interface{}{new(uuid.UUID)}, values...), nil
+			return append([]interface{}{new(guidgql.GUID)}, values...), nil
 		}
 		spec.Assign = func(columns []string, values []interface{}) error {
-			outValue := *values[0].(*uuid.UUID)
-			inValue := *values[1].(*uuid.UUID)
+			outValue := *values[0].(*guidgql.GUID)
+			inValue := *values[1].(*guidgql.GUID)
 			if nids[inValue] == nil {
 				nids[inValue] = map[*Player]struct{}{byID[outValue]: struct{}{}}
 				return assign(columns[1:], values[1:])
@@ -596,7 +596,7 @@ func (pq *PlayerQuery) loadSupervisors(ctx context.Context, query *UserQuery, no
 }
 func (pq *PlayerQuery) loadSupervisionRequests(ctx context.Context, query *PlayerSupervisionRequestQuery, nodes []*Player, init func(*Player), assign func(*Player, *PlayerSupervisionRequest)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Player)
+	nodeids := make(map[guidgql.GUID]*Player)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -652,7 +652,7 @@ func (pq *PlayerQuery) querySpec() *sqlgraph.QuerySpec {
 			Table:   player.Table,
 			Columns: player.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: player.FieldID,
 			},
 		},

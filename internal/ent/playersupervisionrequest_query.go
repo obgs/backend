@@ -11,11 +11,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -161,8 +161,8 @@ func (psrq *PlayerSupervisionRequestQuery) FirstX(ctx context.Context) *PlayerSu
 
 // FirstID returns the first PlayerSupervisionRequest ID from the query.
 // Returns a *NotFoundError when no PlayerSupervisionRequest ID was found.
-func (psrq *PlayerSupervisionRequestQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (psrq *PlayerSupervisionRequestQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = psrq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
@@ -174,7 +174,7 @@ func (psrq *PlayerSupervisionRequestQuery) FirstID(ctx context.Context) (id uuid
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (psrq *PlayerSupervisionRequestQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (psrq *PlayerSupervisionRequestQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 	id, err := psrq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -212,8 +212,8 @@ func (psrq *PlayerSupervisionRequestQuery) OnlyX(ctx context.Context) *PlayerSup
 // OnlyID is like Only, but returns the only PlayerSupervisionRequest ID in the query.
 // Returns a *NotSingularError when more than one PlayerSupervisionRequest ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (psrq *PlayerSupervisionRequestQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (psrq *PlayerSupervisionRequestQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = psrq.Limit(2).IDs(ctx); err != nil {
 		return
 	}
@@ -229,7 +229,7 @@ func (psrq *PlayerSupervisionRequestQuery) OnlyID(ctx context.Context) (id uuid.
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (psrq *PlayerSupervisionRequestQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (psrq *PlayerSupervisionRequestQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 	id, err := psrq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -255,8 +255,8 @@ func (psrq *PlayerSupervisionRequestQuery) AllX(ctx context.Context) []*PlayerSu
 }
 
 // IDs executes the query and returns a list of PlayerSupervisionRequest IDs.
-func (psrq *PlayerSupervisionRequestQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
+func (psrq *PlayerSupervisionRequestQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
+	var ids []guidgql.GUID
 	if err := psrq.Select(playersupervisionrequest.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (psrq *PlayerSupervisionRequestQuery) IDs(ctx context.Context) ([]uuid.UUID
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (psrq *PlayerSupervisionRequestQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (psrq *PlayerSupervisionRequestQuery) IDsX(ctx context.Context) []guidgql.GUID {
 	ids, err := psrq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -502,8 +502,8 @@ func (psrq *PlayerSupervisionRequestQuery) sqlAll(ctx context.Context, hooks ...
 }
 
 func (psrq *PlayerSupervisionRequestQuery) loadSender(ctx context.Context, query *UserQuery, nodes []*PlayerSupervisionRequest, init func(*PlayerSupervisionRequest), assign func(*PlayerSupervisionRequest, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*PlayerSupervisionRequest)
+	ids := make([]guidgql.GUID, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID][]*PlayerSupervisionRequest)
 	for i := range nodes {
 		if nodes[i].user_sent_supervision_requests == nil {
 			continue
@@ -531,8 +531,8 @@ func (psrq *PlayerSupervisionRequestQuery) loadSender(ctx context.Context, query
 	return nil
 }
 func (psrq *PlayerSupervisionRequestQuery) loadPlayer(ctx context.Context, query *PlayerQuery, nodes []*PlayerSupervisionRequest, init func(*PlayerSupervisionRequest), assign func(*PlayerSupervisionRequest, *Player)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*PlayerSupervisionRequest)
+	ids := make([]guidgql.GUID, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID][]*PlayerSupervisionRequest)
 	for i := range nodes {
 		if nodes[i].player_supervision_requests == nil {
 			continue
@@ -561,7 +561,7 @@ func (psrq *PlayerSupervisionRequestQuery) loadPlayer(ctx context.Context, query
 }
 func (psrq *PlayerSupervisionRequestQuery) loadApprovals(ctx context.Context, query *PlayerSupervisionRequestApprovalQuery, nodes []*PlayerSupervisionRequest, init func(*PlayerSupervisionRequest), assign func(*PlayerSupervisionRequest, *PlayerSupervisionRequestApproval)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*PlayerSupervisionRequest)
+	nodeids := make(map[guidgql.GUID]*PlayerSupervisionRequest)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -617,7 +617,7 @@ func (psrq *PlayerSupervisionRequestQuery) querySpec() *sqlgraph.QuerySpec {
 			Table:   playersupervisionrequest.Table,
 			Columns: playersupervisionrequest.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: playersupervisionrequest.FieldID,
 			},
 		},

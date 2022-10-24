@@ -6,16 +6,16 @@ package resolver
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, id uuid.UUID, input ent.UpdateUserInput) (*ent.User, error) {
+func (r *mutationResolver) UpdateUser(ctx context.Context, id guidgql.GUID, input ent.UpdateUserInput) (*ent.User, error) {
 	return ent.FromContext(ctx).User.UpdateOneID(id).SetInput(input).Save(ctx)
 }
 

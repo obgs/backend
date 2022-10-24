@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -16,13 +16,13 @@ import (
 type Player struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID guidgql.GUID `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerQuery when eager-loading is set.
 	Edges            PlayerEdges `json:"edges"`
-	user_main_player *uuid.UUID
+	user_main_player *guidgql.GUID
 }
 
 // PlayerEdges holds the relations/edges for other nodes in the graph.
@@ -79,12 +79,12 @@ func (*Player) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case player.FieldID:
+			values[i] = new(guidgql.GUID)
 		case player.FieldName:
 			values[i] = new(sql.NullString)
-		case player.FieldID:
-			values[i] = new(uuid.UUID)
 		case player.ForeignKeys[0]: // user_main_player
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Player", columns[i])
 		}
@@ -101,7 +101,7 @@ func (pl *Player) assignValues(columns []string, values []interface{}) error {
 	for i := range columns {
 		switch columns[i] {
 		case player.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*guidgql.GUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				pl.ID = *value
@@ -116,8 +116,8 @@ func (pl *Player) assignValues(columns []string, values []interface{}) error {
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field user_main_player", values[i])
 			} else if value.Valid {
-				pl.user_main_player = new(uuid.UUID)
-				*pl.user_main_player = *value.S.(*uuid.UUID)
+				pl.user_main_player = new(guidgql.GUID)
+				*pl.user_main_player = *value.S.(*guidgql.GUID)
 			}
 		}
 	}

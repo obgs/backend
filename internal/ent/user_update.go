@@ -10,13 +10,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -74,14 +74,14 @@ func (uu *UserUpdate) SetNillableAvatarURL(s *string) *UserUpdate {
 }
 
 // AddPlayerIDs adds the "players" edge to the Player entity by IDs.
-func (uu *UserUpdate) AddPlayerIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddPlayerIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.AddPlayerIDs(ids...)
 	return uu
 }
 
 // AddPlayers adds the "players" edges to the Player entity.
 func (uu *UserUpdate) AddPlayers(p ...*Player) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -89,13 +89,13 @@ func (uu *UserUpdate) AddPlayers(p ...*Player) *UserUpdate {
 }
 
 // SetMainPlayerID sets the "main_player" edge to the Player entity by ID.
-func (uu *UserUpdate) SetMainPlayerID(id uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) SetMainPlayerID(id guidgql.GUID) *UserUpdate {
 	uu.mutation.SetMainPlayerID(id)
 	return uu
 }
 
 // SetNillableMainPlayerID sets the "main_player" edge to the Player entity by ID if the given value is not nil.
-func (uu *UserUpdate) SetNillableMainPlayerID(id *uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) SetNillableMainPlayerID(id *guidgql.GUID) *UserUpdate {
 	if id != nil {
 		uu = uu.SetMainPlayerID(*id)
 	}
@@ -108,14 +108,14 @@ func (uu *UserUpdate) SetMainPlayer(p *Player) *UserUpdate {
 }
 
 // AddSentSupervisionRequestIDs adds the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
-func (uu *UserUpdate) AddSentSupervisionRequestIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddSentSupervisionRequestIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.AddSentSupervisionRequestIDs(ids...)
 	return uu
 }
 
 // AddSentSupervisionRequests adds the "sent_supervision_requests" edges to the PlayerSupervisionRequest entity.
 func (uu *UserUpdate) AddSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -123,14 +123,14 @@ func (uu *UserUpdate) AddSentSupervisionRequests(p ...*PlayerSupervisionRequest)
 }
 
 // AddSupervisionRequestApprovalIDs adds the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
-func (uu *UserUpdate) AddSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddSupervisionRequestApprovalIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.AddSupervisionRequestApprovalIDs(ids...)
 	return uu
 }
 
 // AddSupervisionRequestApprovals adds the "supervision_request_approvals" edges to the PlayerSupervisionRequestApproval entity.
 func (uu *UserUpdate) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -138,14 +138,14 @@ func (uu *UserUpdate) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequ
 }
 
 // AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
-func (uu *UserUpdate) AddGroupMembershipIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddGroupMembershipIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.AddGroupMembershipIDs(ids...)
 	return uu
 }
 
 // AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
 func (uu *UserUpdate) AddGroupMemberships(g ...*GroupMembership) *UserUpdate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -153,14 +153,14 @@ func (uu *UserUpdate) AddGroupMemberships(g ...*GroupMembership) *UserUpdate {
 }
 
 // AddGroupMembershipApplicationIDs adds the "group_membership_applications" edge to the GroupMembershipApplication entity by IDs.
-func (uu *UserUpdate) AddGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddGroupMembershipApplicationIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.AddGroupMembershipApplicationIDs(ids...)
 	return uu
 }
 
 // AddGroupMembershipApplications adds the "group_membership_applications" edges to the GroupMembershipApplication entity.
 func (uu *UserUpdate) AddGroupMembershipApplications(g ...*GroupMembershipApplication) *UserUpdate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -179,14 +179,14 @@ func (uu *UserUpdate) ClearPlayers() *UserUpdate {
 }
 
 // RemovePlayerIDs removes the "players" edge to Player entities by IDs.
-func (uu *UserUpdate) RemovePlayerIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemovePlayerIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.RemovePlayerIDs(ids...)
 	return uu
 }
 
 // RemovePlayers removes "players" edges to Player entities.
 func (uu *UserUpdate) RemovePlayers(p ...*Player) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -206,14 +206,14 @@ func (uu *UserUpdate) ClearSentSupervisionRequests() *UserUpdate {
 }
 
 // RemoveSentSupervisionRequestIDs removes the "sent_supervision_requests" edge to PlayerSupervisionRequest entities by IDs.
-func (uu *UserUpdate) RemoveSentSupervisionRequestIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveSentSupervisionRequestIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.RemoveSentSupervisionRequestIDs(ids...)
 	return uu
 }
 
 // RemoveSentSupervisionRequests removes "sent_supervision_requests" edges to PlayerSupervisionRequest entities.
 func (uu *UserUpdate) RemoveSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -227,14 +227,14 @@ func (uu *UserUpdate) ClearSupervisionRequestApprovals() *UserUpdate {
 }
 
 // RemoveSupervisionRequestApprovalIDs removes the "supervision_request_approvals" edge to PlayerSupervisionRequestApproval entities by IDs.
-func (uu *UserUpdate) RemoveSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveSupervisionRequestApprovalIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.RemoveSupervisionRequestApprovalIDs(ids...)
 	return uu
 }
 
 // RemoveSupervisionRequestApprovals removes "supervision_request_approvals" edges to PlayerSupervisionRequestApproval entities.
 func (uu *UserUpdate) RemoveSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -248,14 +248,14 @@ func (uu *UserUpdate) ClearGroupMemberships() *UserUpdate {
 }
 
 // RemoveGroupMembershipIDs removes the "group_memberships" edge to GroupMembership entities by IDs.
-func (uu *UserUpdate) RemoveGroupMembershipIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveGroupMembershipIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.RemoveGroupMembershipIDs(ids...)
 	return uu
 }
 
 // RemoveGroupMemberships removes "group_memberships" edges to GroupMembership entities.
 func (uu *UserUpdate) RemoveGroupMemberships(g ...*GroupMembership) *UserUpdate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -269,14 +269,14 @@ func (uu *UserUpdate) ClearGroupMembershipApplications() *UserUpdate {
 }
 
 // RemoveGroupMembershipApplicationIDs removes the "group_membership_applications" edge to GroupMembershipApplication entities by IDs.
-func (uu *UserUpdate) RemoveGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveGroupMembershipApplicationIDs(ids ...guidgql.GUID) *UserUpdate {
 	uu.mutation.RemoveGroupMembershipApplicationIDs(ids...)
 	return uu
 }
 
 // RemoveGroupMembershipApplications removes "group_membership_applications" edges to GroupMembershipApplication entities.
 func (uu *UserUpdate) RemoveGroupMembershipApplications(g ...*GroupMembershipApplication) *UserUpdate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -364,7 +364,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Table:   user.Table,
 			Columns: user.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: user.FieldID,
 			},
 		},
@@ -413,7 +413,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -429,7 +429,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -448,7 +448,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -467,7 +467,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -483,7 +483,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -502,7 +502,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -518,7 +518,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -537,7 +537,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -556,7 +556,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -572,7 +572,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -591,7 +591,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -610,7 +610,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -626,7 +626,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -645,7 +645,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -664,7 +664,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -680,7 +680,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -699,7 +699,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -769,14 +769,14 @@ func (uuo *UserUpdateOne) SetNillableAvatarURL(s *string) *UserUpdateOne {
 }
 
 // AddPlayerIDs adds the "players" edge to the Player entity by IDs.
-func (uuo *UserUpdateOne) AddPlayerIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddPlayerIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.AddPlayerIDs(ids...)
 	return uuo
 }
 
 // AddPlayers adds the "players" edges to the Player entity.
 func (uuo *UserUpdateOne) AddPlayers(p ...*Player) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -784,13 +784,13 @@ func (uuo *UserUpdateOne) AddPlayers(p ...*Player) *UserUpdateOne {
 }
 
 // SetMainPlayerID sets the "main_player" edge to the Player entity by ID.
-func (uuo *UserUpdateOne) SetMainPlayerID(id uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) SetMainPlayerID(id guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.SetMainPlayerID(id)
 	return uuo
 }
 
 // SetNillableMainPlayerID sets the "main_player" edge to the Player entity by ID if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableMainPlayerID(id *uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) SetNillableMainPlayerID(id *guidgql.GUID) *UserUpdateOne {
 	if id != nil {
 		uuo = uuo.SetMainPlayerID(*id)
 	}
@@ -803,14 +803,14 @@ func (uuo *UserUpdateOne) SetMainPlayer(p *Player) *UserUpdateOne {
 }
 
 // AddSentSupervisionRequestIDs adds the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
-func (uuo *UserUpdateOne) AddSentSupervisionRequestIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddSentSupervisionRequestIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.AddSentSupervisionRequestIDs(ids...)
 	return uuo
 }
 
 // AddSentSupervisionRequests adds the "sent_supervision_requests" edges to the PlayerSupervisionRequest entity.
 func (uuo *UserUpdateOne) AddSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -818,14 +818,14 @@ func (uuo *UserUpdateOne) AddSentSupervisionRequests(p ...*PlayerSupervisionRequ
 }
 
 // AddSupervisionRequestApprovalIDs adds the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
-func (uuo *UserUpdateOne) AddSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddSupervisionRequestApprovalIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.AddSupervisionRequestApprovalIDs(ids...)
 	return uuo
 }
 
 // AddSupervisionRequestApprovals adds the "supervision_request_approvals" edges to the PlayerSupervisionRequestApproval entity.
 func (uuo *UserUpdateOne) AddSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -833,14 +833,14 @@ func (uuo *UserUpdateOne) AddSupervisionRequestApprovals(p ...*PlayerSupervision
 }
 
 // AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
-func (uuo *UserUpdateOne) AddGroupMembershipIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddGroupMembershipIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.AddGroupMembershipIDs(ids...)
 	return uuo
 }
 
 // AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
 func (uuo *UserUpdateOne) AddGroupMemberships(g ...*GroupMembership) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -848,14 +848,14 @@ func (uuo *UserUpdateOne) AddGroupMemberships(g ...*GroupMembership) *UserUpdate
 }
 
 // AddGroupMembershipApplicationIDs adds the "group_membership_applications" edge to the GroupMembershipApplication entity by IDs.
-func (uuo *UserUpdateOne) AddGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddGroupMembershipApplicationIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.AddGroupMembershipApplicationIDs(ids...)
 	return uuo
 }
 
 // AddGroupMembershipApplications adds the "group_membership_applications" edges to the GroupMembershipApplication entity.
 func (uuo *UserUpdateOne) AddGroupMembershipApplications(g ...*GroupMembershipApplication) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -874,14 +874,14 @@ func (uuo *UserUpdateOne) ClearPlayers() *UserUpdateOne {
 }
 
 // RemovePlayerIDs removes the "players" edge to Player entities by IDs.
-func (uuo *UserUpdateOne) RemovePlayerIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemovePlayerIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.RemovePlayerIDs(ids...)
 	return uuo
 }
 
 // RemovePlayers removes "players" edges to Player entities.
 func (uuo *UserUpdateOne) RemovePlayers(p ...*Player) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -901,14 +901,14 @@ func (uuo *UserUpdateOne) ClearSentSupervisionRequests() *UserUpdateOne {
 }
 
 // RemoveSentSupervisionRequestIDs removes the "sent_supervision_requests" edge to PlayerSupervisionRequest entities by IDs.
-func (uuo *UserUpdateOne) RemoveSentSupervisionRequestIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveSentSupervisionRequestIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.RemoveSentSupervisionRequestIDs(ids...)
 	return uuo
 }
 
 // RemoveSentSupervisionRequests removes "sent_supervision_requests" edges to PlayerSupervisionRequest entities.
 func (uuo *UserUpdateOne) RemoveSentSupervisionRequests(p ...*PlayerSupervisionRequest) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -922,14 +922,14 @@ func (uuo *UserUpdateOne) ClearSupervisionRequestApprovals() *UserUpdateOne {
 }
 
 // RemoveSupervisionRequestApprovalIDs removes the "supervision_request_approvals" edge to PlayerSupervisionRequestApproval entities by IDs.
-func (uuo *UserUpdateOne) RemoveSupervisionRequestApprovalIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveSupervisionRequestApprovalIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.RemoveSupervisionRequestApprovalIDs(ids...)
 	return uuo
 }
 
 // RemoveSupervisionRequestApprovals removes "supervision_request_approvals" edges to PlayerSupervisionRequestApproval entities.
 func (uuo *UserUpdateOne) RemoveSupervisionRequestApprovals(p ...*PlayerSupervisionRequestApproval) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -943,14 +943,14 @@ func (uuo *UserUpdateOne) ClearGroupMemberships() *UserUpdateOne {
 }
 
 // RemoveGroupMembershipIDs removes the "group_memberships" edge to GroupMembership entities by IDs.
-func (uuo *UserUpdateOne) RemoveGroupMembershipIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveGroupMembershipIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.RemoveGroupMembershipIDs(ids...)
 	return uuo
 }
 
 // RemoveGroupMemberships removes "group_memberships" edges to GroupMembership entities.
 func (uuo *UserUpdateOne) RemoveGroupMemberships(g ...*GroupMembership) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -964,14 +964,14 @@ func (uuo *UserUpdateOne) ClearGroupMembershipApplications() *UserUpdateOne {
 }
 
 // RemoveGroupMembershipApplicationIDs removes the "group_membership_applications" edge to GroupMembershipApplication entities by IDs.
-func (uuo *UserUpdateOne) RemoveGroupMembershipApplicationIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveGroupMembershipApplicationIDs(ids ...guidgql.GUID) *UserUpdateOne {
 	uuo.mutation.RemoveGroupMembershipApplicationIDs(ids...)
 	return uuo
 }
 
 // RemoveGroupMembershipApplications removes "group_membership_applications" edges to GroupMembershipApplication entities.
 func (uuo *UserUpdateOne) RemoveGroupMembershipApplications(g ...*GroupMembershipApplication) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -1072,7 +1072,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Table:   user.Table,
 			Columns: user.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: user.FieldID,
 			},
 		},
@@ -1138,7 +1138,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -1154,7 +1154,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -1173,7 +1173,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -1192,7 +1192,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -1208,7 +1208,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -1227,7 +1227,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -1243,7 +1243,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -1262,7 +1262,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -1281,7 +1281,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -1297,7 +1297,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -1316,7 +1316,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},
@@ -1335,7 +1335,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -1351,7 +1351,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -1370,7 +1370,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -1389,7 +1389,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -1405,7 +1405,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -1424,7 +1424,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},

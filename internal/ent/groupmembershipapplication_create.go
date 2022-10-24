@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -37,28 +37,28 @@ func (gmac *GroupMembershipApplicationCreate) SetNillableMessage(s *string) *Gro
 }
 
 // SetID sets the "id" field.
-func (gmac *GroupMembershipApplicationCreate) SetID(u uuid.UUID) *GroupMembershipApplicationCreate {
-	gmac.mutation.SetID(u)
+func (gmac *GroupMembershipApplicationCreate) SetID(gu guidgql.GUID) *GroupMembershipApplicationCreate {
+	gmac.mutation.SetID(gu)
 	return gmac
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (gmac *GroupMembershipApplicationCreate) SetNillableID(u *uuid.UUID) *GroupMembershipApplicationCreate {
-	if u != nil {
-		gmac.SetID(*u)
+func (gmac *GroupMembershipApplicationCreate) SetNillableID(gu *guidgql.GUID) *GroupMembershipApplicationCreate {
+	if gu != nil {
+		gmac.SetID(*gu)
 	}
 	return gmac
 }
 
 // AddUserIDs adds the "user" edge to the User entity by IDs.
-func (gmac *GroupMembershipApplicationCreate) AddUserIDs(ids ...uuid.UUID) *GroupMembershipApplicationCreate {
+func (gmac *GroupMembershipApplicationCreate) AddUserIDs(ids ...guidgql.GUID) *GroupMembershipApplicationCreate {
 	gmac.mutation.AddUserIDs(ids...)
 	return gmac
 }
 
 // AddUser adds the "user" edges to the User entity.
 func (gmac *GroupMembershipApplicationCreate) AddUser(u ...*User) *GroupMembershipApplicationCreate {
-	ids := make([]uuid.UUID, len(u))
+	ids := make([]guidgql.GUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -66,14 +66,14 @@ func (gmac *GroupMembershipApplicationCreate) AddUser(u ...*User) *GroupMembersh
 }
 
 // AddGroupIDs adds the "group" edge to the Group entity by IDs.
-func (gmac *GroupMembershipApplicationCreate) AddGroupIDs(ids ...uuid.UUID) *GroupMembershipApplicationCreate {
+func (gmac *GroupMembershipApplicationCreate) AddGroupIDs(ids ...guidgql.GUID) *GroupMembershipApplicationCreate {
 	gmac.mutation.AddGroupIDs(ids...)
 	return gmac
 }
 
 // AddGroup adds the "group" edges to the Group entity.
 func (gmac *GroupMembershipApplicationCreate) AddGroup(g ...*Group) *GroupMembershipApplicationCreate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -190,7 +190,7 @@ func (gmac *GroupMembershipApplicationCreate) sqlSave(ctx context.Context) (*Gro
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+		if id, ok := _spec.ID.Value.(*guidgql.GUID); ok {
 			_node.ID = *id
 		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
 			return nil, err
@@ -205,7 +205,7 @@ func (gmac *GroupMembershipApplicationCreate) createSpec() (*GroupMembershipAppl
 		_spec = &sqlgraph.CreateSpec{
 			Table: groupmembershipapplication.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupmembershipapplication.FieldID,
 			},
 		}
@@ -231,7 +231,7 @@ func (gmac *GroupMembershipApplicationCreate) createSpec() (*GroupMembershipAppl
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -250,7 +250,7 @@ func (gmac *GroupMembershipApplicationCreate) createSpec() (*GroupMembershipAppl
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},

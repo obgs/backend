@@ -3,7 +3,7 @@
 package player
 
 import (
-	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 const (
@@ -79,5 +79,5 @@ var (
 	// DefaultName holds the default value on creation for the "name" field.
 	DefaultName string
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() guidgql.GUID
 )

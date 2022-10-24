@@ -6,8 +6,8 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 type GroupMembership struct {
@@ -16,7 +16,7 @@ type GroupMembership struct {
 
 func (GroupMembership) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("group_memberships")),
 		field.Enum("role").GoType(enums.RoleMember),
 	}
 }

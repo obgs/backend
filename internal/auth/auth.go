@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 
 	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -61,10 +61,10 @@ const DAY = 24 * time.Hour
 const RANDOM_PASSWORD_LENGTH = 32
 
 // create and sign access and refresh tokens
-func (a *AuthService) generateTokens(w http.ResponseWriter, userId uuid.UUID, statusCode int) {
+func (a *AuthService) generateTokens(w http.ResponseWriter, userId guidgql.GUID, statusCode int) {
 	now := time.Now()
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  userId,
+		"id":  userId.String(),
 		"exp": now.Add(DAY).Unix(),
 	})
 	signedAccessToken, err := accessToken.SignedString([]byte(a.secret))
@@ -73,7 +73,7 @@ func (a *AuthService) generateTokens(w http.ResponseWriter, userId uuid.UUID, st
 		return
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  userId,
+		"id":  userId.String(),
 		"exp": now.Add(60 * 24 * time.Hour).Unix(),
 	})
 	signedRefreshToken, err := refreshToken.SignedString([]byte(a.secret))
@@ -175,7 +175,7 @@ func (a *AuthService) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		id, err := uuid.Parse(claims["id"].(string))
+		id, err := guidgql.UnmarshalGUID(claims["id"].(string))
 		if err != nil {
 			invalidRefreshToken(w)
 			return

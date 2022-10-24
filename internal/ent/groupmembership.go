@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -18,14 +18,14 @@ import (
 type GroupMembership struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID guidgql.GUID `json:"id,omitempty"`
 	// Role holds the value of the "role" field.
 	Role enums.Role `json:"role,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupMembershipQuery when eager-loading is set.
 	Edges                  GroupMembershipEdges `json:"edges"`
-	group_members          *uuid.UUID
-	user_group_memberships *uuid.UUID
+	group_members          *guidgql.GUID
+	user_group_memberships *guidgql.GUID
 }
 
 // GroupMembershipEdges holds the relations/edges for other nodes in the graph.
@@ -72,14 +72,14 @@ func (*GroupMembership) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case groupmembership.FieldID:
+			values[i] = new(guidgql.GUID)
 		case groupmembership.FieldRole:
 			values[i] = new(sql.NullString)
-		case groupmembership.FieldID:
-			values[i] = new(uuid.UUID)
 		case groupmembership.ForeignKeys[0]: // group_members
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		case groupmembership.ForeignKeys[1]: // user_group_memberships
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type GroupMembership", columns[i])
 		}
@@ -96,7 +96,7 @@ func (gm *GroupMembership) assignValues(columns []string, values []interface{}) 
 	for i := range columns {
 		switch columns[i] {
 		case groupmembership.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*guidgql.GUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				gm.ID = *value
@@ -111,15 +111,15 @@ func (gm *GroupMembership) assignValues(columns []string, values []interface{}) 
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field group_members", values[i])
 			} else if value.Valid {
-				gm.group_members = new(uuid.UUID)
-				*gm.group_members = *value.S.(*uuid.UUID)
+				gm.group_members = new(guidgql.GUID)
+				*gm.group_members = *value.S.(*guidgql.GUID)
 			}
 		case groupmembership.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field user_group_memberships", values[i])
 			} else if value.Valid {
-				gm.user_group_memberships = new(uuid.UUID)
-				*gm.user_group_memberships = *value.S.(*uuid.UUID)
+				gm.user_group_memberships = new(guidgql.GUID)
+				*gm.user_group_memberships = *value.S.(*guidgql.GUID)
 			}
 		}
 	}

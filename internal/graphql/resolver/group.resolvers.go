@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
@@ -15,6 +14,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
@@ -106,7 +106,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.CreateGr
 }
 
 // JoinGroup is the resolver for the joinGroup field.
-func (r *mutationResolver) JoinGroup(ctx context.Context, groupID uuid.UUID) (bool, error) {
+func (r *mutationResolver) JoinGroup(ctx context.Context, groupID guidgql.GUID) (bool, error) {
 	u, err := auth.UserFromContext(ctx)
 	if err != nil {
 		return false, err

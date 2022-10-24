@@ -3,7 +3,7 @@
 package groupmembershipapplication
 
 import (
-	"github.com/google/uuid"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 const (
@@ -60,5 +60,5 @@ var (
 	// DefaultMessage holds the default value on creation for the "message" field.
 	DefaultMessage string
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() guidgql.GUID
 )

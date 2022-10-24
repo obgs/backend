@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -37,27 +37,27 @@ func (pc *PlayerCreate) SetNillableName(s *string) *PlayerCreate {
 }
 
 // SetID sets the "id" field.
-func (pc *PlayerCreate) SetID(u uuid.UUID) *PlayerCreate {
-	pc.mutation.SetID(u)
+func (pc *PlayerCreate) SetID(gu guidgql.GUID) *PlayerCreate {
+	pc.mutation.SetID(gu)
 	return pc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pc *PlayerCreate) SetNillableID(u *uuid.UUID) *PlayerCreate {
-	if u != nil {
-		pc.SetID(*u)
+func (pc *PlayerCreate) SetNillableID(gu *guidgql.GUID) *PlayerCreate {
+	if gu != nil {
+		pc.SetID(*gu)
 	}
 	return pc
 }
 
 // SetOwnerID sets the "owner" edge to the User entity by ID.
-func (pc *PlayerCreate) SetOwnerID(id uuid.UUID) *PlayerCreate {
+func (pc *PlayerCreate) SetOwnerID(id guidgql.GUID) *PlayerCreate {
 	pc.mutation.SetOwnerID(id)
 	return pc
 }
 
 // SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
-func (pc *PlayerCreate) SetNillableOwnerID(id *uuid.UUID) *PlayerCreate {
+func (pc *PlayerCreate) SetNillableOwnerID(id *guidgql.GUID) *PlayerCreate {
 	if id != nil {
 		pc = pc.SetOwnerID(*id)
 	}
@@ -70,14 +70,14 @@ func (pc *PlayerCreate) SetOwner(u *User) *PlayerCreate {
 }
 
 // AddSupervisorIDs adds the "supervisors" edge to the User entity by IDs.
-func (pc *PlayerCreate) AddSupervisorIDs(ids ...uuid.UUID) *PlayerCreate {
+func (pc *PlayerCreate) AddSupervisorIDs(ids ...guidgql.GUID) *PlayerCreate {
 	pc.mutation.AddSupervisorIDs(ids...)
 	return pc
 }
 
 // AddSupervisors adds the "supervisors" edges to the User entity.
 func (pc *PlayerCreate) AddSupervisors(u ...*User) *PlayerCreate {
-	ids := make([]uuid.UUID, len(u))
+	ids := make([]guidgql.GUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -85,14 +85,14 @@ func (pc *PlayerCreate) AddSupervisors(u ...*User) *PlayerCreate {
 }
 
 // AddSupervisionRequestIDs adds the "supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
-func (pc *PlayerCreate) AddSupervisionRequestIDs(ids ...uuid.UUID) *PlayerCreate {
+func (pc *PlayerCreate) AddSupervisionRequestIDs(ids ...guidgql.GUID) *PlayerCreate {
 	pc.mutation.AddSupervisionRequestIDs(ids...)
 	return pc
 }
 
 // AddSupervisionRequests adds the "supervision_requests" edges to the PlayerSupervisionRequest entity.
 func (pc *PlayerCreate) AddSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -203,7 +203,7 @@ func (pc *PlayerCreate) sqlSave(ctx context.Context) (*Player, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+		if id, ok := _spec.ID.Value.(*guidgql.GUID); ok {
 			_node.ID = *id
 		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
 			return nil, err
@@ -218,7 +218,7 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 		_spec = &sqlgraph.CreateSpec{
 			Table: player.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: player.FieldID,
 			},
 		}
@@ -244,7 +244,7 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -264,7 +264,7 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -283,7 +283,7 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},

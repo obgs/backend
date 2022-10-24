@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 
 	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -39,8 +39,13 @@ func (a *AuthService) Middleware(next http.Handler) http.Handler {
 			return
 		}
 		ctx := context.Background()
+		id, err := guidgql.UnmarshalGUID(claims["id"].(string))
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
 		// get the user from the database
-		user, err := a.client.User.Query().Where(user.IDEQ(uuid.MustParse(claims["id"].(string)))).Only(ctx)
+		user, err := a.client.User.Query().Where(user.IDEQ(id)).Only(ctx)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
