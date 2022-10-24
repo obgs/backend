@@ -37,18 +37,34 @@ func MarshalGUID(g GUID) graphql.Marshaler {
 	})
 }
 
-func UnmarshalGUID(v interface{}) (g GUID, err error) {
-	s, ok := v.(string)
-	if !ok {
-		return g, fmt.Errorf("invalid type %T, expect string", v)
-	}
+func UnmarshalGUID(src interface{}) (g GUID, err error) {
+	switch v := src.(type) {
+	case []byte:
+		var s []byte
+		_, err = base64.StdEncoding.Decode(s, v)
+		if err != nil {
+			return
+		}
 
-	j, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return g, fmt.Errorf("invalid base64 string %s", s)
-	}
+		err = json.Unmarshal(s, &g)
 
-	return g, json.Unmarshal(j, &g)
+		return
+	case string:
+		var s []byte
+		s, err = base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return
+		}
+
+		err = json.Unmarshal(s, &g)
+
+		return
+	case GUID:
+		return v, nil
+	default:
+		err = fmt.Errorf("invalid type %T, expect []byte or string", src)
+		return
+	}
 }
 
 func (guid GUID) MarshalGQL(w io.Writer) {
@@ -67,25 +83,7 @@ func (guid *GUID) UnmarshalGQL(v interface{}) error {
 }
 
 func (guid *GUID) Scan(src interface{}) error {
-	switch v := src.(type) {
-	case []byte:
-		var s []byte
-		_, err := base64.StdEncoding.Decode(s, v)
-		if err != nil {
-			return err
-		}
-
-		return json.Unmarshal(s, guid)
-	case string:
-		s, err := base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			return err
-		}
-
-		return json.Unmarshal(s, guid)
-	default:
-		return fmt.Errorf("invalid type %T, expect []byte or string", src)
-	}
+	return guid.UnmarshalGQL(src)
 }
 
 func (guid GUID) Value() (driver.Value, error) {
