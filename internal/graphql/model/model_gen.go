@@ -3,9 +3,9 @@
 package model
 
 import (
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 type CreateGroupInput struct {
@@ -22,16 +22,16 @@ type CreatePlayerInput struct {
 }
 
 type GroupApplicationInput struct {
-	GroupID uuid.UUID `json:"groupId"`
-	Message *string   `json:"message"`
+	GroupID guidgql.GUID `json:"groupId"`
+	Message *string      `json:"message"`
 }
 
 type RequestPlayerSupervisionInput struct {
-	PlayerID uuid.UUID `json:"playerId"`
-	Message  *string   `json:"message"`
+	PlayerID guidgql.GUID `json:"playerId"`
+	Message  *string      `json:"message"`
 }
 
 type ResolvePlayerSupervisionRequestInput struct {
-	RequestID uuid.UUID `json:"requestId"`
-	Approved  bool      `json:"approved"`
+	RequestID guidgql.GUID `json:"requestId"`
+	Approved  bool         `json:"approved"`
 }

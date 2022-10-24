@@ -10,10 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // GroupSettingsQuery is the builder for querying GroupSettings entities.
@@ -111,8 +111,8 @@ func (gsq *GroupSettingsQuery) FirstX(ctx context.Context) *GroupSettings {
 
 // FirstID returns the first GroupSettings ID from the query.
 // Returns a *NotFoundError when no GroupSettings ID was found.
-func (gsq *GroupSettingsQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (gsq *GroupSettingsQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = gsq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
@@ -124,7 +124,7 @@ func (gsq *GroupSettingsQuery) FirstID(ctx context.Context) (id uuid.UUID, err e
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (gsq *GroupSettingsQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (gsq *GroupSettingsQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 	id, err := gsq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -162,8 +162,8 @@ func (gsq *GroupSettingsQuery) OnlyX(ctx context.Context) *GroupSettings {
 // OnlyID is like Only, but returns the only GroupSettings ID in the query.
 // Returns a *NotSingularError when more than one GroupSettings ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (gsq *GroupSettingsQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (gsq *GroupSettingsQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = gsq.Limit(2).IDs(ctx); err != nil {
 		return
 	}
@@ -179,7 +179,7 @@ func (gsq *GroupSettingsQuery) OnlyID(ctx context.Context) (id uuid.UUID, err er
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (gsq *GroupSettingsQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (gsq *GroupSettingsQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 	id, err := gsq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -205,8 +205,8 @@ func (gsq *GroupSettingsQuery) AllX(ctx context.Context) []*GroupSettings {
 }
 
 // IDs executes the query and returns a list of GroupSettings IDs.
-func (gsq *GroupSettingsQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
+func (gsq *GroupSettingsQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
+	var ids []guidgql.GUID
 	if err := gsq.Select(groupsettings.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (gsq *GroupSettingsQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (gsq *GroupSettingsQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (gsq *GroupSettingsQuery) IDsX(ctx context.Context) []guidgql.GUID {
 	ids, err := gsq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -402,8 +402,8 @@ func (gsq *GroupSettingsQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 }
 
 func (gsq *GroupSettingsQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes []*GroupSettings, init func(*GroupSettings), assign func(*GroupSettings, *Group)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*GroupSettings)
+	ids := make([]guidgql.GUID, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID][]*GroupSettings)
 	for i := range nodes {
 		if nodes[i].group_settings == nil {
 			continue
@@ -457,7 +457,7 @@ func (gsq *GroupSettingsQuery) querySpec() *sqlgraph.QuerySpec {
 			Table:   groupsettings.Table,
 			Columns: groupsettings.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupsettings.FieldID,
 			},
 		},

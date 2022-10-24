@@ -72,7 +72,7 @@ func (gmd *GroupMembershipDelete) sqlExec(ctx context.Context) (int, error) {
 		Node: &sqlgraph.NodeSpec{
 			Table: groupmembership.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupmembership.FieldID,
 			},
 		},

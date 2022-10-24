@@ -10,11 +10,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -38,7 +38,7 @@ func (gmu *GroupMembershipUpdate) SetRole(e enums.Role) *GroupMembershipUpdate {
 }
 
 // SetGroupID sets the "group" edge to the Group entity by ID.
-func (gmu *GroupMembershipUpdate) SetGroupID(id uuid.UUID) *GroupMembershipUpdate {
+func (gmu *GroupMembershipUpdate) SetGroupID(id guidgql.GUID) *GroupMembershipUpdate {
 	gmu.mutation.SetGroupID(id)
 	return gmu
 }
@@ -49,7 +49,7 @@ func (gmu *GroupMembershipUpdate) SetGroup(g *Group) *GroupMembershipUpdate {
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (gmu *GroupMembershipUpdate) SetUserID(id uuid.UUID) *GroupMembershipUpdate {
+func (gmu *GroupMembershipUpdate) SetUserID(id guidgql.GUID) *GroupMembershipUpdate {
 	gmu.mutation.SetUserID(id)
 	return gmu
 }
@@ -158,7 +158,7 @@ func (gmu *GroupMembershipUpdate) sqlSave(ctx context.Context) (n int, err error
 			Table:   groupmembership.Table,
 			Columns: groupmembership.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupmembership.FieldID,
 			},
 		},
@@ -186,7 +186,7 @@ func (gmu *GroupMembershipUpdate) sqlSave(ctx context.Context) (n int, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},
@@ -202,7 +202,7 @@ func (gmu *GroupMembershipUpdate) sqlSave(ctx context.Context) (n int, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},
@@ -221,7 +221,7 @@ func (gmu *GroupMembershipUpdate) sqlSave(ctx context.Context) (n int, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -237,7 +237,7 @@ func (gmu *GroupMembershipUpdate) sqlSave(ctx context.Context) (n int, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -273,7 +273,7 @@ func (gmuo *GroupMembershipUpdateOne) SetRole(e enums.Role) *GroupMembershipUpda
 }
 
 // SetGroupID sets the "group" edge to the Group entity by ID.
-func (gmuo *GroupMembershipUpdateOne) SetGroupID(id uuid.UUID) *GroupMembershipUpdateOne {
+func (gmuo *GroupMembershipUpdateOne) SetGroupID(id guidgql.GUID) *GroupMembershipUpdateOne {
 	gmuo.mutation.SetGroupID(id)
 	return gmuo
 }
@@ -284,7 +284,7 @@ func (gmuo *GroupMembershipUpdateOne) SetGroup(g *Group) *GroupMembershipUpdateO
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (gmuo *GroupMembershipUpdateOne) SetUserID(id uuid.UUID) *GroupMembershipUpdateOne {
+func (gmuo *GroupMembershipUpdateOne) SetUserID(id guidgql.GUID) *GroupMembershipUpdateOne {
 	gmuo.mutation.SetUserID(id)
 	return gmuo
 }
@@ -406,7 +406,7 @@ func (gmuo *GroupMembershipUpdateOne) sqlSave(ctx context.Context) (_node *Group
 			Table:   groupmembership.Table,
 			Columns: groupmembership.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupmembership.FieldID,
 			},
 		},
@@ -451,7 +451,7 @@ func (gmuo *GroupMembershipUpdateOne) sqlSave(ctx context.Context) (_node *Group
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},
@@ -467,7 +467,7 @@ func (gmuo *GroupMembershipUpdateOne) sqlSave(ctx context.Context) (_node *Group
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},
@@ -486,7 +486,7 @@ func (gmuo *GroupMembershipUpdateOne) sqlSave(ctx context.Context) (_node *Group
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -502,7 +502,7 @@ func (gmuo *GroupMembershipUpdateOne) sqlSave(ctx context.Context) (_node *Group
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},

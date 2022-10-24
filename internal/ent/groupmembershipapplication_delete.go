@@ -72,7 +72,7 @@ func (gmad *GroupMembershipApplicationDelete) sqlExec(ctx context.Context) (int,
 		Node: &sqlgraph.NodeSpec{
 			Table: groupmembershipapplication.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupmembershipapplication.FieldID,
 			},
 		},

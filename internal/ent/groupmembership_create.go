@@ -9,10 +9,10 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -30,21 +30,21 @@ func (gmc *GroupMembershipCreate) SetRole(e enums.Role) *GroupMembershipCreate {
 }
 
 // SetID sets the "id" field.
-func (gmc *GroupMembershipCreate) SetID(u uuid.UUID) *GroupMembershipCreate {
-	gmc.mutation.SetID(u)
+func (gmc *GroupMembershipCreate) SetID(gu guidgql.GUID) *GroupMembershipCreate {
+	gmc.mutation.SetID(gu)
 	return gmc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (gmc *GroupMembershipCreate) SetNillableID(u *uuid.UUID) *GroupMembershipCreate {
-	if u != nil {
-		gmc.SetID(*u)
+func (gmc *GroupMembershipCreate) SetNillableID(gu *guidgql.GUID) *GroupMembershipCreate {
+	if gu != nil {
+		gmc.SetID(*gu)
 	}
 	return gmc
 }
 
 // SetGroupID sets the "group" edge to the Group entity by ID.
-func (gmc *GroupMembershipCreate) SetGroupID(id uuid.UUID) *GroupMembershipCreate {
+func (gmc *GroupMembershipCreate) SetGroupID(id guidgql.GUID) *GroupMembershipCreate {
 	gmc.mutation.SetGroupID(id)
 	return gmc
 }
@@ -55,7 +55,7 @@ func (gmc *GroupMembershipCreate) SetGroup(g *Group) *GroupMembershipCreate {
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (gmc *GroupMembershipCreate) SetUserID(id uuid.UUID) *GroupMembershipCreate {
+func (gmc *GroupMembershipCreate) SetUserID(id guidgql.GUID) *GroupMembershipCreate {
 	gmc.mutation.SetUserID(id)
 	return gmc
 }
@@ -176,7 +176,7 @@ func (gmc *GroupMembershipCreate) sqlSave(ctx context.Context) (*GroupMembership
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+		if id, ok := _spec.ID.Value.(*guidgql.GUID); ok {
 			_node.ID = *id
 		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
 			return nil, err
@@ -191,7 +191,7 @@ func (gmc *GroupMembershipCreate) createSpec() (*GroupMembership, *sqlgraph.Crea
 		_spec = &sqlgraph.CreateSpec{
 			Table: groupmembership.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupmembership.FieldID,
 			},
 		}
@@ -217,7 +217,7 @@ func (gmc *GroupMembershipCreate) createSpec() (*GroupMembership, *sqlgraph.Crea
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},
@@ -237,7 +237,7 @@ func (gmc *GroupMembershipCreate) createSpec() (*GroupMembership, *sqlgraph.Crea
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},

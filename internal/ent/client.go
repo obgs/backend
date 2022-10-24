@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
@@ -213,7 +213,7 @@ func (c *GroupClient) UpdateOne(gr *Group) *GroupUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *GroupClient) UpdateOneID(id uuid.UUID) *GroupUpdateOne {
+func (c *GroupClient) UpdateOneID(id guidgql.GUID) *GroupUpdateOne {
 	mutation := newGroupMutation(c.config, OpUpdateOne, withGroupID(id))
 	return &GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -230,7 +230,7 @@ func (c *GroupClient) DeleteOne(gr *Group) *GroupDeleteOne {
 }
 
 // DeleteOne returns a builder for deleting the given entity by its id.
-func (c *GroupClient) DeleteOneID(id uuid.UUID) *GroupDeleteOne {
+func (c *GroupClient) DeleteOneID(id guidgql.GUID) *GroupDeleteOne {
 	builder := c.Delete().Where(group.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -245,12 +245,12 @@ func (c *GroupClient) Query() *GroupQuery {
 }
 
 // Get returns a Group entity by its id.
-func (c *GroupClient) Get(ctx context.Context, id uuid.UUID) (*Group, error) {
+func (c *GroupClient) Get(ctx context.Context, id guidgql.GUID) (*Group, error) {
 	return c.Query().Where(group.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *GroupClient) GetX(ctx context.Context, id uuid.UUID) *Group {
+func (c *GroupClient) GetX(ctx context.Context, id guidgql.GUID) *Group {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -351,7 +351,7 @@ func (c *GroupMembershipClient) UpdateOne(gm *GroupMembership) *GroupMembershipU
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *GroupMembershipClient) UpdateOneID(id uuid.UUID) *GroupMembershipUpdateOne {
+func (c *GroupMembershipClient) UpdateOneID(id guidgql.GUID) *GroupMembershipUpdateOne {
 	mutation := newGroupMembershipMutation(c.config, OpUpdateOne, withGroupMembershipID(id))
 	return &GroupMembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -368,7 +368,7 @@ func (c *GroupMembershipClient) DeleteOne(gm *GroupMembership) *GroupMembershipD
 }
 
 // DeleteOne returns a builder for deleting the given entity by its id.
-func (c *GroupMembershipClient) DeleteOneID(id uuid.UUID) *GroupMembershipDeleteOne {
+func (c *GroupMembershipClient) DeleteOneID(id guidgql.GUID) *GroupMembershipDeleteOne {
 	builder := c.Delete().Where(groupmembership.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -383,12 +383,12 @@ func (c *GroupMembershipClient) Query() *GroupMembershipQuery {
 }
 
 // Get returns a GroupMembership entity by its id.
-func (c *GroupMembershipClient) Get(ctx context.Context, id uuid.UUID) (*GroupMembership, error) {
+func (c *GroupMembershipClient) Get(ctx context.Context, id guidgql.GUID) (*GroupMembership, error) {
 	return c.Query().Where(groupmembership.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *GroupMembershipClient) GetX(ctx context.Context, id uuid.UUID) *GroupMembership {
+func (c *GroupMembershipClient) GetX(ctx context.Context, id guidgql.GUID) *GroupMembership {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -473,7 +473,7 @@ func (c *GroupMembershipApplicationClient) UpdateOne(gma *GroupMembershipApplica
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *GroupMembershipApplicationClient) UpdateOneID(id uuid.UUID) *GroupMembershipApplicationUpdateOne {
+func (c *GroupMembershipApplicationClient) UpdateOneID(id guidgql.GUID) *GroupMembershipApplicationUpdateOne {
 	mutation := newGroupMembershipApplicationMutation(c.config, OpUpdateOne, withGroupMembershipApplicationID(id))
 	return &GroupMembershipApplicationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -490,7 +490,7 @@ func (c *GroupMembershipApplicationClient) DeleteOne(gma *GroupMembershipApplica
 }
 
 // DeleteOne returns a builder for deleting the given entity by its id.
-func (c *GroupMembershipApplicationClient) DeleteOneID(id uuid.UUID) *GroupMembershipApplicationDeleteOne {
+func (c *GroupMembershipApplicationClient) DeleteOneID(id guidgql.GUID) *GroupMembershipApplicationDeleteOne {
 	builder := c.Delete().Where(groupmembershipapplication.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -505,12 +505,12 @@ func (c *GroupMembershipApplicationClient) Query() *GroupMembershipApplicationQu
 }
 
 // Get returns a GroupMembershipApplication entity by its id.
-func (c *GroupMembershipApplicationClient) Get(ctx context.Context, id uuid.UUID) (*GroupMembershipApplication, error) {
+func (c *GroupMembershipApplicationClient) Get(ctx context.Context, id guidgql.GUID) (*GroupMembershipApplication, error) {
 	return c.Query().Where(groupmembershipapplication.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *GroupMembershipApplicationClient) GetX(ctx context.Context, id uuid.UUID) *GroupMembershipApplication {
+func (c *GroupMembershipApplicationClient) GetX(ctx context.Context, id guidgql.GUID) *GroupMembershipApplication {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -595,7 +595,7 @@ func (c *GroupSettingsClient) UpdateOne(gs *GroupSettings) *GroupSettingsUpdateO
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *GroupSettingsClient) UpdateOneID(id uuid.UUID) *GroupSettingsUpdateOne {
+func (c *GroupSettingsClient) UpdateOneID(id guidgql.GUID) *GroupSettingsUpdateOne {
 	mutation := newGroupSettingsMutation(c.config, OpUpdateOne, withGroupSettingsID(id))
 	return &GroupSettingsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -612,7 +612,7 @@ func (c *GroupSettingsClient) DeleteOne(gs *GroupSettings) *GroupSettingsDeleteO
 }
 
 // DeleteOne returns a builder for deleting the given entity by its id.
-func (c *GroupSettingsClient) DeleteOneID(id uuid.UUID) *GroupSettingsDeleteOne {
+func (c *GroupSettingsClient) DeleteOneID(id guidgql.GUID) *GroupSettingsDeleteOne {
 	builder := c.Delete().Where(groupsettings.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -627,12 +627,12 @@ func (c *GroupSettingsClient) Query() *GroupSettingsQuery {
 }
 
 // Get returns a GroupSettings entity by its id.
-func (c *GroupSettingsClient) Get(ctx context.Context, id uuid.UUID) (*GroupSettings, error) {
+func (c *GroupSettingsClient) Get(ctx context.Context, id guidgql.GUID) (*GroupSettings, error) {
 	return c.Query().Where(groupsettings.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *GroupSettingsClient) GetX(ctx context.Context, id uuid.UUID) *GroupSettings {
+func (c *GroupSettingsClient) GetX(ctx context.Context, id guidgql.GUID) *GroupSettings {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -701,7 +701,7 @@ func (c *PlayerClient) UpdateOne(pl *Player) *PlayerUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *PlayerClient) UpdateOneID(id uuid.UUID) *PlayerUpdateOne {
+func (c *PlayerClient) UpdateOneID(id guidgql.GUID) *PlayerUpdateOne {
 	mutation := newPlayerMutation(c.config, OpUpdateOne, withPlayerID(id))
 	return &PlayerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -718,7 +718,7 @@ func (c *PlayerClient) DeleteOne(pl *Player) *PlayerDeleteOne {
 }
 
 // DeleteOne returns a builder for deleting the given entity by its id.
-func (c *PlayerClient) DeleteOneID(id uuid.UUID) *PlayerDeleteOne {
+func (c *PlayerClient) DeleteOneID(id guidgql.GUID) *PlayerDeleteOne {
 	builder := c.Delete().Where(player.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -733,12 +733,12 @@ func (c *PlayerClient) Query() *PlayerQuery {
 }
 
 // Get returns a Player entity by its id.
-func (c *PlayerClient) Get(ctx context.Context, id uuid.UUID) (*Player, error) {
+func (c *PlayerClient) Get(ctx context.Context, id guidgql.GUID) (*Player, error) {
 	return c.Query().Where(player.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *PlayerClient) GetX(ctx context.Context, id uuid.UUID) *Player {
+func (c *PlayerClient) GetX(ctx context.Context, id guidgql.GUID) *Player {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -839,7 +839,7 @@ func (c *PlayerSupervisionRequestClient) UpdateOne(psr *PlayerSupervisionRequest
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *PlayerSupervisionRequestClient) UpdateOneID(id uuid.UUID) *PlayerSupervisionRequestUpdateOne {
+func (c *PlayerSupervisionRequestClient) UpdateOneID(id guidgql.GUID) *PlayerSupervisionRequestUpdateOne {
 	mutation := newPlayerSupervisionRequestMutation(c.config, OpUpdateOne, withPlayerSupervisionRequestID(id))
 	return &PlayerSupervisionRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -856,7 +856,7 @@ func (c *PlayerSupervisionRequestClient) DeleteOne(psr *PlayerSupervisionRequest
 }
 
 // DeleteOne returns a builder for deleting the given entity by its id.
-func (c *PlayerSupervisionRequestClient) DeleteOneID(id uuid.UUID) *PlayerSupervisionRequestDeleteOne {
+func (c *PlayerSupervisionRequestClient) DeleteOneID(id guidgql.GUID) *PlayerSupervisionRequestDeleteOne {
 	builder := c.Delete().Where(playersupervisionrequest.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -871,12 +871,12 @@ func (c *PlayerSupervisionRequestClient) Query() *PlayerSupervisionRequestQuery 
 }
 
 // Get returns a PlayerSupervisionRequest entity by its id.
-func (c *PlayerSupervisionRequestClient) Get(ctx context.Context, id uuid.UUID) (*PlayerSupervisionRequest, error) {
+func (c *PlayerSupervisionRequestClient) Get(ctx context.Context, id guidgql.GUID) (*PlayerSupervisionRequest, error) {
 	return c.Query().Where(playersupervisionrequest.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *PlayerSupervisionRequestClient) GetX(ctx context.Context, id uuid.UUID) *PlayerSupervisionRequest {
+func (c *PlayerSupervisionRequestClient) GetX(ctx context.Context, id guidgql.GUID) *PlayerSupervisionRequest {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -977,7 +977,7 @@ func (c *PlayerSupervisionRequestApprovalClient) UpdateOne(psra *PlayerSupervisi
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *PlayerSupervisionRequestApprovalClient) UpdateOneID(id uuid.UUID) *PlayerSupervisionRequestApprovalUpdateOne {
+func (c *PlayerSupervisionRequestApprovalClient) UpdateOneID(id guidgql.GUID) *PlayerSupervisionRequestApprovalUpdateOne {
 	mutation := newPlayerSupervisionRequestApprovalMutation(c.config, OpUpdateOne, withPlayerSupervisionRequestApprovalID(id))
 	return &PlayerSupervisionRequestApprovalUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -994,7 +994,7 @@ func (c *PlayerSupervisionRequestApprovalClient) DeleteOne(psra *PlayerSupervisi
 }
 
 // DeleteOne returns a builder for deleting the given entity by its id.
-func (c *PlayerSupervisionRequestApprovalClient) DeleteOneID(id uuid.UUID) *PlayerSupervisionRequestApprovalDeleteOne {
+func (c *PlayerSupervisionRequestApprovalClient) DeleteOneID(id guidgql.GUID) *PlayerSupervisionRequestApprovalDeleteOne {
 	builder := c.Delete().Where(playersupervisionrequestapproval.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -1009,12 +1009,12 @@ func (c *PlayerSupervisionRequestApprovalClient) Query() *PlayerSupervisionReque
 }
 
 // Get returns a PlayerSupervisionRequestApproval entity by its id.
-func (c *PlayerSupervisionRequestApprovalClient) Get(ctx context.Context, id uuid.UUID) (*PlayerSupervisionRequestApproval, error) {
+func (c *PlayerSupervisionRequestApprovalClient) Get(ctx context.Context, id guidgql.GUID) (*PlayerSupervisionRequestApproval, error) {
 	return c.Query().Where(playersupervisionrequestapproval.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *PlayerSupervisionRequestApprovalClient) GetX(ctx context.Context, id uuid.UUID) *PlayerSupervisionRequestApproval {
+func (c *PlayerSupervisionRequestApprovalClient) GetX(ctx context.Context, id guidgql.GUID) *PlayerSupervisionRequestApproval {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -1099,7 +1099,7 @@ func (c *UserClient) UpdateOne(u *User) *UserUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *UserClient) UpdateOneID(id uuid.UUID) *UserUpdateOne {
+func (c *UserClient) UpdateOneID(id guidgql.GUID) *UserUpdateOne {
 	mutation := newUserMutation(c.config, OpUpdateOne, withUserID(id))
 	return &UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -1116,7 +1116,7 @@ func (c *UserClient) DeleteOne(u *User) *UserDeleteOne {
 }
 
 // DeleteOne returns a builder for deleting the given entity by its id.
-func (c *UserClient) DeleteOneID(id uuid.UUID) *UserDeleteOne {
+func (c *UserClient) DeleteOneID(id guidgql.GUID) *UserDeleteOne {
 	builder := c.Delete().Where(user.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -1131,12 +1131,12 @@ func (c *UserClient) Query() *UserQuery {
 }
 
 // Get returns a User entity by its id.
-func (c *UserClient) Get(ctx context.Context, id uuid.UUID) (*User, error) {
+func (c *UserClient) Get(ctx context.Context, id guidgql.GUID) (*User, error) {
 	return c.Query().Where(user.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *UserClient) GetX(ctx context.Context, id uuid.UUID) *User {
+func (c *UserClient) GetX(ctx context.Context, id guidgql.GUID) *User {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)

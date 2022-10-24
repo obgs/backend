@@ -3,7 +3,6 @@
 package ent
 
 import (
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -12,6 +11,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -36,13 +36,13 @@ func init() {
 	// groupDescID is the schema descriptor for id field.
 	groupDescID := groupFields[0].Descriptor()
 	// group.DefaultID holds the default value on creation for the id field.
-	group.DefaultID = groupDescID.Default.(func() uuid.UUID)
+	group.DefaultID = groupDescID.Default.(func() guidgql.GUID)
 	groupmembershipFields := schema.GroupMembership{}.Fields()
 	_ = groupmembershipFields
 	// groupmembershipDescID is the schema descriptor for id field.
 	groupmembershipDescID := groupmembershipFields[0].Descriptor()
 	// groupmembership.DefaultID holds the default value on creation for the id field.
-	groupmembership.DefaultID = groupmembershipDescID.Default.(func() uuid.UUID)
+	groupmembership.DefaultID = groupmembershipDescID.Default.(func() guidgql.GUID)
 	groupmembershipapplicationFields := schema.GroupMembershipApplication{}.Fields()
 	_ = groupmembershipapplicationFields
 	// groupmembershipapplicationDescMessage is the schema descriptor for message field.
@@ -52,13 +52,13 @@ func init() {
 	// groupmembershipapplicationDescID is the schema descriptor for id field.
 	groupmembershipapplicationDescID := groupmembershipapplicationFields[0].Descriptor()
 	// groupmembershipapplication.DefaultID holds the default value on creation for the id field.
-	groupmembershipapplication.DefaultID = groupmembershipapplicationDescID.Default.(func() uuid.UUID)
+	groupmembershipapplication.DefaultID = groupmembershipapplicationDescID.Default.(func() guidgql.GUID)
 	groupsettingsFields := schema.GroupSettings{}.Fields()
 	_ = groupsettingsFields
 	// groupsettingsDescID is the schema descriptor for id field.
 	groupsettingsDescID := groupsettingsFields[0].Descriptor()
 	// groupsettings.DefaultID holds the default value on creation for the id field.
-	groupsettings.DefaultID = groupsettingsDescID.Default.(func() uuid.UUID)
+	groupsettings.DefaultID = groupsettingsDescID.Default.(func() guidgql.GUID)
 	playerFields := schema.Player{}.Fields()
 	_ = playerFields
 	// playerDescName is the schema descriptor for name field.
@@ -68,19 +68,19 @@ func init() {
 	// playerDescID is the schema descriptor for id field.
 	playerDescID := playerFields[0].Descriptor()
 	// player.DefaultID holds the default value on creation for the id field.
-	player.DefaultID = playerDescID.Default.(func() uuid.UUID)
+	player.DefaultID = playerDescID.Default.(func() guidgql.GUID)
 	playersupervisionrequestFields := schema.PlayerSupervisionRequest{}.Fields()
 	_ = playersupervisionrequestFields
 	// playersupervisionrequestDescID is the schema descriptor for id field.
 	playersupervisionrequestDescID := playersupervisionrequestFields[0].Descriptor()
 	// playersupervisionrequest.DefaultID holds the default value on creation for the id field.
-	playersupervisionrequest.DefaultID = playersupervisionrequestDescID.Default.(func() uuid.UUID)
+	playersupervisionrequest.DefaultID = playersupervisionrequestDescID.Default.(func() guidgql.GUID)
 	playersupervisionrequestapprovalFields := schema.PlayerSupervisionRequestApproval{}.Fields()
 	_ = playersupervisionrequestapprovalFields
 	// playersupervisionrequestapprovalDescID is the schema descriptor for id field.
 	playersupervisionrequestapprovalDescID := playersupervisionrequestapprovalFields[0].Descriptor()
 	// playersupervisionrequestapproval.DefaultID holds the default value on creation for the id field.
-	playersupervisionrequestapproval.DefaultID = playersupervisionrequestapprovalDescID.Default.(func() uuid.UUID)
+	playersupervisionrequestapproval.DefaultID = playersupervisionrequestapprovalDescID.Default.(func() guidgql.GUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescName is the schema descriptor for name field.
@@ -102,5 +102,5 @@ func init() {
 	// userDescID is the schema descriptor for id field.
 	userDescID := userFields[0].Descriptor()
 	// user.DefaultID holds the default value on creation for the id field.
-	user.DefaultID = userDescID.Default.(func() uuid.UUID)
+	user.DefaultID = userDescID.Default.(func() guidgql.GUID)
 }

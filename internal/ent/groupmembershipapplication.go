@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // GroupMembershipApplication is the model entity for the GroupMembershipApplication schema.
 type GroupMembershipApplication struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID guidgql.GUID `json:"id,omitempty"`
 	// Message holds the value of the "message" field.
 	Message string `json:"message,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -62,10 +62,10 @@ func (*GroupMembershipApplication) scanValues(columns []string) ([]interface{}, 
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case groupmembershipapplication.FieldID:
+			values[i] = new(guidgql.GUID)
 		case groupmembershipapplication.FieldMessage:
 			values[i] = new(sql.NullString)
-		case groupmembershipapplication.FieldID:
-			values[i] = new(uuid.UUID)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type GroupMembershipApplication", columns[i])
 		}
@@ -82,7 +82,7 @@ func (gma *GroupMembershipApplication) assignValues(columns []string, values []i
 	for i := range columns {
 		switch columns[i] {
 		case groupmembershipapplication.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*guidgql.GUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				gma.ID = *value

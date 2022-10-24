@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
@@ -18,6 +17,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 
 	"entgo.io/ent"
@@ -47,18 +47,18 @@ type GroupMutation struct {
 	config
 	op                  Op
 	typ                 string
-	id                  *uuid.UUID
+	id                  *guidgql.GUID
 	name                *string
 	description         *string
 	logo_url            *string
 	clearedFields       map[string]struct{}
-	settings            *uuid.UUID
+	settings            *guidgql.GUID
 	clearedsettings     bool
-	members             map[uuid.UUID]struct{}
-	removedmembers      map[uuid.UUID]struct{}
+	members             map[guidgql.GUID]struct{}
+	removedmembers      map[guidgql.GUID]struct{}
 	clearedmembers      bool
-	applications        map[uuid.UUID]struct{}
-	removedapplications map[uuid.UUID]struct{}
+	applications        map[guidgql.GUID]struct{}
+	removedapplications map[guidgql.GUID]struct{}
 	clearedapplications bool
 	done                bool
 	oldValue            func(context.Context) (*Group, error)
@@ -85,7 +85,7 @@ func newGroupMutation(c config, op Op, opts ...groupOption) *GroupMutation {
 }
 
 // withGroupID sets the ID field of the mutation.
-func withGroupID(id uuid.UUID) groupOption {
+func withGroupID(id guidgql.GUID) groupOption {
 	return func(m *GroupMutation) {
 		var (
 			err   error
@@ -137,13 +137,13 @@ func (m GroupMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of Group entities.
-func (m *GroupMutation) SetID(id uuid.UUID) {
+func (m *GroupMutation) SetID(id guidgql.GUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *GroupMutation) ID() (id uuid.UUID, exists bool) {
+func (m *GroupMutation) ID() (id guidgql.GUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -154,12 +154,12 @@ func (m *GroupMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *GroupMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *GroupMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []guidgql.GUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -278,7 +278,7 @@ func (m *GroupMutation) ResetLogoURL() {
 }
 
 // SetSettingsID sets the "settings" edge to the GroupSettings entity by id.
-func (m *GroupMutation) SetSettingsID(id uuid.UUID) {
+func (m *GroupMutation) SetSettingsID(id guidgql.GUID) {
 	m.settings = &id
 }
 
@@ -293,7 +293,7 @@ func (m *GroupMutation) SettingsCleared() bool {
 }
 
 // SettingsID returns the "settings" edge ID in the mutation.
-func (m *GroupMutation) SettingsID() (id uuid.UUID, exists bool) {
+func (m *GroupMutation) SettingsID() (id guidgql.GUID, exists bool) {
 	if m.settings != nil {
 		return *m.settings, true
 	}
@@ -303,7 +303,7 @@ func (m *GroupMutation) SettingsID() (id uuid.UUID, exists bool) {
 // SettingsIDs returns the "settings" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // SettingsID instead. It exists only for internal usage by the builders.
-func (m *GroupMutation) SettingsIDs() (ids []uuid.UUID) {
+func (m *GroupMutation) SettingsIDs() (ids []guidgql.GUID) {
 	if id := m.settings; id != nil {
 		ids = append(ids, *id)
 	}
@@ -317,9 +317,9 @@ func (m *GroupMutation) ResetSettings() {
 }
 
 // AddMemberIDs adds the "members" edge to the GroupMembership entity by ids.
-func (m *GroupMutation) AddMemberIDs(ids ...uuid.UUID) {
+func (m *GroupMutation) AddMemberIDs(ids ...guidgql.GUID) {
 	if m.members == nil {
-		m.members = make(map[uuid.UUID]struct{})
+		m.members = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.members[ids[i]] = struct{}{}
@@ -337,9 +337,9 @@ func (m *GroupMutation) MembersCleared() bool {
 }
 
 // RemoveMemberIDs removes the "members" edge to the GroupMembership entity by IDs.
-func (m *GroupMutation) RemoveMemberIDs(ids ...uuid.UUID) {
+func (m *GroupMutation) RemoveMemberIDs(ids ...guidgql.GUID) {
 	if m.removedmembers == nil {
-		m.removedmembers = make(map[uuid.UUID]struct{})
+		m.removedmembers = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.members, ids[i])
@@ -348,7 +348,7 @@ func (m *GroupMutation) RemoveMemberIDs(ids ...uuid.UUID) {
 }
 
 // RemovedMembers returns the removed IDs of the "members" edge to the GroupMembership entity.
-func (m *GroupMutation) RemovedMembersIDs() (ids []uuid.UUID) {
+func (m *GroupMutation) RemovedMembersIDs() (ids []guidgql.GUID) {
 	for id := range m.removedmembers {
 		ids = append(ids, id)
 	}
@@ -356,7 +356,7 @@ func (m *GroupMutation) RemovedMembersIDs() (ids []uuid.UUID) {
 }
 
 // MembersIDs returns the "members" edge IDs in the mutation.
-func (m *GroupMutation) MembersIDs() (ids []uuid.UUID) {
+func (m *GroupMutation) MembersIDs() (ids []guidgql.GUID) {
 	for id := range m.members {
 		ids = append(ids, id)
 	}
@@ -371,9 +371,9 @@ func (m *GroupMutation) ResetMembers() {
 }
 
 // AddApplicationIDs adds the "applications" edge to the GroupMembershipApplication entity by ids.
-func (m *GroupMutation) AddApplicationIDs(ids ...uuid.UUID) {
+func (m *GroupMutation) AddApplicationIDs(ids ...guidgql.GUID) {
 	if m.applications == nil {
-		m.applications = make(map[uuid.UUID]struct{})
+		m.applications = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.applications[ids[i]] = struct{}{}
@@ -391,9 +391,9 @@ func (m *GroupMutation) ApplicationsCleared() bool {
 }
 
 // RemoveApplicationIDs removes the "applications" edge to the GroupMembershipApplication entity by IDs.
-func (m *GroupMutation) RemoveApplicationIDs(ids ...uuid.UUID) {
+func (m *GroupMutation) RemoveApplicationIDs(ids ...guidgql.GUID) {
 	if m.removedapplications == nil {
-		m.removedapplications = make(map[uuid.UUID]struct{})
+		m.removedapplications = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.applications, ids[i])
@@ -402,7 +402,7 @@ func (m *GroupMutation) RemoveApplicationIDs(ids ...uuid.UUID) {
 }
 
 // RemovedApplications returns the removed IDs of the "applications" edge to the GroupMembershipApplication entity.
-func (m *GroupMutation) RemovedApplicationsIDs() (ids []uuid.UUID) {
+func (m *GroupMutation) RemovedApplicationsIDs() (ids []guidgql.GUID) {
 	for id := range m.removedapplications {
 		ids = append(ids, id)
 	}
@@ -410,7 +410,7 @@ func (m *GroupMutation) RemovedApplicationsIDs() (ids []uuid.UUID) {
 }
 
 // ApplicationsIDs returns the "applications" edge IDs in the mutation.
-func (m *GroupMutation) ApplicationsIDs() (ids []uuid.UUID) {
+func (m *GroupMutation) ApplicationsIDs() (ids []guidgql.GUID) {
 	for id := range m.applications {
 		ids = append(ids, id)
 	}
@@ -707,12 +707,12 @@ type GroupMembershipMutation struct {
 	config
 	op            Op
 	typ           string
-	id            *uuid.UUID
+	id            *guidgql.GUID
 	role          *enums.Role
 	clearedFields map[string]struct{}
-	group         *uuid.UUID
+	group         *guidgql.GUID
 	clearedgroup  bool
-	user          *uuid.UUID
+	user          *guidgql.GUID
 	cleareduser   bool
 	done          bool
 	oldValue      func(context.Context) (*GroupMembership, error)
@@ -739,7 +739,7 @@ func newGroupMembershipMutation(c config, op Op, opts ...groupmembershipOption) 
 }
 
 // withGroupMembershipID sets the ID field of the mutation.
-func withGroupMembershipID(id uuid.UUID) groupmembershipOption {
+func withGroupMembershipID(id guidgql.GUID) groupmembershipOption {
 	return func(m *GroupMembershipMutation) {
 		var (
 			err   error
@@ -791,13 +791,13 @@ func (m GroupMembershipMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of GroupMembership entities.
-func (m *GroupMembershipMutation) SetID(id uuid.UUID) {
+func (m *GroupMembershipMutation) SetID(id guidgql.GUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *GroupMembershipMutation) ID() (id uuid.UUID, exists bool) {
+func (m *GroupMembershipMutation) ID() (id guidgql.GUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -808,12 +808,12 @@ func (m *GroupMembershipMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *GroupMembershipMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *GroupMembershipMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []guidgql.GUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -860,7 +860,7 @@ func (m *GroupMembershipMutation) ResetRole() {
 }
 
 // SetGroupID sets the "group" edge to the Group entity by id.
-func (m *GroupMembershipMutation) SetGroupID(id uuid.UUID) {
+func (m *GroupMembershipMutation) SetGroupID(id guidgql.GUID) {
 	m.group = &id
 }
 
@@ -875,7 +875,7 @@ func (m *GroupMembershipMutation) GroupCleared() bool {
 }
 
 // GroupID returns the "group" edge ID in the mutation.
-func (m *GroupMembershipMutation) GroupID() (id uuid.UUID, exists bool) {
+func (m *GroupMembershipMutation) GroupID() (id guidgql.GUID, exists bool) {
 	if m.group != nil {
 		return *m.group, true
 	}
@@ -885,7 +885,7 @@ func (m *GroupMembershipMutation) GroupID() (id uuid.UUID, exists bool) {
 // GroupIDs returns the "group" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // GroupID instead. It exists only for internal usage by the builders.
-func (m *GroupMembershipMutation) GroupIDs() (ids []uuid.UUID) {
+func (m *GroupMembershipMutation) GroupIDs() (ids []guidgql.GUID) {
 	if id := m.group; id != nil {
 		ids = append(ids, *id)
 	}
@@ -899,7 +899,7 @@ func (m *GroupMembershipMutation) ResetGroup() {
 }
 
 // SetUserID sets the "user" edge to the User entity by id.
-func (m *GroupMembershipMutation) SetUserID(id uuid.UUID) {
+func (m *GroupMembershipMutation) SetUserID(id guidgql.GUID) {
 	m.user = &id
 }
 
@@ -914,7 +914,7 @@ func (m *GroupMembershipMutation) UserCleared() bool {
 }
 
 // UserID returns the "user" edge ID in the mutation.
-func (m *GroupMembershipMutation) UserID() (id uuid.UUID, exists bool) {
+func (m *GroupMembershipMutation) UserID() (id guidgql.GUID, exists bool) {
 	if m.user != nil {
 		return *m.user, true
 	}
@@ -924,7 +924,7 @@ func (m *GroupMembershipMutation) UserID() (id uuid.UUID, exists bool) {
 // UserIDs returns the "user" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // UserID instead. It exists only for internal usage by the builders.
-func (m *GroupMembershipMutation) UserIDs() (ids []uuid.UUID) {
+func (m *GroupMembershipMutation) UserIDs() (ids []guidgql.GUID) {
 	if id := m.user; id != nil {
 		ids = append(ids, *id)
 	}
@@ -1152,14 +1152,14 @@ type GroupMembershipApplicationMutation struct {
 	config
 	op            Op
 	typ           string
-	id            *uuid.UUID
+	id            *guidgql.GUID
 	message       *string
 	clearedFields map[string]struct{}
-	user          map[uuid.UUID]struct{}
-	removeduser   map[uuid.UUID]struct{}
+	user          map[guidgql.GUID]struct{}
+	removeduser   map[guidgql.GUID]struct{}
 	cleareduser   bool
-	group         map[uuid.UUID]struct{}
-	removedgroup  map[uuid.UUID]struct{}
+	group         map[guidgql.GUID]struct{}
+	removedgroup  map[guidgql.GUID]struct{}
 	clearedgroup  bool
 	done          bool
 	oldValue      func(context.Context) (*GroupMembershipApplication, error)
@@ -1186,7 +1186,7 @@ func newGroupMembershipApplicationMutation(c config, op Op, opts ...groupmembers
 }
 
 // withGroupMembershipApplicationID sets the ID field of the mutation.
-func withGroupMembershipApplicationID(id uuid.UUID) groupmembershipapplicationOption {
+func withGroupMembershipApplicationID(id guidgql.GUID) groupmembershipapplicationOption {
 	return func(m *GroupMembershipApplicationMutation) {
 		var (
 			err   error
@@ -1238,13 +1238,13 @@ func (m GroupMembershipApplicationMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of GroupMembershipApplication entities.
-func (m *GroupMembershipApplicationMutation) SetID(id uuid.UUID) {
+func (m *GroupMembershipApplicationMutation) SetID(id guidgql.GUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *GroupMembershipApplicationMutation) ID() (id uuid.UUID, exists bool) {
+func (m *GroupMembershipApplicationMutation) ID() (id guidgql.GUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -1255,12 +1255,12 @@ func (m *GroupMembershipApplicationMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *GroupMembershipApplicationMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *GroupMembershipApplicationMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []guidgql.GUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -1307,9 +1307,9 @@ func (m *GroupMembershipApplicationMutation) ResetMessage() {
 }
 
 // AddUserIDs adds the "user" edge to the User entity by ids.
-func (m *GroupMembershipApplicationMutation) AddUserIDs(ids ...uuid.UUID) {
+func (m *GroupMembershipApplicationMutation) AddUserIDs(ids ...guidgql.GUID) {
 	if m.user == nil {
-		m.user = make(map[uuid.UUID]struct{})
+		m.user = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.user[ids[i]] = struct{}{}
@@ -1327,9 +1327,9 @@ func (m *GroupMembershipApplicationMutation) UserCleared() bool {
 }
 
 // RemoveUserIDs removes the "user" edge to the User entity by IDs.
-func (m *GroupMembershipApplicationMutation) RemoveUserIDs(ids ...uuid.UUID) {
+func (m *GroupMembershipApplicationMutation) RemoveUserIDs(ids ...guidgql.GUID) {
 	if m.removeduser == nil {
-		m.removeduser = make(map[uuid.UUID]struct{})
+		m.removeduser = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.user, ids[i])
@@ -1338,7 +1338,7 @@ func (m *GroupMembershipApplicationMutation) RemoveUserIDs(ids ...uuid.UUID) {
 }
 
 // RemovedUser returns the removed IDs of the "user" edge to the User entity.
-func (m *GroupMembershipApplicationMutation) RemovedUserIDs() (ids []uuid.UUID) {
+func (m *GroupMembershipApplicationMutation) RemovedUserIDs() (ids []guidgql.GUID) {
 	for id := range m.removeduser {
 		ids = append(ids, id)
 	}
@@ -1346,7 +1346,7 @@ func (m *GroupMembershipApplicationMutation) RemovedUserIDs() (ids []uuid.UUID) 
 }
 
 // UserIDs returns the "user" edge IDs in the mutation.
-func (m *GroupMembershipApplicationMutation) UserIDs() (ids []uuid.UUID) {
+func (m *GroupMembershipApplicationMutation) UserIDs() (ids []guidgql.GUID) {
 	for id := range m.user {
 		ids = append(ids, id)
 	}
@@ -1361,9 +1361,9 @@ func (m *GroupMembershipApplicationMutation) ResetUser() {
 }
 
 // AddGroupIDs adds the "group" edge to the Group entity by ids.
-func (m *GroupMembershipApplicationMutation) AddGroupIDs(ids ...uuid.UUID) {
+func (m *GroupMembershipApplicationMutation) AddGroupIDs(ids ...guidgql.GUID) {
 	if m.group == nil {
-		m.group = make(map[uuid.UUID]struct{})
+		m.group = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.group[ids[i]] = struct{}{}
@@ -1381,9 +1381,9 @@ func (m *GroupMembershipApplicationMutation) GroupCleared() bool {
 }
 
 // RemoveGroupIDs removes the "group" edge to the Group entity by IDs.
-func (m *GroupMembershipApplicationMutation) RemoveGroupIDs(ids ...uuid.UUID) {
+func (m *GroupMembershipApplicationMutation) RemoveGroupIDs(ids ...guidgql.GUID) {
 	if m.removedgroup == nil {
-		m.removedgroup = make(map[uuid.UUID]struct{})
+		m.removedgroup = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.group, ids[i])
@@ -1392,7 +1392,7 @@ func (m *GroupMembershipApplicationMutation) RemoveGroupIDs(ids ...uuid.UUID) {
 }
 
 // RemovedGroup returns the removed IDs of the "group" edge to the Group entity.
-func (m *GroupMembershipApplicationMutation) RemovedGroupIDs() (ids []uuid.UUID) {
+func (m *GroupMembershipApplicationMutation) RemovedGroupIDs() (ids []guidgql.GUID) {
 	for id := range m.removedgroup {
 		ids = append(ids, id)
 	}
@@ -1400,7 +1400,7 @@ func (m *GroupMembershipApplicationMutation) RemovedGroupIDs() (ids []uuid.UUID)
 }
 
 // GroupIDs returns the "group" edge IDs in the mutation.
-func (m *GroupMembershipApplicationMutation) GroupIDs() (ids []uuid.UUID) {
+func (m *GroupMembershipApplicationMutation) GroupIDs() (ids []guidgql.GUID) {
 	for id := range m.group {
 		ids = append(ids, id)
 	}
@@ -1645,12 +1645,12 @@ type GroupSettingsMutation struct {
 	config
 	op                     Op
 	typ                    string
-	id                     *uuid.UUID
+	id                     *guidgql.GUID
 	visibility             *groupsettings.Visibility
 	join_policy            *groupsettings.JoinPolicy
 	minimum_role_to_invite *enums.Role
 	clearedFields          map[string]struct{}
-	group                  *uuid.UUID
+	group                  *guidgql.GUID
 	clearedgroup           bool
 	done                   bool
 	oldValue               func(context.Context) (*GroupSettings, error)
@@ -1677,7 +1677,7 @@ func newGroupSettingsMutation(c config, op Op, opts ...groupsettingsOption) *Gro
 }
 
 // withGroupSettingsID sets the ID field of the mutation.
-func withGroupSettingsID(id uuid.UUID) groupsettingsOption {
+func withGroupSettingsID(id guidgql.GUID) groupsettingsOption {
 	return func(m *GroupSettingsMutation) {
 		var (
 			err   error
@@ -1729,13 +1729,13 @@ func (m GroupSettingsMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of GroupSettings entities.
-func (m *GroupSettingsMutation) SetID(id uuid.UUID) {
+func (m *GroupSettingsMutation) SetID(id guidgql.GUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *GroupSettingsMutation) ID() (id uuid.UUID, exists bool) {
+func (m *GroupSettingsMutation) ID() (id guidgql.GUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -1746,12 +1746,12 @@ func (m *GroupSettingsMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *GroupSettingsMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *GroupSettingsMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []guidgql.GUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -1883,7 +1883,7 @@ func (m *GroupSettingsMutation) ResetMinimumRoleToInvite() {
 }
 
 // SetGroupID sets the "group" edge to the Group entity by id.
-func (m *GroupSettingsMutation) SetGroupID(id uuid.UUID) {
+func (m *GroupSettingsMutation) SetGroupID(id guidgql.GUID) {
 	m.group = &id
 }
 
@@ -1898,7 +1898,7 @@ func (m *GroupSettingsMutation) GroupCleared() bool {
 }
 
 // GroupID returns the "group" edge ID in the mutation.
-func (m *GroupSettingsMutation) GroupID() (id uuid.UUID, exists bool) {
+func (m *GroupSettingsMutation) GroupID() (id guidgql.GUID, exists bool) {
 	if m.group != nil {
 		return *m.group, true
 	}
@@ -1908,7 +1908,7 @@ func (m *GroupSettingsMutation) GroupID() (id uuid.UUID, exists bool) {
 // GroupIDs returns the "group" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // GroupID instead. It exists only for internal usage by the builders.
-func (m *GroupSettingsMutation) GroupIDs() (ids []uuid.UUID) {
+func (m *GroupSettingsMutation) GroupIDs() (ids []guidgql.GUID) {
 	if id := m.group; id != nil {
 		ids = append(ids, *id)
 	}
@@ -2161,16 +2161,16 @@ type PlayerMutation struct {
 	config
 	op                          Op
 	typ                         string
-	id                          *uuid.UUID
+	id                          *guidgql.GUID
 	name                        *string
 	clearedFields               map[string]struct{}
-	owner                       *uuid.UUID
+	owner                       *guidgql.GUID
 	clearedowner                bool
-	supervisors                 map[uuid.UUID]struct{}
-	removedsupervisors          map[uuid.UUID]struct{}
+	supervisors                 map[guidgql.GUID]struct{}
+	removedsupervisors          map[guidgql.GUID]struct{}
 	clearedsupervisors          bool
-	supervision_requests        map[uuid.UUID]struct{}
-	removedsupervision_requests map[uuid.UUID]struct{}
+	supervision_requests        map[guidgql.GUID]struct{}
+	removedsupervision_requests map[guidgql.GUID]struct{}
 	clearedsupervision_requests bool
 	done                        bool
 	oldValue                    func(context.Context) (*Player, error)
@@ -2197,7 +2197,7 @@ func newPlayerMutation(c config, op Op, opts ...playerOption) *PlayerMutation {
 }
 
 // withPlayerID sets the ID field of the mutation.
-func withPlayerID(id uuid.UUID) playerOption {
+func withPlayerID(id guidgql.GUID) playerOption {
 	return func(m *PlayerMutation) {
 		var (
 			err   error
@@ -2249,13 +2249,13 @@ func (m PlayerMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of Player entities.
-func (m *PlayerMutation) SetID(id uuid.UUID) {
+func (m *PlayerMutation) SetID(id guidgql.GUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *PlayerMutation) ID() (id uuid.UUID, exists bool) {
+func (m *PlayerMutation) ID() (id guidgql.GUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -2266,12 +2266,12 @@ func (m *PlayerMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *PlayerMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *PlayerMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []guidgql.GUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -2318,7 +2318,7 @@ func (m *PlayerMutation) ResetName() {
 }
 
 // SetOwnerID sets the "owner" edge to the User entity by id.
-func (m *PlayerMutation) SetOwnerID(id uuid.UUID) {
+func (m *PlayerMutation) SetOwnerID(id guidgql.GUID) {
 	m.owner = &id
 }
 
@@ -2333,7 +2333,7 @@ func (m *PlayerMutation) OwnerCleared() bool {
 }
 
 // OwnerID returns the "owner" edge ID in the mutation.
-func (m *PlayerMutation) OwnerID() (id uuid.UUID, exists bool) {
+func (m *PlayerMutation) OwnerID() (id guidgql.GUID, exists bool) {
 	if m.owner != nil {
 		return *m.owner, true
 	}
@@ -2343,7 +2343,7 @@ func (m *PlayerMutation) OwnerID() (id uuid.UUID, exists bool) {
 // OwnerIDs returns the "owner" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // OwnerID instead. It exists only for internal usage by the builders.
-func (m *PlayerMutation) OwnerIDs() (ids []uuid.UUID) {
+func (m *PlayerMutation) OwnerIDs() (ids []guidgql.GUID) {
 	if id := m.owner; id != nil {
 		ids = append(ids, *id)
 	}
@@ -2357,9 +2357,9 @@ func (m *PlayerMutation) ResetOwner() {
 }
 
 // AddSupervisorIDs adds the "supervisors" edge to the User entity by ids.
-func (m *PlayerMutation) AddSupervisorIDs(ids ...uuid.UUID) {
+func (m *PlayerMutation) AddSupervisorIDs(ids ...guidgql.GUID) {
 	if m.supervisors == nil {
-		m.supervisors = make(map[uuid.UUID]struct{})
+		m.supervisors = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.supervisors[ids[i]] = struct{}{}
@@ -2377,9 +2377,9 @@ func (m *PlayerMutation) SupervisorsCleared() bool {
 }
 
 // RemoveSupervisorIDs removes the "supervisors" edge to the User entity by IDs.
-func (m *PlayerMutation) RemoveSupervisorIDs(ids ...uuid.UUID) {
+func (m *PlayerMutation) RemoveSupervisorIDs(ids ...guidgql.GUID) {
 	if m.removedsupervisors == nil {
-		m.removedsupervisors = make(map[uuid.UUID]struct{})
+		m.removedsupervisors = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.supervisors, ids[i])
@@ -2388,7 +2388,7 @@ func (m *PlayerMutation) RemoveSupervisorIDs(ids ...uuid.UUID) {
 }
 
 // RemovedSupervisors returns the removed IDs of the "supervisors" edge to the User entity.
-func (m *PlayerMutation) RemovedSupervisorsIDs() (ids []uuid.UUID) {
+func (m *PlayerMutation) RemovedSupervisorsIDs() (ids []guidgql.GUID) {
 	for id := range m.removedsupervisors {
 		ids = append(ids, id)
 	}
@@ -2396,7 +2396,7 @@ func (m *PlayerMutation) RemovedSupervisorsIDs() (ids []uuid.UUID) {
 }
 
 // SupervisorsIDs returns the "supervisors" edge IDs in the mutation.
-func (m *PlayerMutation) SupervisorsIDs() (ids []uuid.UUID) {
+func (m *PlayerMutation) SupervisorsIDs() (ids []guidgql.GUID) {
 	for id := range m.supervisors {
 		ids = append(ids, id)
 	}
@@ -2411,9 +2411,9 @@ func (m *PlayerMutation) ResetSupervisors() {
 }
 
 // AddSupervisionRequestIDs adds the "supervision_requests" edge to the PlayerSupervisionRequest entity by ids.
-func (m *PlayerMutation) AddSupervisionRequestIDs(ids ...uuid.UUID) {
+func (m *PlayerMutation) AddSupervisionRequestIDs(ids ...guidgql.GUID) {
 	if m.supervision_requests == nil {
-		m.supervision_requests = make(map[uuid.UUID]struct{})
+		m.supervision_requests = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.supervision_requests[ids[i]] = struct{}{}
@@ -2431,9 +2431,9 @@ func (m *PlayerMutation) SupervisionRequestsCleared() bool {
 }
 
 // RemoveSupervisionRequestIDs removes the "supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
-func (m *PlayerMutation) RemoveSupervisionRequestIDs(ids ...uuid.UUID) {
+func (m *PlayerMutation) RemoveSupervisionRequestIDs(ids ...guidgql.GUID) {
 	if m.removedsupervision_requests == nil {
-		m.removedsupervision_requests = make(map[uuid.UUID]struct{})
+		m.removedsupervision_requests = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.supervision_requests, ids[i])
@@ -2442,7 +2442,7 @@ func (m *PlayerMutation) RemoveSupervisionRequestIDs(ids ...uuid.UUID) {
 }
 
 // RemovedSupervisionRequests returns the removed IDs of the "supervision_requests" edge to the PlayerSupervisionRequest entity.
-func (m *PlayerMutation) RemovedSupervisionRequestsIDs() (ids []uuid.UUID) {
+func (m *PlayerMutation) RemovedSupervisionRequestsIDs() (ids []guidgql.GUID) {
 	for id := range m.removedsupervision_requests {
 		ids = append(ids, id)
 	}
@@ -2450,7 +2450,7 @@ func (m *PlayerMutation) RemovedSupervisionRequestsIDs() (ids []uuid.UUID) {
 }
 
 // SupervisionRequestsIDs returns the "supervision_requests" edge IDs in the mutation.
-func (m *PlayerMutation) SupervisionRequestsIDs() (ids []uuid.UUID) {
+func (m *PlayerMutation) SupervisionRequestsIDs() (ids []guidgql.GUID) {
 	for id := range m.supervision_requests {
 		ids = append(ids, id)
 	}
@@ -2713,15 +2713,15 @@ type PlayerSupervisionRequestMutation struct {
 	config
 	op               Op
 	typ              string
-	id               *uuid.UUID
+	id               *guidgql.GUID
 	message          *string
 	clearedFields    map[string]struct{}
-	sender           *uuid.UUID
+	sender           *guidgql.GUID
 	clearedsender    bool
-	player           *uuid.UUID
+	player           *guidgql.GUID
 	clearedplayer    bool
-	approvals        map[uuid.UUID]struct{}
-	removedapprovals map[uuid.UUID]struct{}
+	approvals        map[guidgql.GUID]struct{}
+	removedapprovals map[guidgql.GUID]struct{}
 	clearedapprovals bool
 	done             bool
 	oldValue         func(context.Context) (*PlayerSupervisionRequest, error)
@@ -2748,7 +2748,7 @@ func newPlayerSupervisionRequestMutation(c config, op Op, opts ...playersupervis
 }
 
 // withPlayerSupervisionRequestID sets the ID field of the mutation.
-func withPlayerSupervisionRequestID(id uuid.UUID) playersupervisionrequestOption {
+func withPlayerSupervisionRequestID(id guidgql.GUID) playersupervisionrequestOption {
 	return func(m *PlayerSupervisionRequestMutation) {
 		var (
 			err   error
@@ -2800,13 +2800,13 @@ func (m PlayerSupervisionRequestMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of PlayerSupervisionRequest entities.
-func (m *PlayerSupervisionRequestMutation) SetID(id uuid.UUID) {
+func (m *PlayerSupervisionRequestMutation) SetID(id guidgql.GUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *PlayerSupervisionRequestMutation) ID() (id uuid.UUID, exists bool) {
+func (m *PlayerSupervisionRequestMutation) ID() (id guidgql.GUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -2817,12 +2817,12 @@ func (m *PlayerSupervisionRequestMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *PlayerSupervisionRequestMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *PlayerSupervisionRequestMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []guidgql.GUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -2882,7 +2882,7 @@ func (m *PlayerSupervisionRequestMutation) ResetMessage() {
 }
 
 // SetSenderID sets the "sender" edge to the User entity by id.
-func (m *PlayerSupervisionRequestMutation) SetSenderID(id uuid.UUID) {
+func (m *PlayerSupervisionRequestMutation) SetSenderID(id guidgql.GUID) {
 	m.sender = &id
 }
 
@@ -2897,7 +2897,7 @@ func (m *PlayerSupervisionRequestMutation) SenderCleared() bool {
 }
 
 // SenderID returns the "sender" edge ID in the mutation.
-func (m *PlayerSupervisionRequestMutation) SenderID() (id uuid.UUID, exists bool) {
+func (m *PlayerSupervisionRequestMutation) SenderID() (id guidgql.GUID, exists bool) {
 	if m.sender != nil {
 		return *m.sender, true
 	}
@@ -2907,7 +2907,7 @@ func (m *PlayerSupervisionRequestMutation) SenderID() (id uuid.UUID, exists bool
 // SenderIDs returns the "sender" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // SenderID instead. It exists only for internal usage by the builders.
-func (m *PlayerSupervisionRequestMutation) SenderIDs() (ids []uuid.UUID) {
+func (m *PlayerSupervisionRequestMutation) SenderIDs() (ids []guidgql.GUID) {
 	if id := m.sender; id != nil {
 		ids = append(ids, *id)
 	}
@@ -2921,7 +2921,7 @@ func (m *PlayerSupervisionRequestMutation) ResetSender() {
 }
 
 // SetPlayerID sets the "player" edge to the Player entity by id.
-func (m *PlayerSupervisionRequestMutation) SetPlayerID(id uuid.UUID) {
+func (m *PlayerSupervisionRequestMutation) SetPlayerID(id guidgql.GUID) {
 	m.player = &id
 }
 
@@ -2936,7 +2936,7 @@ func (m *PlayerSupervisionRequestMutation) PlayerCleared() bool {
 }
 
 // PlayerID returns the "player" edge ID in the mutation.
-func (m *PlayerSupervisionRequestMutation) PlayerID() (id uuid.UUID, exists bool) {
+func (m *PlayerSupervisionRequestMutation) PlayerID() (id guidgql.GUID, exists bool) {
 	if m.player != nil {
 		return *m.player, true
 	}
@@ -2946,7 +2946,7 @@ func (m *PlayerSupervisionRequestMutation) PlayerID() (id uuid.UUID, exists bool
 // PlayerIDs returns the "player" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // PlayerID instead. It exists only for internal usage by the builders.
-func (m *PlayerSupervisionRequestMutation) PlayerIDs() (ids []uuid.UUID) {
+func (m *PlayerSupervisionRequestMutation) PlayerIDs() (ids []guidgql.GUID) {
 	if id := m.player; id != nil {
 		ids = append(ids, *id)
 	}
@@ -2960,9 +2960,9 @@ func (m *PlayerSupervisionRequestMutation) ResetPlayer() {
 }
 
 // AddApprovalIDs adds the "approvals" edge to the PlayerSupervisionRequestApproval entity by ids.
-func (m *PlayerSupervisionRequestMutation) AddApprovalIDs(ids ...uuid.UUID) {
+func (m *PlayerSupervisionRequestMutation) AddApprovalIDs(ids ...guidgql.GUID) {
 	if m.approvals == nil {
-		m.approvals = make(map[uuid.UUID]struct{})
+		m.approvals = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.approvals[ids[i]] = struct{}{}
@@ -2980,9 +2980,9 @@ func (m *PlayerSupervisionRequestMutation) ApprovalsCleared() bool {
 }
 
 // RemoveApprovalIDs removes the "approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
-func (m *PlayerSupervisionRequestMutation) RemoveApprovalIDs(ids ...uuid.UUID) {
+func (m *PlayerSupervisionRequestMutation) RemoveApprovalIDs(ids ...guidgql.GUID) {
 	if m.removedapprovals == nil {
-		m.removedapprovals = make(map[uuid.UUID]struct{})
+		m.removedapprovals = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.approvals, ids[i])
@@ -2991,7 +2991,7 @@ func (m *PlayerSupervisionRequestMutation) RemoveApprovalIDs(ids ...uuid.UUID) {
 }
 
 // RemovedApprovals returns the removed IDs of the "approvals" edge to the PlayerSupervisionRequestApproval entity.
-func (m *PlayerSupervisionRequestMutation) RemovedApprovalsIDs() (ids []uuid.UUID) {
+func (m *PlayerSupervisionRequestMutation) RemovedApprovalsIDs() (ids []guidgql.GUID) {
 	for id := range m.removedapprovals {
 		ids = append(ids, id)
 	}
@@ -2999,7 +2999,7 @@ func (m *PlayerSupervisionRequestMutation) RemovedApprovalsIDs() (ids []uuid.UUI
 }
 
 // ApprovalsIDs returns the "approvals" edge IDs in the mutation.
-func (m *PlayerSupervisionRequestMutation) ApprovalsIDs() (ids []uuid.UUID) {
+func (m *PlayerSupervisionRequestMutation) ApprovalsIDs() (ids []guidgql.GUID) {
 	for id := range m.approvals {
 		ids = append(ids, id)
 	}
@@ -3263,12 +3263,12 @@ type PlayerSupervisionRequestApprovalMutation struct {
 	config
 	op                         Op
 	typ                        string
-	id                         *uuid.UUID
+	id                         *guidgql.GUID
 	approved                   *bool
 	clearedFields              map[string]struct{}
-	approver                   *uuid.UUID
+	approver                   *guidgql.GUID
 	clearedapprover            bool
-	supervision_request        *uuid.UUID
+	supervision_request        *guidgql.GUID
 	clearedsupervision_request bool
 	done                       bool
 	oldValue                   func(context.Context) (*PlayerSupervisionRequestApproval, error)
@@ -3295,7 +3295,7 @@ func newPlayerSupervisionRequestApprovalMutation(c config, op Op, opts ...player
 }
 
 // withPlayerSupervisionRequestApprovalID sets the ID field of the mutation.
-func withPlayerSupervisionRequestApprovalID(id uuid.UUID) playersupervisionrequestapprovalOption {
+func withPlayerSupervisionRequestApprovalID(id guidgql.GUID) playersupervisionrequestapprovalOption {
 	return func(m *PlayerSupervisionRequestApprovalMutation) {
 		var (
 			err   error
@@ -3347,13 +3347,13 @@ func (m PlayerSupervisionRequestApprovalMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of PlayerSupervisionRequestApproval entities.
-func (m *PlayerSupervisionRequestApprovalMutation) SetID(id uuid.UUID) {
+func (m *PlayerSupervisionRequestApprovalMutation) SetID(id guidgql.GUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *PlayerSupervisionRequestApprovalMutation) ID() (id uuid.UUID, exists bool) {
+func (m *PlayerSupervisionRequestApprovalMutation) ID() (id guidgql.GUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -3364,12 +3364,12 @@ func (m *PlayerSupervisionRequestApprovalMutation) ID() (id uuid.UUID, exists bo
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *PlayerSupervisionRequestApprovalMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *PlayerSupervisionRequestApprovalMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []guidgql.GUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -3429,7 +3429,7 @@ func (m *PlayerSupervisionRequestApprovalMutation) ResetApproved() {
 }
 
 // SetApproverID sets the "approver" edge to the User entity by id.
-func (m *PlayerSupervisionRequestApprovalMutation) SetApproverID(id uuid.UUID) {
+func (m *PlayerSupervisionRequestApprovalMutation) SetApproverID(id guidgql.GUID) {
 	m.approver = &id
 }
 
@@ -3444,7 +3444,7 @@ func (m *PlayerSupervisionRequestApprovalMutation) ApproverCleared() bool {
 }
 
 // ApproverID returns the "approver" edge ID in the mutation.
-func (m *PlayerSupervisionRequestApprovalMutation) ApproverID() (id uuid.UUID, exists bool) {
+func (m *PlayerSupervisionRequestApprovalMutation) ApproverID() (id guidgql.GUID, exists bool) {
 	if m.approver != nil {
 		return *m.approver, true
 	}
@@ -3454,7 +3454,7 @@ func (m *PlayerSupervisionRequestApprovalMutation) ApproverID() (id uuid.UUID, e
 // ApproverIDs returns the "approver" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // ApproverID instead. It exists only for internal usage by the builders.
-func (m *PlayerSupervisionRequestApprovalMutation) ApproverIDs() (ids []uuid.UUID) {
+func (m *PlayerSupervisionRequestApprovalMutation) ApproverIDs() (ids []guidgql.GUID) {
 	if id := m.approver; id != nil {
 		ids = append(ids, *id)
 	}
@@ -3468,7 +3468,7 @@ func (m *PlayerSupervisionRequestApprovalMutation) ResetApprover() {
 }
 
 // SetSupervisionRequestID sets the "supervision_request" edge to the PlayerSupervisionRequest entity by id.
-func (m *PlayerSupervisionRequestApprovalMutation) SetSupervisionRequestID(id uuid.UUID) {
+func (m *PlayerSupervisionRequestApprovalMutation) SetSupervisionRequestID(id guidgql.GUID) {
 	m.supervision_request = &id
 }
 
@@ -3483,7 +3483,7 @@ func (m *PlayerSupervisionRequestApprovalMutation) SupervisionRequestCleared() b
 }
 
 // SupervisionRequestID returns the "supervision_request" edge ID in the mutation.
-func (m *PlayerSupervisionRequestApprovalMutation) SupervisionRequestID() (id uuid.UUID, exists bool) {
+func (m *PlayerSupervisionRequestApprovalMutation) SupervisionRequestID() (id guidgql.GUID, exists bool) {
 	if m.supervision_request != nil {
 		return *m.supervision_request, true
 	}
@@ -3493,7 +3493,7 @@ func (m *PlayerSupervisionRequestApprovalMutation) SupervisionRequestID() (id uu
 // SupervisionRequestIDs returns the "supervision_request" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // SupervisionRequestID instead. It exists only for internal usage by the builders.
-func (m *PlayerSupervisionRequestApprovalMutation) SupervisionRequestIDs() (ids []uuid.UUID) {
+func (m *PlayerSupervisionRequestApprovalMutation) SupervisionRequestIDs() (ids []guidgql.GUID) {
 	if id := m.supervision_request; id != nil {
 		ids = append(ids, *id)
 	}
@@ -3730,28 +3730,28 @@ type UserMutation struct {
 	config
 	op                                   Op
 	typ                                  string
-	id                                   *uuid.UUID
+	id                                   *guidgql.GUID
 	name                                 *string
 	email                                *string
 	password                             *string
 	avatar_url                           *string
 	clearedFields                        map[string]struct{}
-	players                              map[uuid.UUID]struct{}
-	removedplayers                       map[uuid.UUID]struct{}
+	players                              map[guidgql.GUID]struct{}
+	removedplayers                       map[guidgql.GUID]struct{}
 	clearedplayers                       bool
-	main_player                          *uuid.UUID
+	main_player                          *guidgql.GUID
 	clearedmain_player                   bool
-	sent_supervision_requests            map[uuid.UUID]struct{}
-	removedsent_supervision_requests     map[uuid.UUID]struct{}
+	sent_supervision_requests            map[guidgql.GUID]struct{}
+	removedsent_supervision_requests     map[guidgql.GUID]struct{}
 	clearedsent_supervision_requests     bool
-	supervision_request_approvals        map[uuid.UUID]struct{}
-	removedsupervision_request_approvals map[uuid.UUID]struct{}
+	supervision_request_approvals        map[guidgql.GUID]struct{}
+	removedsupervision_request_approvals map[guidgql.GUID]struct{}
 	clearedsupervision_request_approvals bool
-	group_memberships                    map[uuid.UUID]struct{}
-	removedgroup_memberships             map[uuid.UUID]struct{}
+	group_memberships                    map[guidgql.GUID]struct{}
+	removedgroup_memberships             map[guidgql.GUID]struct{}
 	clearedgroup_memberships             bool
-	group_membership_applications        map[uuid.UUID]struct{}
-	removedgroup_membership_applications map[uuid.UUID]struct{}
+	group_membership_applications        map[guidgql.GUID]struct{}
+	removedgroup_membership_applications map[guidgql.GUID]struct{}
 	clearedgroup_membership_applications bool
 	done                                 bool
 	oldValue                             func(context.Context) (*User, error)
@@ -3778,7 +3778,7 @@ func newUserMutation(c config, op Op, opts ...userOption) *UserMutation {
 }
 
 // withUserID sets the ID field of the mutation.
-func withUserID(id uuid.UUID) userOption {
+func withUserID(id guidgql.GUID) userOption {
 	return func(m *UserMutation) {
 		var (
 			err   error
@@ -3830,13 +3830,13 @@ func (m UserMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of User entities.
-func (m *UserMutation) SetID(id uuid.UUID) {
+func (m *UserMutation) SetID(id guidgql.GUID) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *UserMutation) ID() (id uuid.UUID, exists bool) {
+func (m *UserMutation) ID() (id guidgql.GUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -3847,12 +3847,12 @@ func (m *UserMutation) ID() (id uuid.UUID, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *UserMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+func (m *UserMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []uuid.UUID{id}, nil
+			return []guidgql.GUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -4007,9 +4007,9 @@ func (m *UserMutation) ResetAvatarURL() {
 }
 
 // AddPlayerIDs adds the "players" edge to the Player entity by ids.
-func (m *UserMutation) AddPlayerIDs(ids ...uuid.UUID) {
+func (m *UserMutation) AddPlayerIDs(ids ...guidgql.GUID) {
 	if m.players == nil {
-		m.players = make(map[uuid.UUID]struct{})
+		m.players = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.players[ids[i]] = struct{}{}
@@ -4027,9 +4027,9 @@ func (m *UserMutation) PlayersCleared() bool {
 }
 
 // RemovePlayerIDs removes the "players" edge to the Player entity by IDs.
-func (m *UserMutation) RemovePlayerIDs(ids ...uuid.UUID) {
+func (m *UserMutation) RemovePlayerIDs(ids ...guidgql.GUID) {
 	if m.removedplayers == nil {
-		m.removedplayers = make(map[uuid.UUID]struct{})
+		m.removedplayers = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.players, ids[i])
@@ -4038,7 +4038,7 @@ func (m *UserMutation) RemovePlayerIDs(ids ...uuid.UUID) {
 }
 
 // RemovedPlayers returns the removed IDs of the "players" edge to the Player entity.
-func (m *UserMutation) RemovedPlayersIDs() (ids []uuid.UUID) {
+func (m *UserMutation) RemovedPlayersIDs() (ids []guidgql.GUID) {
 	for id := range m.removedplayers {
 		ids = append(ids, id)
 	}
@@ -4046,7 +4046,7 @@ func (m *UserMutation) RemovedPlayersIDs() (ids []uuid.UUID) {
 }
 
 // PlayersIDs returns the "players" edge IDs in the mutation.
-func (m *UserMutation) PlayersIDs() (ids []uuid.UUID) {
+func (m *UserMutation) PlayersIDs() (ids []guidgql.GUID) {
 	for id := range m.players {
 		ids = append(ids, id)
 	}
@@ -4061,7 +4061,7 @@ func (m *UserMutation) ResetPlayers() {
 }
 
 // SetMainPlayerID sets the "main_player" edge to the Player entity by id.
-func (m *UserMutation) SetMainPlayerID(id uuid.UUID) {
+func (m *UserMutation) SetMainPlayerID(id guidgql.GUID) {
 	m.main_player = &id
 }
 
@@ -4076,7 +4076,7 @@ func (m *UserMutation) MainPlayerCleared() bool {
 }
 
 // MainPlayerID returns the "main_player" edge ID in the mutation.
-func (m *UserMutation) MainPlayerID() (id uuid.UUID, exists bool) {
+func (m *UserMutation) MainPlayerID() (id guidgql.GUID, exists bool) {
 	if m.main_player != nil {
 		return *m.main_player, true
 	}
@@ -4086,7 +4086,7 @@ func (m *UserMutation) MainPlayerID() (id uuid.UUID, exists bool) {
 // MainPlayerIDs returns the "main_player" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // MainPlayerID instead. It exists only for internal usage by the builders.
-func (m *UserMutation) MainPlayerIDs() (ids []uuid.UUID) {
+func (m *UserMutation) MainPlayerIDs() (ids []guidgql.GUID) {
 	if id := m.main_player; id != nil {
 		ids = append(ids, *id)
 	}
@@ -4100,9 +4100,9 @@ func (m *UserMutation) ResetMainPlayer() {
 }
 
 // AddSentSupervisionRequestIDs adds the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by ids.
-func (m *UserMutation) AddSentSupervisionRequestIDs(ids ...uuid.UUID) {
+func (m *UserMutation) AddSentSupervisionRequestIDs(ids ...guidgql.GUID) {
 	if m.sent_supervision_requests == nil {
-		m.sent_supervision_requests = make(map[uuid.UUID]struct{})
+		m.sent_supervision_requests = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.sent_supervision_requests[ids[i]] = struct{}{}
@@ -4120,9 +4120,9 @@ func (m *UserMutation) SentSupervisionRequestsCleared() bool {
 }
 
 // RemoveSentSupervisionRequestIDs removes the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
-func (m *UserMutation) RemoveSentSupervisionRequestIDs(ids ...uuid.UUID) {
+func (m *UserMutation) RemoveSentSupervisionRequestIDs(ids ...guidgql.GUID) {
 	if m.removedsent_supervision_requests == nil {
-		m.removedsent_supervision_requests = make(map[uuid.UUID]struct{})
+		m.removedsent_supervision_requests = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.sent_supervision_requests, ids[i])
@@ -4131,7 +4131,7 @@ func (m *UserMutation) RemoveSentSupervisionRequestIDs(ids ...uuid.UUID) {
 }
 
 // RemovedSentSupervisionRequests returns the removed IDs of the "sent_supervision_requests" edge to the PlayerSupervisionRequest entity.
-func (m *UserMutation) RemovedSentSupervisionRequestsIDs() (ids []uuid.UUID) {
+func (m *UserMutation) RemovedSentSupervisionRequestsIDs() (ids []guidgql.GUID) {
 	for id := range m.removedsent_supervision_requests {
 		ids = append(ids, id)
 	}
@@ -4139,7 +4139,7 @@ func (m *UserMutation) RemovedSentSupervisionRequestsIDs() (ids []uuid.UUID) {
 }
 
 // SentSupervisionRequestsIDs returns the "sent_supervision_requests" edge IDs in the mutation.
-func (m *UserMutation) SentSupervisionRequestsIDs() (ids []uuid.UUID) {
+func (m *UserMutation) SentSupervisionRequestsIDs() (ids []guidgql.GUID) {
 	for id := range m.sent_supervision_requests {
 		ids = append(ids, id)
 	}
@@ -4154,9 +4154,9 @@ func (m *UserMutation) ResetSentSupervisionRequests() {
 }
 
 // AddSupervisionRequestApprovalIDs adds the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by ids.
-func (m *UserMutation) AddSupervisionRequestApprovalIDs(ids ...uuid.UUID) {
+func (m *UserMutation) AddSupervisionRequestApprovalIDs(ids ...guidgql.GUID) {
 	if m.supervision_request_approvals == nil {
-		m.supervision_request_approvals = make(map[uuid.UUID]struct{})
+		m.supervision_request_approvals = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.supervision_request_approvals[ids[i]] = struct{}{}
@@ -4174,9 +4174,9 @@ func (m *UserMutation) SupervisionRequestApprovalsCleared() bool {
 }
 
 // RemoveSupervisionRequestApprovalIDs removes the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
-func (m *UserMutation) RemoveSupervisionRequestApprovalIDs(ids ...uuid.UUID) {
+func (m *UserMutation) RemoveSupervisionRequestApprovalIDs(ids ...guidgql.GUID) {
 	if m.removedsupervision_request_approvals == nil {
-		m.removedsupervision_request_approvals = make(map[uuid.UUID]struct{})
+		m.removedsupervision_request_approvals = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.supervision_request_approvals, ids[i])
@@ -4185,7 +4185,7 @@ func (m *UserMutation) RemoveSupervisionRequestApprovalIDs(ids ...uuid.UUID) {
 }
 
 // RemovedSupervisionRequestApprovals returns the removed IDs of the "supervision_request_approvals" edge to the PlayerSupervisionRequestApproval entity.
-func (m *UserMutation) RemovedSupervisionRequestApprovalsIDs() (ids []uuid.UUID) {
+func (m *UserMutation) RemovedSupervisionRequestApprovalsIDs() (ids []guidgql.GUID) {
 	for id := range m.removedsupervision_request_approvals {
 		ids = append(ids, id)
 	}
@@ -4193,7 +4193,7 @@ func (m *UserMutation) RemovedSupervisionRequestApprovalsIDs() (ids []uuid.UUID)
 }
 
 // SupervisionRequestApprovalsIDs returns the "supervision_request_approvals" edge IDs in the mutation.
-func (m *UserMutation) SupervisionRequestApprovalsIDs() (ids []uuid.UUID) {
+func (m *UserMutation) SupervisionRequestApprovalsIDs() (ids []guidgql.GUID) {
 	for id := range m.supervision_request_approvals {
 		ids = append(ids, id)
 	}
@@ -4208,9 +4208,9 @@ func (m *UserMutation) ResetSupervisionRequestApprovals() {
 }
 
 // AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by ids.
-func (m *UserMutation) AddGroupMembershipIDs(ids ...uuid.UUID) {
+func (m *UserMutation) AddGroupMembershipIDs(ids ...guidgql.GUID) {
 	if m.group_memberships == nil {
-		m.group_memberships = make(map[uuid.UUID]struct{})
+		m.group_memberships = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.group_memberships[ids[i]] = struct{}{}
@@ -4228,9 +4228,9 @@ func (m *UserMutation) GroupMembershipsCleared() bool {
 }
 
 // RemoveGroupMembershipIDs removes the "group_memberships" edge to the GroupMembership entity by IDs.
-func (m *UserMutation) RemoveGroupMembershipIDs(ids ...uuid.UUID) {
+func (m *UserMutation) RemoveGroupMembershipIDs(ids ...guidgql.GUID) {
 	if m.removedgroup_memberships == nil {
-		m.removedgroup_memberships = make(map[uuid.UUID]struct{})
+		m.removedgroup_memberships = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.group_memberships, ids[i])
@@ -4239,7 +4239,7 @@ func (m *UserMutation) RemoveGroupMembershipIDs(ids ...uuid.UUID) {
 }
 
 // RemovedGroupMemberships returns the removed IDs of the "group_memberships" edge to the GroupMembership entity.
-func (m *UserMutation) RemovedGroupMembershipsIDs() (ids []uuid.UUID) {
+func (m *UserMutation) RemovedGroupMembershipsIDs() (ids []guidgql.GUID) {
 	for id := range m.removedgroup_memberships {
 		ids = append(ids, id)
 	}
@@ -4247,7 +4247,7 @@ func (m *UserMutation) RemovedGroupMembershipsIDs() (ids []uuid.UUID) {
 }
 
 // GroupMembershipsIDs returns the "group_memberships" edge IDs in the mutation.
-func (m *UserMutation) GroupMembershipsIDs() (ids []uuid.UUID) {
+func (m *UserMutation) GroupMembershipsIDs() (ids []guidgql.GUID) {
 	for id := range m.group_memberships {
 		ids = append(ids, id)
 	}
@@ -4262,9 +4262,9 @@ func (m *UserMutation) ResetGroupMemberships() {
 }
 
 // AddGroupMembershipApplicationIDs adds the "group_membership_applications" edge to the GroupMembershipApplication entity by ids.
-func (m *UserMutation) AddGroupMembershipApplicationIDs(ids ...uuid.UUID) {
+func (m *UserMutation) AddGroupMembershipApplicationIDs(ids ...guidgql.GUID) {
 	if m.group_membership_applications == nil {
-		m.group_membership_applications = make(map[uuid.UUID]struct{})
+		m.group_membership_applications = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		m.group_membership_applications[ids[i]] = struct{}{}
@@ -4282,9 +4282,9 @@ func (m *UserMutation) GroupMembershipApplicationsCleared() bool {
 }
 
 // RemoveGroupMembershipApplicationIDs removes the "group_membership_applications" edge to the GroupMembershipApplication entity by IDs.
-func (m *UserMutation) RemoveGroupMembershipApplicationIDs(ids ...uuid.UUID) {
+func (m *UserMutation) RemoveGroupMembershipApplicationIDs(ids ...guidgql.GUID) {
 	if m.removedgroup_membership_applications == nil {
-		m.removedgroup_membership_applications = make(map[uuid.UUID]struct{})
+		m.removedgroup_membership_applications = make(map[guidgql.GUID]struct{})
 	}
 	for i := range ids {
 		delete(m.group_membership_applications, ids[i])
@@ -4293,7 +4293,7 @@ func (m *UserMutation) RemoveGroupMembershipApplicationIDs(ids ...uuid.UUID) {
 }
 
 // RemovedGroupMembershipApplications returns the removed IDs of the "group_membership_applications" edge to the GroupMembershipApplication entity.
-func (m *UserMutation) RemovedGroupMembershipApplicationsIDs() (ids []uuid.UUID) {
+func (m *UserMutation) RemovedGroupMembershipApplicationsIDs() (ids []guidgql.GUID) {
 	for id := range m.removedgroup_membership_applications {
 		ids = append(ids, id)
 	}
@@ -4301,7 +4301,7 @@ func (m *UserMutation) RemovedGroupMembershipApplicationsIDs() (ids []uuid.UUID)
 }
 
 // GroupMembershipApplicationsIDs returns the "group_membership_applications" edge IDs in the mutation.
-func (m *UserMutation) GroupMembershipApplicationsIDs() (ids []uuid.UUID) {
+func (m *UserMutation) GroupMembershipApplicationsIDs() (ids []guidgql.GUID) {
 	for id := range m.group_membership_applications {
 		ids = append(ids, id)
 	}

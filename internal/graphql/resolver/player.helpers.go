@@ -3,15 +3,15 @@ package resolver
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
-func deleteRequestAndApprovals(ctx context.Context, client *ent.Client, requestID uuid.UUID) error {
+func deleteRequestAndApprovals(ctx context.Context, client *ent.Client, requestID guidgql.GUID) error {
 	_, err := client.PlayerSupervisionRequestApproval.Delete().Where(
 		playersupervisionrequestapproval.HasSupervisionRequestWith(
 			playersupervisionrequest.ID(requestID),
@@ -29,7 +29,7 @@ func deleteRequestAndApprovals(ctx context.Context, client *ent.Client, requestI
 	return nil
 }
 
-func addSupervisor(ctx context.Context, client *ent.Client, requestID uuid.UUID) error {
+func addSupervisor(ctx context.Context, client *ent.Client, requestID guidgql.GUID) error {
 	request, err := client.PlayerSupervisionRequest.Get(ctx, requestID)
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func addSupervisor(ctx context.Context, client *ent.Client, requestID uuid.UUID)
 	return deleteRequestAndApprovals(ctx, client, requestID)
 }
 
-func handleSupervisionRequestApproval(ctx context.Context, client *ent.Client, approverID, requestID uuid.UUID) error {
+func handleSupervisionRequestApproval(ctx context.Context, client *ent.Client, approverID, requestID guidgql.GUID) error {
 	// approve the request
 	_, err := client.PlayerSupervisionRequestApproval.Update().Where(
 		playersupervisionrequestapproval.HasSupervisionRequestWith(

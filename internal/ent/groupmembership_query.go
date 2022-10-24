@@ -10,10 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -135,8 +135,8 @@ func (gmq *GroupMembershipQuery) FirstX(ctx context.Context) *GroupMembership {
 
 // FirstID returns the first GroupMembership ID from the query.
 // Returns a *NotFoundError when no GroupMembership ID was found.
-func (gmq *GroupMembershipQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (gmq *GroupMembershipQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = gmq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
@@ -148,7 +148,7 @@ func (gmq *GroupMembershipQuery) FirstID(ctx context.Context) (id uuid.UUID, err
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (gmq *GroupMembershipQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (gmq *GroupMembershipQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 	id, err := gmq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -186,8 +186,8 @@ func (gmq *GroupMembershipQuery) OnlyX(ctx context.Context) *GroupMembership {
 // OnlyID is like Only, but returns the only GroupMembership ID in the query.
 // Returns a *NotSingularError when more than one GroupMembership ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (gmq *GroupMembershipQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (gmq *GroupMembershipQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
+	var ids []guidgql.GUID
 	if ids, err = gmq.Limit(2).IDs(ctx); err != nil {
 		return
 	}
@@ -203,7 +203,7 @@ func (gmq *GroupMembershipQuery) OnlyID(ctx context.Context) (id uuid.UUID, err 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (gmq *GroupMembershipQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (gmq *GroupMembershipQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 	id, err := gmq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -229,8 +229,8 @@ func (gmq *GroupMembershipQuery) AllX(ctx context.Context) []*GroupMembership {
 }
 
 // IDs executes the query and returns a list of GroupMembership IDs.
-func (gmq *GroupMembershipQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
+func (gmq *GroupMembershipQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
+	var ids []guidgql.GUID
 	if err := gmq.Select(groupmembership.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (gmq *GroupMembershipQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (gmq *GroupMembershipQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (gmq *GroupMembershipQuery) IDsX(ctx context.Context) []guidgql.GUID {
 	ids, err := gmq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -445,8 +445,8 @@ func (gmq *GroupMembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 }
 
 func (gmq *GroupMembershipQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes []*GroupMembership, init func(*GroupMembership), assign func(*GroupMembership, *Group)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*GroupMembership)
+	ids := make([]guidgql.GUID, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID][]*GroupMembership)
 	for i := range nodes {
 		if nodes[i].group_members == nil {
 			continue
@@ -474,8 +474,8 @@ func (gmq *GroupMembershipQuery) loadGroup(ctx context.Context, query *GroupQuer
 	return nil
 }
 func (gmq *GroupMembershipQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*GroupMembership, init func(*GroupMembership), assign func(*GroupMembership, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*GroupMembership)
+	ids := make([]guidgql.GUID, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID][]*GroupMembership)
 	for i := range nodes {
 		if nodes[i].user_group_memberships == nil {
 			continue
@@ -529,7 +529,7 @@ func (gmq *GroupMembershipQuery) querySpec() *sqlgraph.QuerySpec {
 			Table:   groupmembership.Table,
 			Columns: groupmembership.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupmembership.FieldID,
 			},
 		},

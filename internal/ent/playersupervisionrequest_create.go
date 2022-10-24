@@ -9,10 +9,10 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -38,21 +38,21 @@ func (psrc *PlayerSupervisionRequestCreate) SetNillableMessage(s *string) *Playe
 }
 
 // SetID sets the "id" field.
-func (psrc *PlayerSupervisionRequestCreate) SetID(u uuid.UUID) *PlayerSupervisionRequestCreate {
-	psrc.mutation.SetID(u)
+func (psrc *PlayerSupervisionRequestCreate) SetID(gu guidgql.GUID) *PlayerSupervisionRequestCreate {
+	psrc.mutation.SetID(gu)
 	return psrc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (psrc *PlayerSupervisionRequestCreate) SetNillableID(u *uuid.UUID) *PlayerSupervisionRequestCreate {
-	if u != nil {
-		psrc.SetID(*u)
+func (psrc *PlayerSupervisionRequestCreate) SetNillableID(gu *guidgql.GUID) *PlayerSupervisionRequestCreate {
+	if gu != nil {
+		psrc.SetID(*gu)
 	}
 	return psrc
 }
 
 // SetSenderID sets the "sender" edge to the User entity by ID.
-func (psrc *PlayerSupervisionRequestCreate) SetSenderID(id uuid.UUID) *PlayerSupervisionRequestCreate {
+func (psrc *PlayerSupervisionRequestCreate) SetSenderID(id guidgql.GUID) *PlayerSupervisionRequestCreate {
 	psrc.mutation.SetSenderID(id)
 	return psrc
 }
@@ -63,7 +63,7 @@ func (psrc *PlayerSupervisionRequestCreate) SetSender(u *User) *PlayerSupervisio
 }
 
 // SetPlayerID sets the "player" edge to the Player entity by ID.
-func (psrc *PlayerSupervisionRequestCreate) SetPlayerID(id uuid.UUID) *PlayerSupervisionRequestCreate {
+func (psrc *PlayerSupervisionRequestCreate) SetPlayerID(id guidgql.GUID) *PlayerSupervisionRequestCreate {
 	psrc.mutation.SetPlayerID(id)
 	return psrc
 }
@@ -74,14 +74,14 @@ func (psrc *PlayerSupervisionRequestCreate) SetPlayer(p *Player) *PlayerSupervis
 }
 
 // AddApprovalIDs adds the "approvals" edge to the PlayerSupervisionRequestApproval entity by IDs.
-func (psrc *PlayerSupervisionRequestCreate) AddApprovalIDs(ids ...uuid.UUID) *PlayerSupervisionRequestCreate {
+func (psrc *PlayerSupervisionRequestCreate) AddApprovalIDs(ids ...guidgql.GUID) *PlayerSupervisionRequestCreate {
 	psrc.mutation.AddApprovalIDs(ids...)
 	return psrc
 }
 
 // AddApprovals adds the "approvals" edges to the PlayerSupervisionRequestApproval entity.
 func (psrc *PlayerSupervisionRequestCreate) AddApprovals(p ...*PlayerSupervisionRequestApproval) *PlayerSupervisionRequestCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -191,7 +191,7 @@ func (psrc *PlayerSupervisionRequestCreate) sqlSave(ctx context.Context) (*Playe
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+		if id, ok := _spec.ID.Value.(*guidgql.GUID); ok {
 			_node.ID = *id
 		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
 			return nil, err
@@ -206,7 +206,7 @@ func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequ
 		_spec = &sqlgraph.CreateSpec{
 			Table: playersupervisionrequest.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: playersupervisionrequest.FieldID,
 			},
 		}
@@ -232,7 +232,7 @@ func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequ
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -252,7 +252,7 @@ func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequ
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: player.FieldID,
 				},
 			},
@@ -272,7 +272,7 @@ func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequ
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequestapproval.FieldID,
 				},
 			},

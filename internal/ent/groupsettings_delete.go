@@ -72,7 +72,7 @@ func (gsd *GroupSettingsDelete) sqlExec(ctx context.Context) (int, error) {
 		Node: &sqlgraph.NodeSpec{
 			Table: groupsettings.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupsettings.FieldID,
 			},
 		},

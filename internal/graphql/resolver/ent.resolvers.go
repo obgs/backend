@@ -6,24 +6,29 @@ package resolver
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 )
 
 // Node is the resolver for the node field.
-func (r *queryResolver) Node(ctx context.Context, id uuid.UUID) (ent.Noder, error) {
+func (r *queryResolver) Node(ctx context.Context, id guidgql.GUID) (ent.Noder, error) {
 	return r.client.Noder(ctx, id)
 }
 
 // Nodes is the resolver for the nodes field.
-func (r *queryResolver) Nodes(ctx context.Context, ids []uuid.UUID) ([]ent.Noder, error) {
-	return r.client.Noders(ctx, ids)
+func (r *queryResolver) Nodes(ctx context.Context, ids []*guidgql.GUID) ([]ent.Noder, error) {
+	actual := make([]guidgql.GUID, len(ids))
+	for i, id := range ids {
+		actual[i] = *id
+	}
+
+	return r.client.Noders(ctx, actual)
 }
 
 // Groups is the resolver for the groups field.

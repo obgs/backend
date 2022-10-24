@@ -9,10 +9,10 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // GroupSettingsCreate is the builder for creating a GroupSettings entity.
@@ -65,27 +65,27 @@ func (gsc *GroupSettingsCreate) SetNillableMinimumRoleToInvite(e *enums.Role) *G
 }
 
 // SetID sets the "id" field.
-func (gsc *GroupSettingsCreate) SetID(u uuid.UUID) *GroupSettingsCreate {
-	gsc.mutation.SetID(u)
+func (gsc *GroupSettingsCreate) SetID(gu guidgql.GUID) *GroupSettingsCreate {
+	gsc.mutation.SetID(gu)
 	return gsc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (gsc *GroupSettingsCreate) SetNillableID(u *uuid.UUID) *GroupSettingsCreate {
-	if u != nil {
-		gsc.SetID(*u)
+func (gsc *GroupSettingsCreate) SetNillableID(gu *guidgql.GUID) *GroupSettingsCreate {
+	if gu != nil {
+		gsc.SetID(*gu)
 	}
 	return gsc
 }
 
 // SetGroupID sets the "group" edge to the Group entity by ID.
-func (gsc *GroupSettingsCreate) SetGroupID(id uuid.UUID) *GroupSettingsCreate {
+func (gsc *GroupSettingsCreate) SetGroupID(id guidgql.GUID) *GroupSettingsCreate {
 	gsc.mutation.SetGroupID(id)
 	return gsc
 }
 
 // SetNillableGroupID sets the "group" edge to the Group entity by ID if the given value is not nil.
-func (gsc *GroupSettingsCreate) SetNillableGroupID(id *uuid.UUID) *GroupSettingsCreate {
+func (gsc *GroupSettingsCreate) SetNillableGroupID(id *guidgql.GUID) *GroupSettingsCreate {
 	if id != nil {
 		gsc = gsc.SetGroupID(*id)
 	}
@@ -223,7 +223,7 @@ func (gsc *GroupSettingsCreate) sqlSave(ctx context.Context) (*GroupSettings, er
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+		if id, ok := _spec.ID.Value.(*guidgql.GUID); ok {
 			_node.ID = *id
 		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
 			return nil, err
@@ -238,7 +238,7 @@ func (gsc *GroupSettingsCreate) createSpec() (*GroupSettings, *sqlgraph.CreateSp
 		_spec = &sqlgraph.CreateSpec{
 			Table: groupsettings.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: groupsettings.FieldID,
 			},
 		}
@@ -280,7 +280,7 @@ func (gsc *GroupSettingsCreate) createSpec() (*GroupSettings, *sqlgraph.CreateSp
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: group.FieldID,
 				},
 			},

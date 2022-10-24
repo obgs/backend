@@ -10,12 +10,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
 // GroupUpdate is the builder for updating Group entities.
@@ -58,7 +58,7 @@ func (gu *GroupUpdate) SetLogoURL(s string) *GroupUpdate {
 }
 
 // SetSettingsID sets the "settings" edge to the GroupSettings entity by ID.
-func (gu *GroupUpdate) SetSettingsID(id uuid.UUID) *GroupUpdate {
+func (gu *GroupUpdate) SetSettingsID(id guidgql.GUID) *GroupUpdate {
 	gu.mutation.SetSettingsID(id)
 	return gu
 }
@@ -69,14 +69,14 @@ func (gu *GroupUpdate) SetSettings(g *GroupSettings) *GroupUpdate {
 }
 
 // AddMemberIDs adds the "members" edge to the GroupMembership entity by IDs.
-func (gu *GroupUpdate) AddMemberIDs(ids ...uuid.UUID) *GroupUpdate {
+func (gu *GroupUpdate) AddMemberIDs(ids ...guidgql.GUID) *GroupUpdate {
 	gu.mutation.AddMemberIDs(ids...)
 	return gu
 }
 
 // AddMembers adds the "members" edges to the GroupMembership entity.
 func (gu *GroupUpdate) AddMembers(g ...*GroupMembership) *GroupUpdate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -84,14 +84,14 @@ func (gu *GroupUpdate) AddMembers(g ...*GroupMembership) *GroupUpdate {
 }
 
 // AddApplicationIDs adds the "applications" edge to the GroupMembershipApplication entity by IDs.
-func (gu *GroupUpdate) AddApplicationIDs(ids ...uuid.UUID) *GroupUpdate {
+func (gu *GroupUpdate) AddApplicationIDs(ids ...guidgql.GUID) *GroupUpdate {
 	gu.mutation.AddApplicationIDs(ids...)
 	return gu
 }
 
 // AddApplications adds the "applications" edges to the GroupMembershipApplication entity.
 func (gu *GroupUpdate) AddApplications(g ...*GroupMembershipApplication) *GroupUpdate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -116,14 +116,14 @@ func (gu *GroupUpdate) ClearMembers() *GroupUpdate {
 }
 
 // RemoveMemberIDs removes the "members" edge to GroupMembership entities by IDs.
-func (gu *GroupUpdate) RemoveMemberIDs(ids ...uuid.UUID) *GroupUpdate {
+func (gu *GroupUpdate) RemoveMemberIDs(ids ...guidgql.GUID) *GroupUpdate {
 	gu.mutation.RemoveMemberIDs(ids...)
 	return gu
 }
 
 // RemoveMembers removes "members" edges to GroupMembership entities.
 func (gu *GroupUpdate) RemoveMembers(g ...*GroupMembership) *GroupUpdate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -137,14 +137,14 @@ func (gu *GroupUpdate) ClearApplications() *GroupUpdate {
 }
 
 // RemoveApplicationIDs removes the "applications" edge to GroupMembershipApplication entities by IDs.
-func (gu *GroupUpdate) RemoveApplicationIDs(ids ...uuid.UUID) *GroupUpdate {
+func (gu *GroupUpdate) RemoveApplicationIDs(ids ...guidgql.GUID) *GroupUpdate {
 	gu.mutation.RemoveApplicationIDs(ids...)
 	return gu
 }
 
 // RemoveApplications removes "applications" edges to GroupMembershipApplication entities.
 func (gu *GroupUpdate) RemoveApplications(g ...*GroupMembershipApplication) *GroupUpdate {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -235,7 +235,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Table:   group.Table,
 			Columns: group.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: group.FieldID,
 			},
 		},
@@ -277,7 +277,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupsettings.FieldID,
 				},
 			},
@@ -293,7 +293,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupsettings.FieldID,
 				},
 			},
@@ -312,7 +312,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -328,7 +328,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -347,7 +347,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -366,7 +366,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -382,7 +382,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -401,7 +401,7 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -457,7 +457,7 @@ func (guo *GroupUpdateOne) SetLogoURL(s string) *GroupUpdateOne {
 }
 
 // SetSettingsID sets the "settings" edge to the GroupSettings entity by ID.
-func (guo *GroupUpdateOne) SetSettingsID(id uuid.UUID) *GroupUpdateOne {
+func (guo *GroupUpdateOne) SetSettingsID(id guidgql.GUID) *GroupUpdateOne {
 	guo.mutation.SetSettingsID(id)
 	return guo
 }
@@ -468,14 +468,14 @@ func (guo *GroupUpdateOne) SetSettings(g *GroupSettings) *GroupUpdateOne {
 }
 
 // AddMemberIDs adds the "members" edge to the GroupMembership entity by IDs.
-func (guo *GroupUpdateOne) AddMemberIDs(ids ...uuid.UUID) *GroupUpdateOne {
+func (guo *GroupUpdateOne) AddMemberIDs(ids ...guidgql.GUID) *GroupUpdateOne {
 	guo.mutation.AddMemberIDs(ids...)
 	return guo
 }
 
 // AddMembers adds the "members" edges to the GroupMembership entity.
 func (guo *GroupUpdateOne) AddMembers(g ...*GroupMembership) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -483,14 +483,14 @@ func (guo *GroupUpdateOne) AddMembers(g ...*GroupMembership) *GroupUpdateOne {
 }
 
 // AddApplicationIDs adds the "applications" edge to the GroupMembershipApplication entity by IDs.
-func (guo *GroupUpdateOne) AddApplicationIDs(ids ...uuid.UUID) *GroupUpdateOne {
+func (guo *GroupUpdateOne) AddApplicationIDs(ids ...guidgql.GUID) *GroupUpdateOne {
 	guo.mutation.AddApplicationIDs(ids...)
 	return guo
 }
 
 // AddApplications adds the "applications" edges to the GroupMembershipApplication entity.
 func (guo *GroupUpdateOne) AddApplications(g ...*GroupMembershipApplication) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -515,14 +515,14 @@ func (guo *GroupUpdateOne) ClearMembers() *GroupUpdateOne {
 }
 
 // RemoveMemberIDs removes the "members" edge to GroupMembership entities by IDs.
-func (guo *GroupUpdateOne) RemoveMemberIDs(ids ...uuid.UUID) *GroupUpdateOne {
+func (guo *GroupUpdateOne) RemoveMemberIDs(ids ...guidgql.GUID) *GroupUpdateOne {
 	guo.mutation.RemoveMemberIDs(ids...)
 	return guo
 }
 
 // RemoveMembers removes "members" edges to GroupMembership entities.
 func (guo *GroupUpdateOne) RemoveMembers(g ...*GroupMembership) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -536,14 +536,14 @@ func (guo *GroupUpdateOne) ClearApplications() *GroupUpdateOne {
 }
 
 // RemoveApplicationIDs removes the "applications" edge to GroupMembershipApplication entities by IDs.
-func (guo *GroupUpdateOne) RemoveApplicationIDs(ids ...uuid.UUID) *GroupUpdateOne {
+func (guo *GroupUpdateOne) RemoveApplicationIDs(ids ...guidgql.GUID) *GroupUpdateOne {
 	guo.mutation.RemoveApplicationIDs(ids...)
 	return guo
 }
 
 // RemoveApplications removes "applications" edges to GroupMembershipApplication entities.
 func (guo *GroupUpdateOne) RemoveApplications(g ...*GroupMembershipApplication) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(g))
+	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
@@ -647,7 +647,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Table:   group.Table,
 			Columns: group.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: group.FieldID,
 			},
 		},
@@ -706,7 +706,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupsettings.FieldID,
 				},
 			},
@@ -722,7 +722,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupsettings.FieldID,
 				},
 			},
@@ -741,7 +741,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -757,7 +757,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -776,7 +776,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembership.FieldID,
 				},
 			},
@@ -795,7 +795,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -811,7 +811,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},
@@ -830,7 +830,7 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
 				},
 			},

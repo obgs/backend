@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
@@ -18,6 +17,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -28,10 +28,10 @@ type Noder interface {
 
 // Node in the graph.
 type Node struct {
-	ID     uuid.UUID `json:"id,omitempty"`     // node id.
-	Type   string    `json:"type,omitempty"`   // node type.
-	Fields []*Field  `json:"fields,omitempty"` // node fields.
-	Edges  []*Edge   `json:"edges,omitempty"`  // node edges.
+	ID     guidgql.GUID `json:"id,omitempty"`     // node id.
+	Type   string       `json:"type,omitempty"`   // node type.
+	Fields []*Field     `json:"fields,omitempty"` // node fields.
+	Edges  []*Edge      `json:"edges,omitempty"`  // node edges.
 }
 
 // Field of a node.
@@ -43,9 +43,9 @@ type Field struct {
 
 // Edges between two nodes.
 type Edge struct {
-	Type string      `json:"type,omitempty"` // edge type.
-	Name string      `json:"name,omitempty"` // edge name.
-	IDs  []uuid.UUID `json:"ids,omitempty"`  // node ids (where this edge point to).
+	Type string         `json:"type,omitempty"` // edge type.
+	Name string         `json:"name,omitempty"` // edge name.
+	IDs  []guidgql.GUID `json:"ids,omitempty"`  // node ids (where this edge point to).
 }
 
 func (gr *Group) Node(ctx context.Context) (node *Node, err error) {
@@ -438,7 +438,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
-func (c *Client) Node(ctx context.Context, id uuid.UUID) (*Node, error) {
+func (c *Client) Node(ctx context.Context, id guidgql.GUID) (*Node, error) {
 	n, err := c.Noder(ctx, id)
 	if err != nil {
 		return nil, err
@@ -454,7 +454,7 @@ type NodeOption func(*nodeOptions)
 // WithNodeType sets the node Type resolver function (i.e. the table to query).
 // If was not provided, the table will be derived from the universal-id
 // configuration as described in: https://entgo.io/docs/migrate/#universal-ids.
-func WithNodeType(f func(context.Context, uuid.UUID) (string, error)) NodeOption {
+func WithNodeType(f func(context.Context, guidgql.GUID) (string, error)) NodeOption {
 	return func(o *nodeOptions) {
 		o.nodeType = f
 	}
@@ -462,13 +462,13 @@ func WithNodeType(f func(context.Context, uuid.UUID) (string, error)) NodeOption
 
 // WithFixedNodeType sets the Type of the node to a fixed value.
 func WithFixedNodeType(t string) NodeOption {
-	return WithNodeType(func(context.Context, uuid.UUID) (string, error) {
+	return WithNodeType(func(context.Context, guidgql.GUID) (string, error) {
 		return t, nil
 	})
 }
 
 type nodeOptions struct {
-	nodeType func(context.Context, uuid.UUID) (string, error)
+	nodeType func(context.Context, guidgql.GUID) (string, error)
 }
 
 func (c *Client) newNodeOpts(opts []NodeOption) *nodeOptions {
@@ -477,7 +477,7 @@ func (c *Client) newNodeOpts(opts []NodeOption) *nodeOptions {
 		opt(nopts)
 	}
 	if nopts.nodeType == nil {
-		nopts.nodeType = func(ctx context.Context, id uuid.UUID) (string, error) {
+		nopts.nodeType = func(ctx context.Context, id guidgql.GUID) (string, error) {
 			return "", fmt.Errorf("cannot resolve noder (%v) without its type", id)
 		}
 	}
@@ -489,7 +489,7 @@ func (c *Client) newNodeOpts(opts []NodeOption) *nodeOptions {
 //
 //	c.Noder(ctx, id)
 //	c.Noder(ctx, id, ent.WithNodeType(typeResolver))
-func (c *Client) Noder(ctx context.Context, id uuid.UUID, opts ...NodeOption) (_ Noder, err error) {
+func (c *Client) Noder(ctx context.Context, id guidgql.GUID, opts ...NodeOption) (_ Noder, err error) {
 	defer func() {
 		if IsNotFound(err) {
 			err = multierror.Append(err, entgql.ErrNodeNotFound(id))
@@ -502,11 +502,15 @@ func (c *Client) Noder(ctx context.Context, id uuid.UUID, opts ...NodeOption) (_
 	return c.noder(ctx, table, id)
 }
 
-func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, error) {
+func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Noder, error) {
 	switch table {
 	case group.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
 		query := c.Group.Query().
-			Where(group.ID(id))
+			Where(group.ID(uid))
 		query, err := query.CollectFields(ctx, "Group")
 		if err != nil {
 			return nil, err
@@ -517,8 +521,12 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 		}
 		return n, nil
 	case groupmembership.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
 		query := c.GroupMembership.Query().
-			Where(groupmembership.ID(id))
+			Where(groupmembership.ID(uid))
 		query, err := query.CollectFields(ctx, "GroupMembership")
 		if err != nil {
 			return nil, err
@@ -529,8 +537,12 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 		}
 		return n, nil
 	case groupmembershipapplication.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
 		query := c.GroupMembershipApplication.Query().
-			Where(groupmembershipapplication.ID(id))
+			Where(groupmembershipapplication.ID(uid))
 		query, err := query.CollectFields(ctx, "GroupMembershipApplication")
 		if err != nil {
 			return nil, err
@@ -541,8 +553,12 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 		}
 		return n, nil
 	case groupsettings.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
 		query := c.GroupSettings.Query().
-			Where(groupsettings.ID(id))
+			Where(groupsettings.ID(uid))
 		query, err := query.CollectFields(ctx, "GroupSettings")
 		if err != nil {
 			return nil, err
@@ -553,8 +569,12 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 		}
 		return n, nil
 	case player.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
 		query := c.Player.Query().
-			Where(player.ID(id))
+			Where(player.ID(uid))
 		query, err := query.CollectFields(ctx, "Player")
 		if err != nil {
 			return nil, err
@@ -565,8 +585,12 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 		}
 		return n, nil
 	case playersupervisionrequest.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
 		query := c.PlayerSupervisionRequest.Query().
-			Where(playersupervisionrequest.ID(id))
+			Where(playersupervisionrequest.ID(uid))
 		query, err := query.CollectFields(ctx, "PlayerSupervisionRequest")
 		if err != nil {
 			return nil, err
@@ -577,8 +601,12 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 		}
 		return n, nil
 	case playersupervisionrequestapproval.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
 		query := c.PlayerSupervisionRequestApproval.Query().
-			Where(playersupervisionrequestapproval.ID(id))
+			Where(playersupervisionrequestapproval.ID(uid))
 		query, err := query.CollectFields(ctx, "PlayerSupervisionRequestApproval")
 		if err != nil {
 			return nil, err
@@ -589,8 +617,12 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 		}
 		return n, nil
 	case user.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
 		query := c.User.Query().
-			Where(user.ID(id))
+			Where(user.ID(uid))
 		query, err := query.CollectFields(ctx, "User")
 		if err != nil {
 			return nil, err
@@ -605,7 +637,7 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 	}
 }
 
-func (c *Client) Noders(ctx context.Context, ids []uuid.UUID, opts ...NodeOption) ([]Noder, error) {
+func (c *Client) Noders(ctx context.Context, ids []guidgql.GUID, opts ...NodeOption) ([]Noder, error) {
 	switch len(ids) {
 	case 1:
 		noder, err := c.Noder(ctx, ids[0], opts...)
@@ -619,8 +651,8 @@ func (c *Client) Noders(ctx context.Context, ids []uuid.UUID, opts ...NodeOption
 
 	noders := make([]Noder, len(ids))
 	errors := make([]error, len(ids))
-	tables := make(map[string][]uuid.UUID)
-	id2idx := make(map[uuid.UUID][]int, len(ids))
+	tables := make(map[string][]guidgql.GUID)
+	id2idx := make(map[guidgql.GUID][]int, len(ids))
 	nopts := c.newNodeOpts(opts)
 	for i, id := range ids {
 		table, err := nopts.nodeType(ctx, id)
@@ -666,9 +698,9 @@ func (c *Client) Noders(ctx context.Context, ids []uuid.UUID, opts ...NodeOption
 	return noders, nil
 }
 
-func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]Noder, error) {
+func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) ([]Noder, error) {
 	noders := make([]Noder, len(ids))
-	idmap := make(map[uuid.UUID][]*Noder, len(ids))
+	idmap := make(map[guidgql.GUID][]*Noder, len(ids))
 	for i, id := range ids {
 		idmap[id] = append(idmap[id], &noders[i])
 	}

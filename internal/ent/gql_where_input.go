@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
@@ -15,6 +14,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -26,14 +26,14 @@ type GroupWhereInput struct {
 	And        []*GroupWhereInput `json:"and,omitempty"`
 
 	// "id" field predicates.
-	ID      *uuid.UUID  `json:"id,omitempty"`
-	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
-	IDIn    []uuid.UUID `json:"idIn,omitempty"`
-	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
-	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
-	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
-	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
-	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
@@ -248,14 +248,14 @@ type GroupMembershipWhereInput struct {
 	And        []*GroupMembershipWhereInput `json:"and,omitempty"`
 
 	// "id" field predicates.
-	ID      *uuid.UUID  `json:"id,omitempty"`
-	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
-	IDIn    []uuid.UUID `json:"idIn,omitempty"`
-	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
-	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
-	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
-	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
-	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
 
 	// "role" field predicates.
 	Role      *enums.Role  `json:"role,omitempty"`
@@ -434,14 +434,14 @@ type GroupSettingsWhereInput struct {
 	And        []*GroupSettingsWhereInput `json:"and,omitempty"`
 
 	// "id" field predicates.
-	ID      *uuid.UUID  `json:"id,omitempty"`
-	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
-	IDIn    []uuid.UUID `json:"idIn,omitempty"`
-	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
-	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
-	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
-	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
-	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
 
 	// "visibility" field predicates.
 	Visibility      *groupsettings.Visibility  `json:"visibility,omitempty"`
@@ -594,14 +594,14 @@ type PlayerWhereInput struct {
 	And        []*PlayerWhereInput `json:"and,omitempty"`
 
 	// "id" field predicates.
-	ID      *uuid.UUID  `json:"id,omitempty"`
-	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
-	IDIn    []uuid.UUID `json:"idIn,omitempty"`
-	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
-	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
-	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
-	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
-	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
@@ -838,14 +838,14 @@ type PlayerSupervisionRequestWhereInput struct {
 	And        []*PlayerSupervisionRequestWhereInput `json:"and,omitempty"`
 
 	// "id" field predicates.
-	ID      *uuid.UUID  `json:"id,omitempty"`
-	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
-	IDIn    []uuid.UUID `json:"idIn,omitempty"`
-	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
-	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
-	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
-	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
-	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
 
 	// "sender" edge predicates.
 	HasSender     *bool             `json:"hasSender,omitempty"`
@@ -1028,14 +1028,14 @@ type PlayerSupervisionRequestApprovalWhereInput struct {
 	And        []*PlayerSupervisionRequestApprovalWhereInput `json:"and,omitempty"`
 
 	// "id" field predicates.
-	ID      *uuid.UUID  `json:"id,omitempty"`
-	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
-	IDIn    []uuid.UUID `json:"idIn,omitempty"`
-	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
-	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
-	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
-	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
-	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
 
 	// "approved" field predicates.
 	Approved       *bool `json:"approved,omitempty"`
@@ -1214,14 +1214,14 @@ type UserWhereInput struct {
 	And        []*UserWhereInput `json:"and,omitempty"`
 
 	// "id" field predicates.
-	ID      *uuid.UUID  `json:"id,omitempty"`
-	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
-	IDIn    []uuid.UUID `json:"idIn,omitempty"`
-	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
-	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
-	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
-	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
-	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`

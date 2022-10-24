@@ -10,10 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -45,13 +45,13 @@ func (pu *PlayerUpdate) SetNillableName(s *string) *PlayerUpdate {
 }
 
 // SetOwnerID sets the "owner" edge to the User entity by ID.
-func (pu *PlayerUpdate) SetOwnerID(id uuid.UUID) *PlayerUpdate {
+func (pu *PlayerUpdate) SetOwnerID(id guidgql.GUID) *PlayerUpdate {
 	pu.mutation.SetOwnerID(id)
 	return pu
 }
 
 // SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
-func (pu *PlayerUpdate) SetNillableOwnerID(id *uuid.UUID) *PlayerUpdate {
+func (pu *PlayerUpdate) SetNillableOwnerID(id *guidgql.GUID) *PlayerUpdate {
 	if id != nil {
 		pu = pu.SetOwnerID(*id)
 	}
@@ -64,14 +64,14 @@ func (pu *PlayerUpdate) SetOwner(u *User) *PlayerUpdate {
 }
 
 // AddSupervisorIDs adds the "supervisors" edge to the User entity by IDs.
-func (pu *PlayerUpdate) AddSupervisorIDs(ids ...uuid.UUID) *PlayerUpdate {
+func (pu *PlayerUpdate) AddSupervisorIDs(ids ...guidgql.GUID) *PlayerUpdate {
 	pu.mutation.AddSupervisorIDs(ids...)
 	return pu
 }
 
 // AddSupervisors adds the "supervisors" edges to the User entity.
 func (pu *PlayerUpdate) AddSupervisors(u ...*User) *PlayerUpdate {
-	ids := make([]uuid.UUID, len(u))
+	ids := make([]guidgql.GUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -79,14 +79,14 @@ func (pu *PlayerUpdate) AddSupervisors(u ...*User) *PlayerUpdate {
 }
 
 // AddSupervisionRequestIDs adds the "supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
-func (pu *PlayerUpdate) AddSupervisionRequestIDs(ids ...uuid.UUID) *PlayerUpdate {
+func (pu *PlayerUpdate) AddSupervisionRequestIDs(ids ...guidgql.GUID) *PlayerUpdate {
 	pu.mutation.AddSupervisionRequestIDs(ids...)
 	return pu
 }
 
 // AddSupervisionRequests adds the "supervision_requests" edges to the PlayerSupervisionRequest entity.
 func (pu *PlayerUpdate) AddSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -111,14 +111,14 @@ func (pu *PlayerUpdate) ClearSupervisors() *PlayerUpdate {
 }
 
 // RemoveSupervisorIDs removes the "supervisors" edge to User entities by IDs.
-func (pu *PlayerUpdate) RemoveSupervisorIDs(ids ...uuid.UUID) *PlayerUpdate {
+func (pu *PlayerUpdate) RemoveSupervisorIDs(ids ...guidgql.GUID) *PlayerUpdate {
 	pu.mutation.RemoveSupervisorIDs(ids...)
 	return pu
 }
 
 // RemoveSupervisors removes "supervisors" edges to User entities.
 func (pu *PlayerUpdate) RemoveSupervisors(u ...*User) *PlayerUpdate {
-	ids := make([]uuid.UUID, len(u))
+	ids := make([]guidgql.GUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -132,14 +132,14 @@ func (pu *PlayerUpdate) ClearSupervisionRequests() *PlayerUpdate {
 }
 
 // RemoveSupervisionRequestIDs removes the "supervision_requests" edge to PlayerSupervisionRequest entities by IDs.
-func (pu *PlayerUpdate) RemoveSupervisionRequestIDs(ids ...uuid.UUID) *PlayerUpdate {
+func (pu *PlayerUpdate) RemoveSupervisionRequestIDs(ids ...guidgql.GUID) *PlayerUpdate {
 	pu.mutation.RemoveSupervisionRequestIDs(ids...)
 	return pu
 }
 
 // RemoveSupervisionRequests removes "supervision_requests" edges to PlayerSupervisionRequest entities.
 func (pu *PlayerUpdate) RemoveSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -206,7 +206,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Table:   player.Table,
 			Columns: player.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: player.FieldID,
 			},
 		},
@@ -234,7 +234,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -250,7 +250,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -269,7 +269,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -285,7 +285,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -304,7 +304,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -323,7 +323,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -339,7 +339,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -358,7 +358,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -402,13 +402,13 @@ func (puo *PlayerUpdateOne) SetNillableName(s *string) *PlayerUpdateOne {
 }
 
 // SetOwnerID sets the "owner" edge to the User entity by ID.
-func (puo *PlayerUpdateOne) SetOwnerID(id uuid.UUID) *PlayerUpdateOne {
+func (puo *PlayerUpdateOne) SetOwnerID(id guidgql.GUID) *PlayerUpdateOne {
 	puo.mutation.SetOwnerID(id)
 	return puo
 }
 
 // SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
-func (puo *PlayerUpdateOne) SetNillableOwnerID(id *uuid.UUID) *PlayerUpdateOne {
+func (puo *PlayerUpdateOne) SetNillableOwnerID(id *guidgql.GUID) *PlayerUpdateOne {
 	if id != nil {
 		puo = puo.SetOwnerID(*id)
 	}
@@ -421,14 +421,14 @@ func (puo *PlayerUpdateOne) SetOwner(u *User) *PlayerUpdateOne {
 }
 
 // AddSupervisorIDs adds the "supervisors" edge to the User entity by IDs.
-func (puo *PlayerUpdateOne) AddSupervisorIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+func (puo *PlayerUpdateOne) AddSupervisorIDs(ids ...guidgql.GUID) *PlayerUpdateOne {
 	puo.mutation.AddSupervisorIDs(ids...)
 	return puo
 }
 
 // AddSupervisors adds the "supervisors" edges to the User entity.
 func (puo *PlayerUpdateOne) AddSupervisors(u ...*User) *PlayerUpdateOne {
-	ids := make([]uuid.UUID, len(u))
+	ids := make([]guidgql.GUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -436,14 +436,14 @@ func (puo *PlayerUpdateOne) AddSupervisors(u ...*User) *PlayerUpdateOne {
 }
 
 // AddSupervisionRequestIDs adds the "supervision_requests" edge to the PlayerSupervisionRequest entity by IDs.
-func (puo *PlayerUpdateOne) AddSupervisionRequestIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+func (puo *PlayerUpdateOne) AddSupervisionRequestIDs(ids ...guidgql.GUID) *PlayerUpdateOne {
 	puo.mutation.AddSupervisionRequestIDs(ids...)
 	return puo
 }
 
 // AddSupervisionRequests adds the "supervision_requests" edges to the PlayerSupervisionRequest entity.
 func (puo *PlayerUpdateOne) AddSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -468,14 +468,14 @@ func (puo *PlayerUpdateOne) ClearSupervisors() *PlayerUpdateOne {
 }
 
 // RemoveSupervisorIDs removes the "supervisors" edge to User entities by IDs.
-func (puo *PlayerUpdateOne) RemoveSupervisorIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+func (puo *PlayerUpdateOne) RemoveSupervisorIDs(ids ...guidgql.GUID) *PlayerUpdateOne {
 	puo.mutation.RemoveSupervisorIDs(ids...)
 	return puo
 }
 
 // RemoveSupervisors removes "supervisors" edges to User entities.
 func (puo *PlayerUpdateOne) RemoveSupervisors(u ...*User) *PlayerUpdateOne {
-	ids := make([]uuid.UUID, len(u))
+	ids := make([]guidgql.GUID, len(u))
 	for i := range u {
 		ids[i] = u[i].ID
 	}
@@ -489,14 +489,14 @@ func (puo *PlayerUpdateOne) ClearSupervisionRequests() *PlayerUpdateOne {
 }
 
 // RemoveSupervisionRequestIDs removes the "supervision_requests" edge to PlayerSupervisionRequest entities by IDs.
-func (puo *PlayerUpdateOne) RemoveSupervisionRequestIDs(ids ...uuid.UUID) *PlayerUpdateOne {
+func (puo *PlayerUpdateOne) RemoveSupervisionRequestIDs(ids ...guidgql.GUID) *PlayerUpdateOne {
 	puo.mutation.RemoveSupervisionRequestIDs(ids...)
 	return puo
 }
 
 // RemoveSupervisionRequests removes "supervision_requests" edges to PlayerSupervisionRequest entities.
 func (puo *PlayerUpdateOne) RemoveSupervisionRequests(p ...*PlayerSupervisionRequest) *PlayerUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]guidgql.GUID, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -576,7 +576,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Table:   player.Table,
 			Columns: player.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
+				Type:   field.TypeString,
 				Column: player.FieldID,
 			},
 		},
@@ -621,7 +621,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -637,7 +637,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -656,7 +656,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -672,7 +672,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -691,7 +691,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: user.FieldID,
 				},
 			},
@@ -710,7 +710,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -726,7 +726,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
@@ -745,7 +745,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
+					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
 				},
 			},
