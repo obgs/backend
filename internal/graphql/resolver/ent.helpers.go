@@ -7,5 +7,5 @@ import (
 )
 
 func getNodeType(_ context.Context, id guidgql.GUID) (string, error) {
-	return id.Type, nil
+	return guidgql.TableNames[id.Type], nil
 }

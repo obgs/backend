@@ -2,33 +2,32 @@ package guidgql
 
 import (
 	"database/sql/driver"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/google/uuid"
+	"github.com/jxskiss/base62"
+	"github.com/teris-io/shortid"
 )
 
 type GUID struct {
-	Type string `json:"t"`
-	UUID string `json:"i"`
+	Type Table
+	ID   string
 }
 
-func New(t string) func() GUID {
+func New(t Table) func() GUID {
 	return func() GUID {
 		return GUID{
 			Type: t,
-			UUID: uuid.New().String(),
+			ID:   shortid.MustGenerate(),
 		}
 	}
 }
 
 func (guid GUID) String() string {
-	j, _ := json.Marshal(guid)
-	return base64.StdEncoding.EncodeToString(j)
+	return base62.EncodeToString([]byte(fmt.Sprintf("%d,%s", guid.Type, guid.ID)))
 }
 
 func MarshalGUID(g GUID) graphql.Marshaler {
@@ -40,25 +39,36 @@ func MarshalGUID(g GUID) graphql.Marshaler {
 func UnmarshalGUID(src interface{}) (g GUID, err error) {
 	switch v := src.(type) {
 	case []byte:
-		var s []byte
-		_, err = base64.StdEncoding.Decode(s, v)
+		s, err := base62.Decode(v)
 		if err != nil {
-			return
+			return g, err
+		}
+		res := strings.Split(string(s), ",")
+		t, err := strconv.Atoi(res[0])
+		if err != nil {
+			return g, err
 		}
 
-		err = json.Unmarshal(s, &g)
-
-		return
+		return GUID{
+			Type: Table(t),
+			ID:   res[1],
+		}, nil
 	case string:
 		var s []byte
-		s, err = base64.StdEncoding.DecodeString(v)
+		s, err = base62.DecodeString(v)
 		if err != nil {
 			return
 		}
+		res := strings.Split(string(s), ",")
+		t, err := strconv.Atoi(res[0])
+		if err != nil {
+			return g, err
+		}
 
-		err = json.Unmarshal(s, &g)
-
-		return
+		return GUID{
+			Type: Table(t),
+			ID:   res[1],
+		}, nil
 	case GUID:
 		return v, nil
 	default:
