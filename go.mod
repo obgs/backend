@@ -14,10 +14,12 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/jxskiss/base62 v1.1.0
 	github.com/lib/pq v1.10.6
 	github.com/minio/minio-go/v7 v7.0.37
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
+	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	github.com/vektah/gqlparser/v2 v2.4.7
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8

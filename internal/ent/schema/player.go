@@ -17,7 +17,7 @@ type Player struct {
 // Fields of the Player.
 func (Player) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("players")),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.Player)),
 		field.String("name").Default(""),
 	}
 }

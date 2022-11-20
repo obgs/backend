@@ -16,7 +16,7 @@ type GroupMembership struct {
 
 func (GroupMembership) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("group_memberships")),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.GroupMembership)),
 		field.Enum("role").GoType(enums.RoleMember),
 	}
 }

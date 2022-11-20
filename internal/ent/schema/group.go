@@ -17,7 +17,7 @@ type Group struct {
 // Fields of the Group.
 func (Group) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("groups")),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.Group)),
 		field.String("name").NotEmpty().Unique(),
 		field.String("description").Default("").Annotations(
 			entgql.Skip(entgql.SkipWhereInput),

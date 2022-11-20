@@ -15,7 +15,7 @@ type GroupMembershipApplication struct {
 
 func (GroupMembershipApplication) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("group_membership_applications")),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.GroupMembershipApplication)),
 		field.String("message").Default(""),
 	}
 }

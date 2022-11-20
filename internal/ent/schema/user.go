@@ -17,7 +17,7 @@ type User struct {
 // Fields of the User.
 func (User) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("users")),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.User)),
 		field.String("name").Default(""),
 		field.String("email").NotEmpty().Unique(),
 		field.String("password").NotEmpty().Sensitive().Annotations(

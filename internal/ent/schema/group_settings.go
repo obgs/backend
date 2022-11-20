@@ -17,7 +17,7 @@ type GroupSettings struct {
 // Fields of the GroupSettings.
 func (GroupSettings) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("group_settings")),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.GroupSettings)),
 		field.Enum("visibility").NamedValues("public", "PUBLIC", "private", "PRIVATE").Default("PUBLIC"),
 		field.Enum("join_policy").NamedValues(
 			"open", "OPEN",

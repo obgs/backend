@@ -14,7 +14,7 @@ type PlayerSupervisionRequest struct {
 
 func (PlayerSupervisionRequest) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("player_supervision_requests")),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.PlayerSupervisionRequest)),
 		field.String("message").Optional().Annotations(
 			entgql.Skip(entgql.SkipWhereInput),
 		),

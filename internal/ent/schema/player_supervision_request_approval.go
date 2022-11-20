@@ -13,7 +13,7 @@ type PlayerSupervisionRequestApproval struct {
 
 func (PlayerSupervisionRequestApproval) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New("player_supervision_request_approvals")),
+		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.PlayerSupervisionRequestApproval)),
 		field.Bool("approved").Optional().Nillable(),
 	}
 }
