@@ -64,40 +64,16 @@ func (r *groupResolver) Applied(ctx context.Context, obj *ent.Group) (*bool, err
 	return &res, nil
 }
 
-// CreateGroup is the resolver for the createGroup field.
-func (r *mutationResolver) CreateGroup(ctx context.Context, input model.CreateGroupInput) (*ent.Group, error) {
-	// create group settings
-	s, err := r.client.GroupSettings.Create().
-		SetVisibility(input.Visibility).
-		SetJoinPolicy(input.JoinPolicy).
-		SetMinimumRoleToInvite(*input.MinimumRoleToInvite).
-		Save(ctx)
-	if err != nil {
-		return nil, err
+// CreateOrUpdateGroup is the resolver for the createOrUpdateGroup field.
+func (r *mutationResolver) CreateOrUpdateGroup(ctx context.Context, input model.CreateOrUpdateGroupInput) (*ent.Group, error) {
+	var g *ent.Group
+	var err error
+	if input.ID == nil {
+		g, err = createGroup(ctx, r.client, input)
+	} else {
+		g, err = updateGroup(ctx, r.client, input)
 	}
 
-	// create the group
-	g, err := r.client.Group.Create().
-		SetSettings(s).
-		SetName(input.Name).
-		SetDescription(*input.Description).
-		SetLogoURL(input.LogoURL).
-		Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	u, err := auth.UserFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// add the user as the owner
-	_, err = r.client.GroupMembership.Create().
-		SetGroup(g).
-		SetUser(u).
-		SetRole(enums.RoleOwner).
-		Save(ctx)
 	if err != nil {
 		return nil, err
 	}

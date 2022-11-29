@@ -34,7 +34,7 @@ func IDNEQ(id guidgql.GUID) predicate.GroupSettings {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.GroupSettings {
 	return predicate.GroupSettings(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -45,7 +45,7 @@ func IDIn(ids ...guidgql.GUID) predicate.GroupSettings {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.GroupSettings {
 	return predicate.GroupSettings(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -97,7 +97,7 @@ func VisibilityNEQ(v Visibility) predicate.GroupSettings {
 
 // VisibilityIn applies the In predicate on the "visibility" field.
 func VisibilityIn(vs ...Visibility) predicate.GroupSettings {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -108,7 +108,7 @@ func VisibilityIn(vs ...Visibility) predicate.GroupSettings {
 
 // VisibilityNotIn applies the NotIn predicate on the "visibility" field.
 func VisibilityNotIn(vs ...Visibility) predicate.GroupSettings {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -133,7 +133,7 @@ func JoinPolicyNEQ(v JoinPolicy) predicate.GroupSettings {
 
 // JoinPolicyIn applies the In predicate on the "join_policy" field.
 func JoinPolicyIn(vs ...JoinPolicy) predicate.GroupSettings {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -144,7 +144,7 @@ func JoinPolicyIn(vs ...JoinPolicy) predicate.GroupSettings {
 
 // JoinPolicyNotIn applies the NotIn predicate on the "join_policy" field.
 func JoinPolicyNotIn(vs ...JoinPolicy) predicate.GroupSettings {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -171,7 +171,7 @@ func MinimumRoleToInviteNEQ(v enums.Role) predicate.GroupSettings {
 
 // MinimumRoleToInviteIn applies the In predicate on the "minimum_role_to_invite" field.
 func MinimumRoleToInviteIn(vs ...enums.Role) predicate.GroupSettings {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -182,7 +182,7 @@ func MinimumRoleToInviteIn(vs ...enums.Role) predicate.GroupSettings {
 
 // MinimumRoleToInviteNotIn applies the NotIn predicate on the "minimum_role_to_invite" field.
 func MinimumRoleToInviteNotIn(vs ...enums.Role) predicate.GroupSettings {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}

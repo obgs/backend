@@ -179,17 +179,10 @@ func (psrau *PlayerSupervisionRequestApprovalUpdate) sqlSave(ctx context.Context
 		}
 	}
 	if value, ok := psrau.mutation.Approved(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Value:  value,
-			Column: playersupervisionrequestapproval.FieldApproved,
-		})
+		_spec.SetField(playersupervisionrequestapproval.FieldApproved, field.TypeBool, value)
 	}
 	if psrau.mutation.ApprovedCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Column: playersupervisionrequestapproval.FieldApproved,
-		})
+		_spec.ClearField(playersupervisionrequestapproval.FieldApproved, field.TypeBool)
 	}
 	if psrau.mutation.ApproverCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -459,17 +452,10 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) sqlSave(ctx context.Con
 		}
 	}
 	if value, ok := psrauo.mutation.Approved(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Value:  value,
-			Column: playersupervisionrequestapproval.FieldApproved,
-		})
+		_spec.SetField(playersupervisionrequestapproval.FieldApproved, field.TypeBool, value)
 	}
 	if psrauo.mutation.ApprovedCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Column: playersupervisionrequestapproval.FieldApproved,
-		})
+		_spec.ClearField(playersupervisionrequestapproval.FieldApproved, field.TypeBool)
 	}
 	if psrauo.mutation.ApproverCleared() {
 		edge := &sqlgraph.EdgeSpec{

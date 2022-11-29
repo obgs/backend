@@ -194,11 +194,7 @@ func (gmau *GroupMembershipApplicationUpdate) sqlSave(ctx context.Context) (n in
 		}
 	}
 	if value, ok := gmau.mutation.Message(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: groupmembershipapplication.FieldMessage,
-		})
+		_spec.SetField(groupmembershipapplication.FieldMessage, field.TypeString, value)
 	}
 	if gmau.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -521,11 +517,7 @@ func (gmauo *GroupMembershipApplicationUpdateOne) sqlSave(ctx context.Context) (
 		}
 	}
 	if value, ok := gmauo.mutation.Message(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: groupmembershipapplication.FieldMessage,
-		})
+		_spec.SetField(groupmembershipapplication.FieldMessage, field.TypeString, value)
 	}
 	if gmauo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
@@ -21,6 +23,7 @@ type PlayerSupervisionRequestCreate struct {
 	config
 	mutation *PlayerSupervisionRequestMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetMessage sets the "message" field.
@@ -211,16 +214,13 @@ func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequ
 			},
 		}
 	)
+	_spec.OnConflict = psrc.conflict
 	if id, ok := psrc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
 	if value, ok := psrc.mutation.Message(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: playersupervisionrequest.FieldMessage,
-		})
+		_spec.SetField(playersupervisionrequest.FieldMessage, field.TypeString, value)
 		_node.Message = value
 	}
 	if nodes := psrc.mutation.SenderIDs(); len(nodes) > 0 {
@@ -285,10 +285,185 @@ func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequ
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.PlayerSupervisionRequest.Create().
+//		SetMessage(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.PlayerSupervisionRequestUpsert) {
+//			SetMessage(v+v).
+//		}).
+//		Exec(ctx)
+func (psrc *PlayerSupervisionRequestCreate) OnConflict(opts ...sql.ConflictOption) *PlayerSupervisionRequestUpsertOne {
+	psrc.conflict = opts
+	return &PlayerSupervisionRequestUpsertOne{
+		create: psrc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.PlayerSupervisionRequest.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (psrc *PlayerSupervisionRequestCreate) OnConflictColumns(columns ...string) *PlayerSupervisionRequestUpsertOne {
+	psrc.conflict = append(psrc.conflict, sql.ConflictColumns(columns...))
+	return &PlayerSupervisionRequestUpsertOne{
+		create: psrc,
+	}
+}
+
+type (
+	// PlayerSupervisionRequestUpsertOne is the builder for "upsert"-ing
+	//  one PlayerSupervisionRequest node.
+	PlayerSupervisionRequestUpsertOne struct {
+		create *PlayerSupervisionRequestCreate
+	}
+
+	// PlayerSupervisionRequestUpsert is the "OnConflict" setter.
+	PlayerSupervisionRequestUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetMessage sets the "message" field.
+func (u *PlayerSupervisionRequestUpsert) SetMessage(v string) *PlayerSupervisionRequestUpsert {
+	u.Set(playersupervisionrequest.FieldMessage, v)
+	return u
+}
+
+// UpdateMessage sets the "message" field to the value that was provided on create.
+func (u *PlayerSupervisionRequestUpsert) UpdateMessage() *PlayerSupervisionRequestUpsert {
+	u.SetExcluded(playersupervisionrequest.FieldMessage)
+	return u
+}
+
+// ClearMessage clears the value of the "message" field.
+func (u *PlayerSupervisionRequestUpsert) ClearMessage() *PlayerSupervisionRequestUpsert {
+	u.SetNull(playersupervisionrequest.FieldMessage)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.PlayerSupervisionRequest.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(playersupervisionrequest.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *PlayerSupervisionRequestUpsertOne) UpdateNewValues() *PlayerSupervisionRequestUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(playersupervisionrequest.FieldID)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.PlayerSupervisionRequest.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *PlayerSupervisionRequestUpsertOne) Ignore() *PlayerSupervisionRequestUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *PlayerSupervisionRequestUpsertOne) DoNothing() *PlayerSupervisionRequestUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the PlayerSupervisionRequestCreate.OnConflict
+// documentation for more info.
+func (u *PlayerSupervisionRequestUpsertOne) Update(set func(*PlayerSupervisionRequestUpsert)) *PlayerSupervisionRequestUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&PlayerSupervisionRequestUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetMessage sets the "message" field.
+func (u *PlayerSupervisionRequestUpsertOne) SetMessage(v string) *PlayerSupervisionRequestUpsertOne {
+	return u.Update(func(s *PlayerSupervisionRequestUpsert) {
+		s.SetMessage(v)
+	})
+}
+
+// UpdateMessage sets the "message" field to the value that was provided on create.
+func (u *PlayerSupervisionRequestUpsertOne) UpdateMessage() *PlayerSupervisionRequestUpsertOne {
+	return u.Update(func(s *PlayerSupervisionRequestUpsert) {
+		s.UpdateMessage()
+	})
+}
+
+// ClearMessage clears the value of the "message" field.
+func (u *PlayerSupervisionRequestUpsertOne) ClearMessage() *PlayerSupervisionRequestUpsertOne {
+	return u.Update(func(s *PlayerSupervisionRequestUpsert) {
+		s.ClearMessage()
+	})
+}
+
+// Exec executes the query.
+func (u *PlayerSupervisionRequestUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for PlayerSupervisionRequestCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *PlayerSupervisionRequestUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *PlayerSupervisionRequestUpsertOne) ID(ctx context.Context) (id guidgql.GUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: PlayerSupervisionRequestUpsertOne.ID is not supported by MySQL driver. Use PlayerSupervisionRequestUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *PlayerSupervisionRequestUpsertOne) IDX(ctx context.Context) guidgql.GUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // PlayerSupervisionRequestCreateBulk is the builder for creating many PlayerSupervisionRequest entities in bulk.
 type PlayerSupervisionRequestCreateBulk struct {
 	config
 	builders []*PlayerSupervisionRequestCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the PlayerSupervisionRequest entities in the database.
@@ -315,6 +490,7 @@ func (psrcb *PlayerSupervisionRequestCreateBulk) Save(ctx context.Context) ([]*P
 					_, err = mutators[i+1].Mutate(root, psrcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = psrcb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, psrcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -361,6 +537,138 @@ func (psrcb *PlayerSupervisionRequestCreateBulk) Exec(ctx context.Context) error
 // ExecX is like Exec, but panics if an error occurs.
 func (psrcb *PlayerSupervisionRequestCreateBulk) ExecX(ctx context.Context) {
 	if err := psrcb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.PlayerSupervisionRequest.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.PlayerSupervisionRequestUpsert) {
+//			SetMessage(v+v).
+//		}).
+//		Exec(ctx)
+func (psrcb *PlayerSupervisionRequestCreateBulk) OnConflict(opts ...sql.ConflictOption) *PlayerSupervisionRequestUpsertBulk {
+	psrcb.conflict = opts
+	return &PlayerSupervisionRequestUpsertBulk{
+		create: psrcb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.PlayerSupervisionRequest.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (psrcb *PlayerSupervisionRequestCreateBulk) OnConflictColumns(columns ...string) *PlayerSupervisionRequestUpsertBulk {
+	psrcb.conflict = append(psrcb.conflict, sql.ConflictColumns(columns...))
+	return &PlayerSupervisionRequestUpsertBulk{
+		create: psrcb,
+	}
+}
+
+// PlayerSupervisionRequestUpsertBulk is the builder for "upsert"-ing
+// a bulk of PlayerSupervisionRequest nodes.
+type PlayerSupervisionRequestUpsertBulk struct {
+	create *PlayerSupervisionRequestCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.PlayerSupervisionRequest.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(playersupervisionrequest.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *PlayerSupervisionRequestUpsertBulk) UpdateNewValues() *PlayerSupervisionRequestUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(playersupervisionrequest.FieldID)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.PlayerSupervisionRequest.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *PlayerSupervisionRequestUpsertBulk) Ignore() *PlayerSupervisionRequestUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *PlayerSupervisionRequestUpsertBulk) DoNothing() *PlayerSupervisionRequestUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the PlayerSupervisionRequestCreateBulk.OnConflict
+// documentation for more info.
+func (u *PlayerSupervisionRequestUpsertBulk) Update(set func(*PlayerSupervisionRequestUpsert)) *PlayerSupervisionRequestUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&PlayerSupervisionRequestUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetMessage sets the "message" field.
+func (u *PlayerSupervisionRequestUpsertBulk) SetMessage(v string) *PlayerSupervisionRequestUpsertBulk {
+	return u.Update(func(s *PlayerSupervisionRequestUpsert) {
+		s.SetMessage(v)
+	})
+}
+
+// UpdateMessage sets the "message" field to the value that was provided on create.
+func (u *PlayerSupervisionRequestUpsertBulk) UpdateMessage() *PlayerSupervisionRequestUpsertBulk {
+	return u.Update(func(s *PlayerSupervisionRequestUpsert) {
+		s.UpdateMessage()
+	})
+}
+
+// ClearMessage clears the value of the "message" field.
+func (u *PlayerSupervisionRequestUpsertBulk) ClearMessage() *PlayerSupervisionRequestUpsertBulk {
+	return u.Update(func(s *PlayerSupervisionRequestUpsert) {
+		s.ClearMessage()
+	})
+}
+
+// Exec executes the query.
+func (u *PlayerSupervisionRequestUpsertBulk) Exec(ctx context.Context) error {
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the PlayerSupervisionRequestCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for PlayerSupervisionRequestCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *PlayerSupervisionRequestUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

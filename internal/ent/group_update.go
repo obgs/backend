@@ -248,25 +248,13 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := gu.mutation.Name(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: group.FieldName,
-		})
+		_spec.SetField(group.FieldName, field.TypeString, value)
 	}
 	if value, ok := gu.mutation.Description(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: group.FieldDescription,
-		})
+		_spec.SetField(group.FieldDescription, field.TypeString, value)
 	}
 	if value, ok := gu.mutation.LogoURL(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: group.FieldLogoURL,
-		})
+		_spec.SetField(group.FieldLogoURL, field.TypeString, value)
 	}
 	if gu.mutation.SettingsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -677,25 +665,13 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		}
 	}
 	if value, ok := guo.mutation.Name(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: group.FieldName,
-		})
+		_spec.SetField(group.FieldName, field.TypeString, value)
 	}
 	if value, ok := guo.mutation.Description(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: group.FieldDescription,
-		})
+		_spec.SetField(group.FieldDescription, field.TypeString, value)
 	}
 	if value, ok := guo.mutation.LogoURL(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: group.FieldLogoURL,
-		})
+		_spec.SetField(group.FieldLogoURL, field.TypeString, value)
 	}
 	if guo.mutation.SettingsCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -409,6 +409,11 @@ func (pq *PlayerQuery) Select(fields ...string) *PlayerSelect {
 	return selbuild
 }
 
+// Aggregate returns a PlayerSelect configured with the given aggregations.
+func (pq *PlayerQuery) Aggregate(fns ...AggregateFunc) *PlayerSelect {
+	return pq.Select().Aggregate(fns...)
+}
+
 func (pq *PlayerQuery) prepareQuery(ctx context.Context) error {
 	for _, f := range pq.fields {
 		if !player.ValidColumn(f) {
@@ -442,10 +447,10 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, player.ForeignKeys...)
 	}
-	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Player).scanValues(nil, columns)
 	}
-	_spec.Assign = func(columns []string, values []interface{}) error {
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &Player{config: pq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
@@ -562,18 +567,18 @@ func (pq *PlayerQuery) loadSupervisors(ctx context.Context, query *UserQuery, no
 	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
 		assign := spec.Assign
 		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]interface{}, error) {
+		spec.ScanValues = func(columns []string) ([]any, error) {
 			values, err := values(columns[1:])
 			if err != nil {
 				return nil, err
 			}
-			return append([]interface{}{new(guidgql.GUID)}, values...), nil
+			return append([]any{new(guidgql.GUID)}, values...), nil
 		}
-		spec.Assign = func(columns []string, values []interface{}) error {
+		spec.Assign = func(columns []string, values []any) error {
 			outValue := *values[0].(*guidgql.GUID)
 			inValue := *values[1].(*guidgql.GUID)
 			if nids[inValue] == nil {
-				nids[inValue] = map[*Player]struct{}{byID[outValue]: struct{}{}}
+				nids[inValue] = map[*Player]struct{}{byID[outValue]: {}}
 				return assign(columns[1:], values[1:])
 			}
 			nids[inValue][byID[outValue]] = struct{}{}
@@ -639,11 +644,14 @@ func (pq *PlayerQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (pq *PlayerQuery) sqlExist(ctx context.Context) (bool, error) {
-	n, err := pq.sqlCount(ctx)
-	if err != nil {
+	switch _, err := pq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
 		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return n > 0, nil
 }
 
 func (pq *PlayerQuery) querySpec() *sqlgraph.QuerySpec {
@@ -772,7 +780,7 @@ func (pgb *PlayerGroupBy) Aggregate(fns ...AggregateFunc) *PlayerGroupBy {
 }
 
 // Scan applies the group-by query and scans the result into the given value.
-func (pgb *PlayerGroupBy) Scan(ctx context.Context, v interface{}) error {
+func (pgb *PlayerGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := pgb.path(ctx)
 	if err != nil {
 		return err
@@ -781,7 +789,7 @@ func (pgb *PlayerGroupBy) Scan(ctx context.Context, v interface{}) error {
 	return pgb.sqlScan(ctx, v)
 }
 
-func (pgb *PlayerGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (pgb *PlayerGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range pgb.fields {
 		if !player.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -806,8 +814,6 @@ func (pgb *PlayerGroupBy) sqlQuery() *sql.Selector {
 	for _, fn := range pgb.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	// If no columns were selected in a custom aggregation function, the default
-	// selection is the fields used for "group-by", and the aggregation functions.
 	if len(selector.SelectedColumns()) == 0 {
 		columns := make([]string, 0, len(pgb.fields)+len(pgb.fns))
 		for _, f := range pgb.fields {
@@ -827,8 +833,14 @@ type PlayerSelect struct {
 	sql *sql.Selector
 }
 
+// Aggregate adds the given aggregation functions to the selector query.
+func (ps *PlayerSelect) Aggregate(fns ...AggregateFunc) *PlayerSelect {
+	ps.fns = append(ps.fns, fns...)
+	return ps
+}
+
 // Scan applies the selector query and scans the result into the given value.
-func (ps *PlayerSelect) Scan(ctx context.Context, v interface{}) error {
+func (ps *PlayerSelect) Scan(ctx context.Context, v any) error {
 	if err := ps.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -836,7 +848,17 @@ func (ps *PlayerSelect) Scan(ctx context.Context, v interface{}) error {
 	return ps.sqlScan(ctx, v)
 }
 
-func (ps *PlayerSelect) sqlScan(ctx context.Context, v interface{}) error {
+func (ps *PlayerSelect) sqlScan(ctx context.Context, v any) error {
+	aggregation := make([]string, 0, len(ps.fns))
+	for _, fn := range ps.fns {
+		aggregation = append(aggregation, fn(ps.sql))
+	}
+	switch n := len(*ps.selector.flds); {
+	case n == 0 && len(aggregation) > 0:
+		ps.sql.Select(aggregation...)
+	case n != 0 && len(aggregation) > 0:
+		ps.sql.AppendSelect(aggregation...)
+	}
 	rows := &sql.Rows{}
 	query, args := ps.sql.Query()
 	if err := ps.driver.Query(ctx, query, args, rows); err != nil {

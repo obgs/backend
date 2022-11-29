@@ -68,8 +68,8 @@ func (e GroupMembershipEdges) UserOrErr() (*User, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*GroupMembership) scanValues(columns []string) ([]interface{}, error) {
-	values := make([]interface{}, len(columns))
+func (*GroupMembership) scanValues(columns []string) ([]any, error) {
+	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
 		case groupmembership.FieldID:
@@ -89,7 +89,7 @@ func (*GroupMembership) scanValues(columns []string) ([]interface{}, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the GroupMembership fields.
-func (gm *GroupMembership) assignValues(columns []string, values []interface{}) error {
+func (gm *GroupMembership) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}

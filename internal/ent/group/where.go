@@ -33,7 +33,7 @@ func IDNEQ(id guidgql.GUID) predicate.Group {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -44,7 +44,7 @@ func IDIn(ids ...guidgql.GUID) predicate.Group {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -117,7 +117,7 @@ func NameNEQ(v string) predicate.Group {
 
 // NameIn applies the In predicate on the "name" field.
 func NameIn(vs ...string) predicate.Group {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -128,7 +128,7 @@ func NameIn(vs ...string) predicate.Group {
 
 // NameNotIn applies the NotIn predicate on the "name" field.
 func NameNotIn(vs ...string) predicate.Group {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -216,7 +216,7 @@ func DescriptionNEQ(v string) predicate.Group {
 
 // DescriptionIn applies the In predicate on the "description" field.
 func DescriptionIn(vs ...string) predicate.Group {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -227,7 +227,7 @@ func DescriptionIn(vs ...string) predicate.Group {
 
 // DescriptionNotIn applies the NotIn predicate on the "description" field.
 func DescriptionNotIn(vs ...string) predicate.Group {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -315,7 +315,7 @@ func LogoURLNEQ(v string) predicate.Group {
 
 // LogoURLIn applies the In predicate on the "logo_url" field.
 func LogoURLIn(vs ...string) predicate.Group {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -326,7 +326,7 @@ func LogoURLIn(vs ...string) predicate.Group {
 
 // LogoURLNotIn applies the NotIn predicate on the "logo_url" field.
 func LogoURLNotIn(vs ...string) predicate.Group {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}

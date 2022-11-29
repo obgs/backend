@@ -393,7 +393,7 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 			pl.WithNamedSupervisors(alias, func(wq *UserQuery) {
 				*wq = *query
 			})
-		case "supervisionRequests", "supervision_requests":
+		case "supervisionRequests":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
@@ -547,7 +547,7 @@ func (psra *PlayerSupervisionRequestApprovalQuery) collectField(ctx context.Cont
 				return err
 			}
 			psra.withApprover = query
-		case "supervisionRequest", "supervision_request":
+		case "supervisionRequest":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
@@ -619,7 +619,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 			u.WithNamedPlayers(alias, func(wq *PlayerQuery) {
 				*wq = *query
 			})
-		case "mainPlayer", "main_player":
+		case "mainPlayer":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
@@ -629,7 +629,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				return err
 			}
 			u.withMainPlayer = query
-		case "groupMemberships", "group_memberships":
+		case "groupMemberships":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
@@ -641,7 +641,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 			u.WithNamedGroupMemberships(alias, func(wq *GroupMembershipQuery) {
 				*wq = *query
 			})
-		case "groupMembershipApplications", "group_membership_applications":
+		case "groupMembershipApplications":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)

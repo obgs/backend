@@ -1,10 +1,15 @@
-input CreateGroupInput {
-  name: String!
-  description: String
-  logoUrl: String!
+input GroupSettingsInput {
   visibility: GroupSettingsVisibility!
   joinPolicy: GroupSettingsJoinPolicy!
   minimumRoleToInvite: GroupMembershipRole
+}
+
+input CreateOrUpdateGroupInput {
+  id: ID
+  name: String!
+  description: String
+  logoUrl: String!
+  settings: GroupSettingsInput!
 }
 
 extend type Group {
@@ -24,7 +29,7 @@ input GroupApplicationInput {
 }
 
 extend type Mutation {
-  createGroup(input: CreateGroupInput!): Group! @authenticated
+  createOrUpdateGroup(input: CreateOrUpdateGroupInput!): Group! @authenticated
   joinGroup(groupId: ID!): Boolean! @authenticated
   applyToGroup(input: GroupApplicationInput!): GroupMembershipApplication!
     @authenticated

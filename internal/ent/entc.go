@@ -22,7 +22,10 @@ func main() {
 		log.Fatalf("creating entgql extension: %v", err)
 	}
 	if err := entc.Generate("./internal/ent/schema", &gen.Config{
-		Features: []gen.Feature{gen.FeatureVersionedMigration},
+		Features: []gen.Feature{
+			gen.FeatureVersionedMigration,
+			gen.FeatureUpsert,
+		},
 	}, entc.Extensions(ex)); err != nil {
 		log.Fatalf("running ent codegen: %v", err)
 	}

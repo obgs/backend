@@ -371,6 +371,11 @@ func (gmq *GroupMembershipQuery) Select(fields ...string) *GroupMembershipSelect
 	return selbuild
 }
 
+// Aggregate returns a GroupMembershipSelect configured with the given aggregations.
+func (gmq *GroupMembershipQuery) Aggregate(fns ...AggregateFunc) *GroupMembershipSelect {
+	return gmq.Select().Aggregate(fns...)
+}
+
 func (gmq *GroupMembershipQuery) prepareQuery(ctx context.Context) error {
 	for _, f := range gmq.fields {
 		if !groupmembership.ValidColumn(f) {
@@ -403,10 +408,10 @@ func (gmq *GroupMembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, groupmembership.ForeignKeys...)
 	}
-	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*GroupMembership).scanValues(nil, columns)
 	}
-	_spec.Assign = func(columns []string, values []interface{}) error {
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &GroupMembership{config: gmq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
@@ -516,11 +521,14 @@ func (gmq *GroupMembershipQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (gmq *GroupMembershipQuery) sqlExist(ctx context.Context) (bool, error) {
-	n, err := gmq.sqlCount(ctx)
-	if err != nil {
+	switch _, err := gmq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
 		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return n > 0, nil
 }
 
 func (gmq *GroupMembershipQuery) querySpec() *sqlgraph.QuerySpec {
@@ -621,7 +629,7 @@ func (gmgb *GroupMembershipGroupBy) Aggregate(fns ...AggregateFunc) *GroupMember
 }
 
 // Scan applies the group-by query and scans the result into the given value.
-func (gmgb *GroupMembershipGroupBy) Scan(ctx context.Context, v interface{}) error {
+func (gmgb *GroupMembershipGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := gmgb.path(ctx)
 	if err != nil {
 		return err
@@ -630,7 +638,7 @@ func (gmgb *GroupMembershipGroupBy) Scan(ctx context.Context, v interface{}) err
 	return gmgb.sqlScan(ctx, v)
 }
 
-func (gmgb *GroupMembershipGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (gmgb *GroupMembershipGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range gmgb.fields {
 		if !groupmembership.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -655,8 +663,6 @@ func (gmgb *GroupMembershipGroupBy) sqlQuery() *sql.Selector {
 	for _, fn := range gmgb.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	// If no columns were selected in a custom aggregation function, the default
-	// selection is the fields used for "group-by", and the aggregation functions.
 	if len(selector.SelectedColumns()) == 0 {
 		columns := make([]string, 0, len(gmgb.fields)+len(gmgb.fns))
 		for _, f := range gmgb.fields {
@@ -676,8 +682,14 @@ type GroupMembershipSelect struct {
 	sql *sql.Selector
 }
 
+// Aggregate adds the given aggregation functions to the selector query.
+func (gms *GroupMembershipSelect) Aggregate(fns ...AggregateFunc) *GroupMembershipSelect {
+	gms.fns = append(gms.fns, fns...)
+	return gms
+}
+
 // Scan applies the selector query and scans the result into the given value.
-func (gms *GroupMembershipSelect) Scan(ctx context.Context, v interface{}) error {
+func (gms *GroupMembershipSelect) Scan(ctx context.Context, v any) error {
 	if err := gms.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -685,7 +697,17 @@ func (gms *GroupMembershipSelect) Scan(ctx context.Context, v interface{}) error
 	return gms.sqlScan(ctx, v)
 }
 
-func (gms *GroupMembershipSelect) sqlScan(ctx context.Context, v interface{}) error {
+func (gms *GroupMembershipSelect) sqlScan(ctx context.Context, v any) error {
+	aggregation := make([]string, 0, len(gms.fns))
+	for _, fn := range gms.fns {
+		aggregation = append(aggregation, fn(gms.sql))
+	}
+	switch n := len(*gms.selector.flds); {
+	case n == 0 && len(aggregation) > 0:
+		gms.sql.Select(aggregation...)
+	case n != 0 && len(aggregation) > 0:
+		gms.sql.AppendSelect(aggregation...)
+	}
 	rows := &sql.Rows{}
 	query, args := gms.sql.Query()
 	if err := gms.driver.Query(ctx, query, args, rows); err != nil {

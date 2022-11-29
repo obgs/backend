@@ -373,6 +373,11 @@ func (gmaq *GroupMembershipApplicationQuery) Select(fields ...string) *GroupMemb
 	return selbuild
 }
 
+// Aggregate returns a GroupMembershipApplicationSelect configured with the given aggregations.
+func (gmaq *GroupMembershipApplicationQuery) Aggregate(fns ...AggregateFunc) *GroupMembershipApplicationSelect {
+	return gmaq.Select().Aggregate(fns...)
+}
+
 func (gmaq *GroupMembershipApplicationQuery) prepareQuery(ctx context.Context) error {
 	for _, f := range gmaq.fields {
 		if !groupmembershipapplication.ValidColumn(f) {
@@ -398,10 +403,10 @@ func (gmaq *GroupMembershipApplicationQuery) sqlAll(ctx context.Context, hooks .
 			gmaq.withGroup != nil,
 		}
 	)
-	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*GroupMembershipApplication).scanValues(nil, columns)
 	}
-	_spec.Assign = func(columns []string, values []interface{}) error {
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &GroupMembershipApplication{config: gmaq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
@@ -481,18 +486,18 @@ func (gmaq *GroupMembershipApplicationQuery) loadUser(ctx context.Context, query
 	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
 		assign := spec.Assign
 		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]interface{}, error) {
+		spec.ScanValues = func(columns []string) ([]any, error) {
 			values, err := values(columns[1:])
 			if err != nil {
 				return nil, err
 			}
-			return append([]interface{}{new(guidgql.GUID)}, values...), nil
+			return append([]any{new(guidgql.GUID)}, values...), nil
 		}
-		spec.Assign = func(columns []string, values []interface{}) error {
+		spec.Assign = func(columns []string, values []any) error {
 			outValue := *values[0].(*guidgql.GUID)
 			inValue := *values[1].(*guidgql.GUID)
 			if nids[inValue] == nil {
-				nids[inValue] = map[*GroupMembershipApplication]struct{}{byID[outValue]: struct{}{}}
+				nids[inValue] = map[*GroupMembershipApplication]struct{}{byID[outValue]: {}}
 				return assign(columns[1:], values[1:])
 			}
 			nids[inValue][byID[outValue]] = struct{}{}
@@ -539,18 +544,18 @@ func (gmaq *GroupMembershipApplicationQuery) loadGroup(ctx context.Context, quer
 	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
 		assign := spec.Assign
 		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]interface{}, error) {
+		spec.ScanValues = func(columns []string) ([]any, error) {
 			values, err := values(columns[1:])
 			if err != nil {
 				return nil, err
 			}
-			return append([]interface{}{new(guidgql.GUID)}, values...), nil
+			return append([]any{new(guidgql.GUID)}, values...), nil
 		}
-		spec.Assign = func(columns []string, values []interface{}) error {
+		spec.Assign = func(columns []string, values []any) error {
 			outValue := *values[0].(*guidgql.GUID)
 			inValue := *values[1].(*guidgql.GUID)
 			if nids[inValue] == nil {
-				nids[inValue] = map[*GroupMembershipApplication]struct{}{byID[outValue]: struct{}{}}
+				nids[inValue] = map[*GroupMembershipApplication]struct{}{byID[outValue]: {}}
 				return assign(columns[1:], values[1:])
 			}
 			nids[inValue][byID[outValue]] = struct{}{}
@@ -585,11 +590,14 @@ func (gmaq *GroupMembershipApplicationQuery) sqlCount(ctx context.Context) (int,
 }
 
 func (gmaq *GroupMembershipApplicationQuery) sqlExist(ctx context.Context) (bool, error) {
-	n, err := gmaq.sqlCount(ctx)
-	if err != nil {
+	switch _, err := gmaq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
 		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return n > 0, nil
 }
 
 func (gmaq *GroupMembershipApplicationQuery) querySpec() *sqlgraph.QuerySpec {
@@ -718,7 +726,7 @@ func (gmagb *GroupMembershipApplicationGroupBy) Aggregate(fns ...AggregateFunc) 
 }
 
 // Scan applies the group-by query and scans the result into the given value.
-func (gmagb *GroupMembershipApplicationGroupBy) Scan(ctx context.Context, v interface{}) error {
+func (gmagb *GroupMembershipApplicationGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := gmagb.path(ctx)
 	if err != nil {
 		return err
@@ -727,7 +735,7 @@ func (gmagb *GroupMembershipApplicationGroupBy) Scan(ctx context.Context, v inte
 	return gmagb.sqlScan(ctx, v)
 }
 
-func (gmagb *GroupMembershipApplicationGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (gmagb *GroupMembershipApplicationGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range gmagb.fields {
 		if !groupmembershipapplication.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -752,8 +760,6 @@ func (gmagb *GroupMembershipApplicationGroupBy) sqlQuery() *sql.Selector {
 	for _, fn := range gmagb.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	// If no columns were selected in a custom aggregation function, the default
-	// selection is the fields used for "group-by", and the aggregation functions.
 	if len(selector.SelectedColumns()) == 0 {
 		columns := make([]string, 0, len(gmagb.fields)+len(gmagb.fns))
 		for _, f := range gmagb.fields {
@@ -773,8 +779,14 @@ type GroupMembershipApplicationSelect struct {
 	sql *sql.Selector
 }
 
+// Aggregate adds the given aggregation functions to the selector query.
+func (gmas *GroupMembershipApplicationSelect) Aggregate(fns ...AggregateFunc) *GroupMembershipApplicationSelect {
+	gmas.fns = append(gmas.fns, fns...)
+	return gmas
+}
+
 // Scan applies the selector query and scans the result into the given value.
-func (gmas *GroupMembershipApplicationSelect) Scan(ctx context.Context, v interface{}) error {
+func (gmas *GroupMembershipApplicationSelect) Scan(ctx context.Context, v any) error {
 	if err := gmas.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -782,7 +794,17 @@ func (gmas *GroupMembershipApplicationSelect) Scan(ctx context.Context, v interf
 	return gmas.sqlScan(ctx, v)
 }
 
-func (gmas *GroupMembershipApplicationSelect) sqlScan(ctx context.Context, v interface{}) error {
+func (gmas *GroupMembershipApplicationSelect) sqlScan(ctx context.Context, v any) error {
+	aggregation := make([]string, 0, len(gmas.fns))
+	for _, fn := range gmas.fns {
+		aggregation = append(aggregation, fn(gmas.sql))
+	}
+	switch n := len(*gmas.selector.flds); {
+	case n == 0 && len(aggregation) > 0:
+		gmas.sql.Select(aggregation...)
+	case n != 0 && len(aggregation) > 0:
+		gmas.sql.AppendSelect(aggregation...)
+	}
 	rows := &sql.Rows{}
 	query, args := gmas.sql.Query()
 	if err := gmas.driver.Query(ctx, query, args, rows); err != nil {

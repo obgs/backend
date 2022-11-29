@@ -229,7 +229,7 @@ func (c *GroupClient) DeleteOne(gr *Group) *GroupDeleteOne {
 	return c.DeleteOneID(gr.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *GroupClient) DeleteOneID(id guidgql.GUID) *GroupDeleteOne {
 	builder := c.Delete().Where(group.ID(id))
 	builder.mutation.id = &id
@@ -261,7 +261,7 @@ func (c *GroupClient) GetX(ctx context.Context, id guidgql.GUID) *Group {
 // QuerySettings queries the settings edge of a Group.
 func (c *GroupClient) QuerySettings(gr *Group) *GroupSettingsQuery {
 	query := &GroupSettingsQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
@@ -277,7 +277,7 @@ func (c *GroupClient) QuerySettings(gr *Group) *GroupSettingsQuery {
 // QueryMembers queries the members edge of a Group.
 func (c *GroupClient) QueryMembers(gr *Group) *GroupMembershipQuery {
 	query := &GroupMembershipQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
@@ -293,7 +293,7 @@ func (c *GroupClient) QueryMembers(gr *Group) *GroupMembershipQuery {
 // QueryApplications queries the applications edge of a Group.
 func (c *GroupClient) QueryApplications(gr *Group) *GroupMembershipApplicationQuery {
 	query := &GroupMembershipApplicationQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
@@ -367,7 +367,7 @@ func (c *GroupMembershipClient) DeleteOne(gm *GroupMembership) *GroupMembershipD
 	return c.DeleteOneID(gm.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *GroupMembershipClient) DeleteOneID(id guidgql.GUID) *GroupMembershipDeleteOne {
 	builder := c.Delete().Where(groupmembership.ID(id))
 	builder.mutation.id = &id
@@ -399,7 +399,7 @@ func (c *GroupMembershipClient) GetX(ctx context.Context, id guidgql.GUID) *Grou
 // QueryGroup queries the group edge of a GroupMembership.
 func (c *GroupMembershipClient) QueryGroup(gm *GroupMembership) *GroupQuery {
 	query := &GroupQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gm.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, id),
@@ -415,7 +415,7 @@ func (c *GroupMembershipClient) QueryGroup(gm *GroupMembership) *GroupQuery {
 // QueryUser queries the user edge of a GroupMembership.
 func (c *GroupMembershipClient) QueryUser(gm *GroupMembership) *UserQuery {
 	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gm.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, id),
@@ -489,7 +489,7 @@ func (c *GroupMembershipApplicationClient) DeleteOne(gma *GroupMembershipApplica
 	return c.DeleteOneID(gma.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *GroupMembershipApplicationClient) DeleteOneID(id guidgql.GUID) *GroupMembershipApplicationDeleteOne {
 	builder := c.Delete().Where(groupmembershipapplication.ID(id))
 	builder.mutation.id = &id
@@ -521,7 +521,7 @@ func (c *GroupMembershipApplicationClient) GetX(ctx context.Context, id guidgql.
 // QueryUser queries the user edge of a GroupMembershipApplication.
 func (c *GroupMembershipApplicationClient) QueryUser(gma *GroupMembershipApplication) *UserQuery {
 	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gma.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembershipapplication.Table, groupmembershipapplication.FieldID, id),
@@ -537,7 +537,7 @@ func (c *GroupMembershipApplicationClient) QueryUser(gma *GroupMembershipApplica
 // QueryGroup queries the group edge of a GroupMembershipApplication.
 func (c *GroupMembershipApplicationClient) QueryGroup(gma *GroupMembershipApplication) *GroupQuery {
 	query := &GroupQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gma.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembershipapplication.Table, groupmembershipapplication.FieldID, id),
@@ -611,7 +611,7 @@ func (c *GroupSettingsClient) DeleteOne(gs *GroupSettings) *GroupSettingsDeleteO
 	return c.DeleteOneID(gs.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *GroupSettingsClient) DeleteOneID(id guidgql.GUID) *GroupSettingsDeleteOne {
 	builder := c.Delete().Where(groupsettings.ID(id))
 	builder.mutation.id = &id
@@ -643,7 +643,7 @@ func (c *GroupSettingsClient) GetX(ctx context.Context, id guidgql.GUID) *GroupS
 // QueryGroup queries the group edge of a GroupSettings.
 func (c *GroupSettingsClient) QueryGroup(gs *GroupSettings) *GroupQuery {
 	query := &GroupQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gs.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupsettings.Table, groupsettings.FieldID, id),
@@ -717,7 +717,7 @@ func (c *PlayerClient) DeleteOne(pl *Player) *PlayerDeleteOne {
 	return c.DeleteOneID(pl.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *PlayerClient) DeleteOneID(id guidgql.GUID) *PlayerDeleteOne {
 	builder := c.Delete().Where(player.ID(id))
 	builder.mutation.id = &id
@@ -749,7 +749,7 @@ func (c *PlayerClient) GetX(ctx context.Context, id guidgql.GUID) *Player {
 // QueryOwner queries the owner edge of a Player.
 func (c *PlayerClient) QueryOwner(pl *Player) *UserQuery {
 	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(player.Table, player.FieldID, id),
@@ -765,7 +765,7 @@ func (c *PlayerClient) QueryOwner(pl *Player) *UserQuery {
 // QuerySupervisors queries the supervisors edge of a Player.
 func (c *PlayerClient) QuerySupervisors(pl *Player) *UserQuery {
 	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(player.Table, player.FieldID, id),
@@ -781,7 +781,7 @@ func (c *PlayerClient) QuerySupervisors(pl *Player) *UserQuery {
 // QuerySupervisionRequests queries the supervision_requests edge of a Player.
 func (c *PlayerClient) QuerySupervisionRequests(pl *Player) *PlayerSupervisionRequestQuery {
 	query := &PlayerSupervisionRequestQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(player.Table, player.FieldID, id),
@@ -855,7 +855,7 @@ func (c *PlayerSupervisionRequestClient) DeleteOne(psr *PlayerSupervisionRequest
 	return c.DeleteOneID(psr.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *PlayerSupervisionRequestClient) DeleteOneID(id guidgql.GUID) *PlayerSupervisionRequestDeleteOne {
 	builder := c.Delete().Where(playersupervisionrequest.ID(id))
 	builder.mutation.id = &id
@@ -887,7 +887,7 @@ func (c *PlayerSupervisionRequestClient) GetX(ctx context.Context, id guidgql.GU
 // QuerySender queries the sender edge of a PlayerSupervisionRequest.
 func (c *PlayerSupervisionRequestClient) QuerySender(psr *PlayerSupervisionRequest) *UserQuery {
 	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(playersupervisionrequest.Table, playersupervisionrequest.FieldID, id),
@@ -903,7 +903,7 @@ func (c *PlayerSupervisionRequestClient) QuerySender(psr *PlayerSupervisionReque
 // QueryPlayer queries the player edge of a PlayerSupervisionRequest.
 func (c *PlayerSupervisionRequestClient) QueryPlayer(psr *PlayerSupervisionRequest) *PlayerQuery {
 	query := &PlayerQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(playersupervisionrequest.Table, playersupervisionrequest.FieldID, id),
@@ -919,7 +919,7 @@ func (c *PlayerSupervisionRequestClient) QueryPlayer(psr *PlayerSupervisionReque
 // QueryApprovals queries the approvals edge of a PlayerSupervisionRequest.
 func (c *PlayerSupervisionRequestClient) QueryApprovals(psr *PlayerSupervisionRequest) *PlayerSupervisionRequestApprovalQuery {
 	query := &PlayerSupervisionRequestApprovalQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(playersupervisionrequest.Table, playersupervisionrequest.FieldID, id),
@@ -993,7 +993,7 @@ func (c *PlayerSupervisionRequestApprovalClient) DeleteOne(psra *PlayerSupervisi
 	return c.DeleteOneID(psra.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *PlayerSupervisionRequestApprovalClient) DeleteOneID(id guidgql.GUID) *PlayerSupervisionRequestApprovalDeleteOne {
 	builder := c.Delete().Where(playersupervisionrequestapproval.ID(id))
 	builder.mutation.id = &id
@@ -1025,7 +1025,7 @@ func (c *PlayerSupervisionRequestApprovalClient) GetX(ctx context.Context, id gu
 // QueryApprover queries the approver edge of a PlayerSupervisionRequestApproval.
 func (c *PlayerSupervisionRequestApprovalClient) QueryApprover(psra *PlayerSupervisionRequestApproval) *UserQuery {
 	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psra.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.FieldID, id),
@@ -1041,7 +1041,7 @@ func (c *PlayerSupervisionRequestApprovalClient) QueryApprover(psra *PlayerSuper
 // QuerySupervisionRequest queries the supervision_request edge of a PlayerSupervisionRequestApproval.
 func (c *PlayerSupervisionRequestApprovalClient) QuerySupervisionRequest(psra *PlayerSupervisionRequestApproval) *PlayerSupervisionRequestQuery {
 	query := &PlayerSupervisionRequestQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psra.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.FieldID, id),
@@ -1115,7 +1115,7 @@ func (c *UserClient) DeleteOne(u *User) *UserDeleteOne {
 	return c.DeleteOneID(u.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *UserClient) DeleteOneID(id guidgql.GUID) *UserDeleteOne {
 	builder := c.Delete().Where(user.ID(id))
 	builder.mutation.id = &id
@@ -1147,7 +1147,7 @@ func (c *UserClient) GetX(ctx context.Context, id guidgql.GUID) *User {
 // QueryPlayers queries the players edge of a User.
 func (c *UserClient) QueryPlayers(u *User) *PlayerQuery {
 	query := &PlayerQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
@@ -1163,7 +1163,7 @@ func (c *UserClient) QueryPlayers(u *User) *PlayerQuery {
 // QueryMainPlayer queries the main_player edge of a User.
 func (c *UserClient) QueryMainPlayer(u *User) *PlayerQuery {
 	query := &PlayerQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
@@ -1179,7 +1179,7 @@ func (c *UserClient) QueryMainPlayer(u *User) *PlayerQuery {
 // QuerySentSupervisionRequests queries the sent_supervision_requests edge of a User.
 func (c *UserClient) QuerySentSupervisionRequests(u *User) *PlayerSupervisionRequestQuery {
 	query := &PlayerSupervisionRequestQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
@@ -1195,7 +1195,7 @@ func (c *UserClient) QuerySentSupervisionRequests(u *User) *PlayerSupervisionReq
 // QuerySupervisionRequestApprovals queries the supervision_request_approvals edge of a User.
 func (c *UserClient) QuerySupervisionRequestApprovals(u *User) *PlayerSupervisionRequestApprovalQuery {
 	query := &PlayerSupervisionRequestApprovalQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
@@ -1211,7 +1211,7 @@ func (c *UserClient) QuerySupervisionRequestApprovals(u *User) *PlayerSupervisio
 // QueryGroupMemberships queries the group_memberships edge of a User.
 func (c *UserClient) QueryGroupMemberships(u *User) *GroupMembershipQuery {
 	query := &GroupMembershipQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
@@ -1227,7 +1227,7 @@ func (c *UserClient) QueryGroupMemberships(u *User) *GroupMembershipQuery {
 // QueryGroupMembershipApplications queries the group_membership_applications edge of a User.
 func (c *UserClient) QueryGroupMembershipApplications(u *User) *GroupMembershipApplicationQuery {
 	query := &GroupMembershipApplicationQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),

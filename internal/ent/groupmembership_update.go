@@ -171,11 +171,7 @@ func (gmu *GroupMembershipUpdate) sqlSave(ctx context.Context) (n int, err error
 		}
 	}
 	if value, ok := gmu.mutation.Role(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupmembership.FieldRole,
-		})
+		_spec.SetField(groupmembership.FieldRole, field.TypeEnum, value)
 	}
 	if gmu.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -436,11 +432,7 @@ func (gmuo *GroupMembershipUpdateOne) sqlSave(ctx context.Context) (_node *Group
 		}
 	}
 	if value, ok := gmuo.mutation.Role(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupmembership.FieldRole,
-		})
+		_spec.SetField(groupmembership.FieldRole, field.TypeEnum, value)
 	}
 	if gmuo.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
