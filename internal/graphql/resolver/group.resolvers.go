@@ -271,6 +271,41 @@ func (r *mutationResolver) ChangeUserGroupMembershipRole(ctx context.Context, gr
 	return err == nil, err
 }
 
+// KickUserFromGroup is the resolver for the kickUserFromGroup field.
+func (r *mutationResolver) KickUserFromGroup(ctx context.Context, groupID guidgql.GUID, userID guidgql.GUID) (bool, error) {
+	u, _ := auth.UserFromContext(ctx)
+
+	// check if the current user is a group admin or owner
+	m, err := r.client.GroupMembership.Query().
+		Where(
+			groupmembership.HasUserWith(user.ID(u.ID)),
+			groupmembership.HasGroupWith(group.ID(groupID)),
+		).
+		Only(ctx)
+	if err != nil {
+		return false, err
+	}
+	if m.Role != enums.RoleAdmin && m.Role != enums.RoleOwner {
+		return false, fmt.Errorf("you don't have permission to kick users")
+	}
+
+	// get the target user's membership
+	m, err = r.client.GroupMembership.Query().
+		Where(
+			groupmembership.HasUserWith(user.ID(userID)),
+			groupmembership.HasGroupWith(group.ID(groupID)),
+		).
+		Only(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	// delete the membership
+	err = r.client.GroupMembership.DeleteOne(m).Exec(ctx)
+
+	return err == nil, err
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 

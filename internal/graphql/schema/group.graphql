@@ -43,4 +43,5 @@ extend type Mutation {
     userId: ID!
     role: GroupMembershipRole!
   ): Boolean! @authenticated
+  kickUserFromGroup(groupId: ID!, userId: ID!): Boolean! @authenticated
 }
