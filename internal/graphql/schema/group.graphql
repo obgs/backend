@@ -38,4 +38,9 @@ extend type Mutation {
     applicationId: ID!
     accepted: Boolean!
   ): Boolean! @authenticated
+  changeUserGroupMembershipRole(
+    groupId: ID!
+    userId: ID!
+    role: GroupMembershipRole!
+  ): Boolean! @authenticated
 }
