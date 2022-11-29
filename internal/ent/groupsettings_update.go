@@ -207,31 +207,16 @@ func (gsu *GroupSettingsUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 	}
 	if value, ok := gsu.mutation.Visibility(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupsettings.FieldVisibility,
-		})
+		_spec.SetField(groupsettings.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := gsu.mutation.JoinPolicy(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupsettings.FieldJoinPolicy,
-		})
+		_spec.SetField(groupsettings.FieldJoinPolicy, field.TypeEnum, value)
 	}
 	if value, ok := gsu.mutation.MinimumRoleToInvite(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupsettings.FieldMinimumRoleToInvite,
-		})
+		_spec.SetField(groupsettings.FieldMinimumRoleToInvite, field.TypeEnum, value)
 	}
 	if gsu.mutation.MinimumRoleToInviteCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Column: groupsettings.FieldMinimumRoleToInvite,
-		})
+		_spec.ClearField(groupsettings.FieldMinimumRoleToInvite, field.TypeEnum)
 	}
 	if gsu.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -494,31 +479,16 @@ func (gsuo *GroupSettingsUpdateOne) sqlSave(ctx context.Context) (_node *GroupSe
 		}
 	}
 	if value, ok := gsuo.mutation.Visibility(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupsettings.FieldVisibility,
-		})
+		_spec.SetField(groupsettings.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := gsuo.mutation.JoinPolicy(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupsettings.FieldJoinPolicy,
-		})
+		_spec.SetField(groupsettings.FieldJoinPolicy, field.TypeEnum, value)
 	}
 	if value, ok := gsuo.mutation.MinimumRoleToInvite(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupsettings.FieldMinimumRoleToInvite,
-		})
+		_spec.SetField(groupsettings.FieldMinimumRoleToInvite, field.TypeEnum, value)
 	}
 	if gsuo.mutation.MinimumRoleToInviteCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Column: groupsettings.FieldMinimumRoleToInvite,
-		})
+		_spec.ClearField(groupsettings.FieldMinimumRoleToInvite, field.TypeEnum)
 	}
 	if gsuo.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{

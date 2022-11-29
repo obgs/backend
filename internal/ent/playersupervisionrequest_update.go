@@ -216,17 +216,10 @@ func (psru *PlayerSupervisionRequestUpdate) sqlSave(ctx context.Context) (n int,
 		}
 	}
 	if value, ok := psru.mutation.Message(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: playersupervisionrequest.FieldMessage,
-		})
+		_spec.SetField(playersupervisionrequest.FieldMessage, field.TypeString, value)
 	}
 	if psru.mutation.MessageCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: playersupervisionrequest.FieldMessage,
-		})
+		_spec.ClearField(playersupervisionrequest.FieldMessage, field.TypeString)
 	}
 	if psru.mutation.SenderCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -586,17 +579,10 @@ func (psruo *PlayerSupervisionRequestUpdateOne) sqlSave(ctx context.Context) (_n
 		}
 	}
 	if value, ok := psruo.mutation.Message(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: playersupervisionrequest.FieldMessage,
-		})
+		_spec.SetField(playersupervisionrequest.FieldMessage, field.TypeString, value)
 	}
 	if psruo.mutation.MessageCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: playersupervisionrequest.FieldMessage,
-		})
+		_spec.ClearField(playersupervisionrequest.FieldMessage, field.TypeString)
 	}
 	if psruo.mutation.SenderCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -108,7 +108,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		ApplyToGroup                    func(childComplexity int, input model.GroupApplicationInput) int
-		CreateGroup                     func(childComplexity int, input model.CreateGroupInput) int
+		CreateOrUpdateGroup             func(childComplexity int, input model.CreateOrUpdateGroupInput) int
 		CreatePlayer                    func(childComplexity int, input model.CreatePlayerInput) int
 		JoinGroup                       func(childComplexity int, groupID guidgql.GUID) int
 		RequestPlayerSupervision        func(childComplexity int, input *model.RequestPlayerSupervisionInput) int
@@ -197,7 +197,7 @@ type GroupResolver interface {
 	Applied(ctx context.Context, obj *ent.Group) (*bool, error)
 }
 type MutationResolver interface {
-	CreateGroup(ctx context.Context, input model.CreateGroupInput) (*ent.Group, error)
+	CreateOrUpdateGroup(ctx context.Context, input model.CreateOrUpdateGroupInput) (*ent.Group, error)
 	JoinGroup(ctx context.Context, groupID guidgql.GUID) (bool, error)
 	ApplyToGroup(ctx context.Context, input model.GroupApplicationInput) (*ent.GroupMembershipApplication, error)
 	CreatePlayer(ctx context.Context, input model.CreatePlayerInput) (*ent.Player, error)
@@ -468,17 +468,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ApplyToGroup(childComplexity, args["input"].(model.GroupApplicationInput)), true
 
-	case "Mutation.createGroup":
-		if e.complexity.Mutation.CreateGroup == nil {
+	case "Mutation.createOrUpdateGroup":
+		if e.complexity.Mutation.CreateOrUpdateGroup == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_createGroup_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_createOrUpdateGroup_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateGroup(childComplexity, args["input"].(model.CreateGroupInput)), true
+		return e.complexity.Mutation.CreateOrUpdateGroup(childComplexity, args["input"].(model.CreateOrUpdateGroupInput)), true
 
 	case "Mutation.createPlayer":
 		if e.complexity.Mutation.CreatePlayer == nil {
@@ -888,10 +888,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputCreateGroupInput,
+		ec.unmarshalInputCreateOrUpdateGroupInput,
 		ec.unmarshalInputCreatePlayerInput,
 		ec.unmarshalInputGroupApplicationInput,
 		ec.unmarshalInputGroupMembershipWhereInput,
+		ec.unmarshalInputGroupSettingsInput,
 		ec.unmarshalInputGroupSettingsWhereInput,
 		ec.unmarshalInputGroupWhereInput,
 		ec.unmarshalInputPlayerSupervisionRequestApprovalWhereInput,
@@ -1478,13 +1479,18 @@ input UserWhereInput {
   getFileUploadURL: String! @authenticated
 }
 `, BuiltIn: false},
-	{Name: "../schema/group.graphql", Input: `input CreateGroupInput {
-  name: String!
-  description: String
-  logoUrl: String!
+	{Name: "../schema/group.graphql", Input: `input GroupSettingsInput {
   visibility: GroupSettingsVisibility!
   joinPolicy: GroupSettingsJoinPolicy!
   minimumRoleToInvite: GroupMembershipRole
+}
+
+input CreateOrUpdateGroupInput {
+  id: ID
+  name: String!
+  description: String
+  logoUrl: String!
+  settings: GroupSettingsInput!
 }
 
 extend type Group {
@@ -1504,7 +1510,7 @@ input GroupApplicationInput {
 }
 
 extend type Mutation {
-  createGroup(input: CreateGroupInput!): Group! @authenticated
+  createOrUpdateGroup(input: CreateOrUpdateGroupInput!): Group! @authenticated
   joinGroup(groupId: ID!): Boolean! @authenticated
   applyToGroup(input: GroupApplicationInput!): GroupMembershipApplication!
     @authenticated
@@ -1621,13 +1627,13 @@ func (ec *executionContext) field_Mutation_applyToGroup_args(ctx context.Context
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_createGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_createOrUpdateGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.CreateGroupInput
+	var arg0 model.CreateOrUpdateGroupInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNCreateGroupInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateGroupInput(ctx, tmp)
+		arg0, err = ec.unmarshalNCreateOrUpdateGroupInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateOrUpdateGroupInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3481,8 +3487,8 @@ func (ec *executionContext) fieldContext_GroupSettings_minimumRoleToInvite(ctx c
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_createGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_createGroup(ctx, field)
+func (ec *executionContext) _Mutation_createOrUpdateGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createOrUpdateGroup(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3496,7 +3502,7 @@ func (ec *executionContext) _Mutation_createGroup(ctx context.Context, field gra
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().CreateGroup(rctx, fc.Args["input"].(model.CreateGroupInput))
+			return ec.resolvers.Mutation().CreateOrUpdateGroup(rctx, fc.Args["input"].(model.CreateOrUpdateGroupInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Authenticated == nil {
@@ -3532,7 +3538,7 @@ func (ec *executionContext) _Mutation_createGroup(ctx context.Context, field gra
 	return ec.marshalNGroup2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroup(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_createGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_createOrUpdateGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -3569,7 +3575,7 @@ func (ec *executionContext) fieldContext_Mutation_createGroup(ctx context.Contex
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_createGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_createOrUpdateGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -8342,20 +8348,28 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputCreateGroupInput(ctx context.Context, obj interface{}) (model.CreateGroupInput, error) {
-	var it model.CreateGroupInput
+func (ec *executionContext) unmarshalInputCreateOrUpdateGroupInput(ctx context.Context, obj interface{}) (model.CreateOrUpdateGroupInput, error) {
+	var it model.CreateOrUpdateGroupInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "description", "logoUrl", "visibility", "joinPolicy", "minimumRoleToInvite"}
+	fieldsInOrder := [...]string{"id", "name", "description", "logoUrl", "settings"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOID2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "name":
 			var err error
 
@@ -8380,27 +8394,11 @@ func (ec *executionContext) unmarshalInputCreateGroupInput(ctx context.Context, 
 			if err != nil {
 				return it, err
 			}
-		case "visibility":
+		case "settings":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visibility"))
-			it.Visibility, err = ec.unmarshalNGroupSettingsVisibility2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋgroupsettingsᚐVisibility(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "joinPolicy":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("joinPolicy"))
-			it.JoinPolicy, err = ec.unmarshalNGroupSettingsJoinPolicy2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋgroupsettingsᚐJoinPolicy(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "minimumRoleToInvite":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minimumRoleToInvite"))
-			it.MinimumRoleToInvite, err = ec.unmarshalOGroupMembershipRole2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋenumsᚐRole(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("settings"))
+			it.Settings, err = ec.unmarshalNGroupSettingsInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGroupSettingsInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8637,6 +8635,50 @@ func (ec *executionContext) unmarshalInputGroupMembershipWhereInput(ctx context.
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUserWith"))
 			it.HasUserWith, err = ec.unmarshalOUserWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUserWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputGroupSettingsInput(ctx context.Context, obj interface{}) (model.GroupSettingsInput, error) {
+	var it model.GroupSettingsInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"visibility", "joinPolicy", "minimumRoleToInvite"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "visibility":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visibility"))
+			it.Visibility, err = ec.unmarshalNGroupSettingsVisibility2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋgroupsettingsᚐVisibility(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "joinPolicy":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("joinPolicy"))
+			it.JoinPolicy, err = ec.unmarshalNGroupSettingsJoinPolicy2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋgroupsettingsᚐJoinPolicy(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "minimumRoleToInvite":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minimumRoleToInvite"))
+			it.MinimumRoleToInvite, err = ec.unmarshalOGroupMembershipRole2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋenumsᚐRole(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10716,10 +10758,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "createGroup":
+		case "createOrUpdateGroup":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_createGroup(ctx, field)
+				return ec._Mutation_createOrUpdateGroup(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -11912,8 +11954,8 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNCreateGroupInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateGroupInput(ctx context.Context, v interface{}) (model.CreateGroupInput, error) {
-	res, err := ec.unmarshalInputCreateGroupInput(ctx, v)
+func (ec *executionContext) unmarshalNCreateOrUpdateGroupInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateOrUpdateGroupInput(ctx context.Context, v interface{}) (model.CreateOrUpdateGroupInput, error) {
+	res, err := ec.unmarshalInputCreateOrUpdateGroupInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -12066,6 +12108,11 @@ func (ec *executionContext) marshalNGroupSettings2ᚖgithubᚗcomᚋopenᚑboard
 		return graphql.Null
 	}
 	return ec._GroupSettings(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNGroupSettingsInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGroupSettingsInput(ctx context.Context, v interface{}) (*model.GroupSettingsInput, error) {
+	res, err := ec.unmarshalInputGroupSettingsInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNGroupSettingsJoinPolicy2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋgroupsettingsᚐJoinPolicy(ctx context.Context, v interface{}) (groupsettings.JoinPolicy, error) {

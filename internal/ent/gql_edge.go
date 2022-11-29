@@ -36,8 +36,12 @@ func (gr *Group) Members(
 	return gr.QueryMembers().Paginate(ctx, after, first, before, last, opts...)
 }
 
-func (gr *Group) Applications(ctx context.Context) ([]*GroupMembershipApplication, error) {
-	result, err := gr.Edges.ApplicationsOrErr()
+func (gr *Group) Applications(ctx context.Context) (result []*GroupMembershipApplication, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = gr.NamedApplications(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = gr.Edges.ApplicationsOrErr()
+	}
 	if IsNotLoaded(err) {
 		result, err = gr.QueryApplications().All(ctx)
 	}
@@ -60,16 +64,24 @@ func (gm *GroupMembership) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
-func (gma *GroupMembershipApplication) User(ctx context.Context) ([]*User, error) {
-	result, err := gma.Edges.UserOrErr()
+func (gma *GroupMembershipApplication) User(ctx context.Context) (result []*User, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = gma.NamedUser(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = gma.Edges.UserOrErr()
+	}
 	if IsNotLoaded(err) {
 		result, err = gma.QueryUser().All(ctx)
 	}
 	return result, err
 }
 
-func (gma *GroupMembershipApplication) Group(ctx context.Context) ([]*Group, error) {
-	result, err := gma.Edges.GroupOrErr()
+func (gma *GroupMembershipApplication) Group(ctx context.Context) (result []*Group, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = gma.NamedGroup(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = gma.Edges.GroupOrErr()
+	}
 	if IsNotLoaded(err) {
 		result, err = gma.QueryGroup().All(ctx)
 	}
@@ -84,16 +96,24 @@ func (pl *Player) Owner(ctx context.Context) (*User, error) {
 	return result, MaskNotFound(err)
 }
 
-func (pl *Player) Supervisors(ctx context.Context) ([]*User, error) {
-	result, err := pl.Edges.SupervisorsOrErr()
+func (pl *Player) Supervisors(ctx context.Context) (result []*User, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = pl.NamedSupervisors(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = pl.Edges.SupervisorsOrErr()
+	}
 	if IsNotLoaded(err) {
 		result, err = pl.QuerySupervisors().All(ctx)
 	}
 	return result, err
 }
 
-func (pl *Player) SupervisionRequests(ctx context.Context) ([]*PlayerSupervisionRequest, error) {
-	result, err := pl.Edges.SupervisionRequestsOrErr()
+func (pl *Player) SupervisionRequests(ctx context.Context) (result []*PlayerSupervisionRequest, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = pl.NamedSupervisionRequests(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = pl.Edges.SupervisionRequestsOrErr()
+	}
 	if IsNotLoaded(err) {
 		result, err = pl.QuerySupervisionRequests().All(ctx)
 	}
@@ -116,8 +136,12 @@ func (psr *PlayerSupervisionRequest) Player(ctx context.Context) (*Player, error
 	return result, err
 }
 
-func (psr *PlayerSupervisionRequest) Approvals(ctx context.Context) ([]*PlayerSupervisionRequestApproval, error) {
-	result, err := psr.Edges.ApprovalsOrErr()
+func (psr *PlayerSupervisionRequest) Approvals(ctx context.Context) (result []*PlayerSupervisionRequestApproval, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = psr.NamedApprovals(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = psr.Edges.ApprovalsOrErr()
+	}
 	if IsNotLoaded(err) {
 		result, err = psr.QueryApprovals().All(ctx)
 	}
@@ -140,8 +164,12 @@ func (psra *PlayerSupervisionRequestApproval) SupervisionRequest(ctx context.Con
 	return result, err
 }
 
-func (u *User) Players(ctx context.Context) ([]*Player, error) {
-	result, err := u.Edges.PlayersOrErr()
+func (u *User) Players(ctx context.Context) (result []*Player, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = u.NamedPlayers(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = u.Edges.PlayersOrErr()
+	}
 	if IsNotLoaded(err) {
 		result, err = u.QueryPlayers().All(ctx)
 	}
@@ -156,16 +184,24 @@ func (u *User) MainPlayer(ctx context.Context) (*Player, error) {
 	return result, MaskNotFound(err)
 }
 
-func (u *User) GroupMemberships(ctx context.Context) ([]*GroupMembership, error) {
-	result, err := u.Edges.GroupMembershipsOrErr()
+func (u *User) GroupMemberships(ctx context.Context) (result []*GroupMembership, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = u.NamedGroupMemberships(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = u.Edges.GroupMembershipsOrErr()
+	}
 	if IsNotLoaded(err) {
 		result, err = u.QueryGroupMemberships().All(ctx)
 	}
 	return result, err
 }
 
-func (u *User) GroupMembershipApplications(ctx context.Context) ([]*GroupMembershipApplication, error) {
-	result, err := u.Edges.GroupMembershipApplicationsOrErr()
+func (u *User) GroupMembershipApplications(ctx context.Context) (result []*GroupMembershipApplication, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = u.NamedGroupMembershipApplications(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = u.Edges.GroupMembershipApplicationsOrErr()
+	}
 	if IsNotLoaded(err) {
 		result, err = u.QueryGroupMembershipApplications().All(ctx)
 	}

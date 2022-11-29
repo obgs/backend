@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
@@ -20,6 +22,7 @@ type GroupSettingsCreate struct {
 	config
 	mutation *GroupSettingsMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetVisibility sets the "visibility" field.
@@ -243,32 +246,21 @@ func (gsc *GroupSettingsCreate) createSpec() (*GroupSettings, *sqlgraph.CreateSp
 			},
 		}
 	)
+	_spec.OnConflict = gsc.conflict
 	if id, ok := gsc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
 	if value, ok := gsc.mutation.Visibility(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupsettings.FieldVisibility,
-		})
+		_spec.SetField(groupsettings.FieldVisibility, field.TypeEnum, value)
 		_node.Visibility = value
 	}
 	if value, ok := gsc.mutation.JoinPolicy(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupsettings.FieldJoinPolicy,
-		})
+		_spec.SetField(groupsettings.FieldJoinPolicy, field.TypeEnum, value)
 		_node.JoinPolicy = value
 	}
 	if value, ok := gsc.mutation.MinimumRoleToInvite(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: groupsettings.FieldMinimumRoleToInvite,
-		})
+		_spec.SetField(groupsettings.FieldMinimumRoleToInvite, field.TypeEnum, value)
 		_node.MinimumRoleToInvite = &value
 	}
 	if nodes := gsc.mutation.GroupIDs(); len(nodes) > 0 {
@@ -294,10 +286,237 @@ func (gsc *GroupSettingsCreate) createSpec() (*GroupSettings, *sqlgraph.CreateSp
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.GroupSettings.Create().
+//		SetVisibility(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.GroupSettingsUpsert) {
+//			SetVisibility(v+v).
+//		}).
+//		Exec(ctx)
+func (gsc *GroupSettingsCreate) OnConflict(opts ...sql.ConflictOption) *GroupSettingsUpsertOne {
+	gsc.conflict = opts
+	return &GroupSettingsUpsertOne{
+		create: gsc,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.GroupSettings.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (gsc *GroupSettingsCreate) OnConflictColumns(columns ...string) *GroupSettingsUpsertOne {
+	gsc.conflict = append(gsc.conflict, sql.ConflictColumns(columns...))
+	return &GroupSettingsUpsertOne{
+		create: gsc,
+	}
+}
+
+type (
+	// GroupSettingsUpsertOne is the builder for "upsert"-ing
+	//  one GroupSettings node.
+	GroupSettingsUpsertOne struct {
+		create *GroupSettingsCreate
+	}
+
+	// GroupSettingsUpsert is the "OnConflict" setter.
+	GroupSettingsUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetVisibility sets the "visibility" field.
+func (u *GroupSettingsUpsert) SetVisibility(v groupsettings.Visibility) *GroupSettingsUpsert {
+	u.Set(groupsettings.FieldVisibility, v)
+	return u
+}
+
+// UpdateVisibility sets the "visibility" field to the value that was provided on create.
+func (u *GroupSettingsUpsert) UpdateVisibility() *GroupSettingsUpsert {
+	u.SetExcluded(groupsettings.FieldVisibility)
+	return u
+}
+
+// SetJoinPolicy sets the "join_policy" field.
+func (u *GroupSettingsUpsert) SetJoinPolicy(v groupsettings.JoinPolicy) *GroupSettingsUpsert {
+	u.Set(groupsettings.FieldJoinPolicy, v)
+	return u
+}
+
+// UpdateJoinPolicy sets the "join_policy" field to the value that was provided on create.
+func (u *GroupSettingsUpsert) UpdateJoinPolicy() *GroupSettingsUpsert {
+	u.SetExcluded(groupsettings.FieldJoinPolicy)
+	return u
+}
+
+// SetMinimumRoleToInvite sets the "minimum_role_to_invite" field.
+func (u *GroupSettingsUpsert) SetMinimumRoleToInvite(v enums.Role) *GroupSettingsUpsert {
+	u.Set(groupsettings.FieldMinimumRoleToInvite, v)
+	return u
+}
+
+// UpdateMinimumRoleToInvite sets the "minimum_role_to_invite" field to the value that was provided on create.
+func (u *GroupSettingsUpsert) UpdateMinimumRoleToInvite() *GroupSettingsUpsert {
+	u.SetExcluded(groupsettings.FieldMinimumRoleToInvite)
+	return u
+}
+
+// ClearMinimumRoleToInvite clears the value of the "minimum_role_to_invite" field.
+func (u *GroupSettingsUpsert) ClearMinimumRoleToInvite() *GroupSettingsUpsert {
+	u.SetNull(groupsettings.FieldMinimumRoleToInvite)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.GroupSettings.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(groupsettings.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *GroupSettingsUpsertOne) UpdateNewValues() *GroupSettingsUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(groupsettings.FieldID)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.GroupSettings.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *GroupSettingsUpsertOne) Ignore() *GroupSettingsUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *GroupSettingsUpsertOne) DoNothing() *GroupSettingsUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the GroupSettingsCreate.OnConflict
+// documentation for more info.
+func (u *GroupSettingsUpsertOne) Update(set func(*GroupSettingsUpsert)) *GroupSettingsUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&GroupSettingsUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetVisibility sets the "visibility" field.
+func (u *GroupSettingsUpsertOne) SetVisibility(v groupsettings.Visibility) *GroupSettingsUpsertOne {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.SetVisibility(v)
+	})
+}
+
+// UpdateVisibility sets the "visibility" field to the value that was provided on create.
+func (u *GroupSettingsUpsertOne) UpdateVisibility() *GroupSettingsUpsertOne {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.UpdateVisibility()
+	})
+}
+
+// SetJoinPolicy sets the "join_policy" field.
+func (u *GroupSettingsUpsertOne) SetJoinPolicy(v groupsettings.JoinPolicy) *GroupSettingsUpsertOne {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.SetJoinPolicy(v)
+	})
+}
+
+// UpdateJoinPolicy sets the "join_policy" field to the value that was provided on create.
+func (u *GroupSettingsUpsertOne) UpdateJoinPolicy() *GroupSettingsUpsertOne {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.UpdateJoinPolicy()
+	})
+}
+
+// SetMinimumRoleToInvite sets the "minimum_role_to_invite" field.
+func (u *GroupSettingsUpsertOne) SetMinimumRoleToInvite(v enums.Role) *GroupSettingsUpsertOne {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.SetMinimumRoleToInvite(v)
+	})
+}
+
+// UpdateMinimumRoleToInvite sets the "minimum_role_to_invite" field to the value that was provided on create.
+func (u *GroupSettingsUpsertOne) UpdateMinimumRoleToInvite() *GroupSettingsUpsertOne {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.UpdateMinimumRoleToInvite()
+	})
+}
+
+// ClearMinimumRoleToInvite clears the value of the "minimum_role_to_invite" field.
+func (u *GroupSettingsUpsertOne) ClearMinimumRoleToInvite() *GroupSettingsUpsertOne {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.ClearMinimumRoleToInvite()
+	})
+}
+
+// Exec executes the query.
+func (u *GroupSettingsUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for GroupSettingsCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *GroupSettingsUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *GroupSettingsUpsertOne) ID(ctx context.Context) (id guidgql.GUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: GroupSettingsUpsertOne.ID is not supported by MySQL driver. Use GroupSettingsUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *GroupSettingsUpsertOne) IDX(ctx context.Context) guidgql.GUID {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // GroupSettingsCreateBulk is the builder for creating many GroupSettings entities in bulk.
 type GroupSettingsCreateBulk struct {
 	config
 	builders []*GroupSettingsCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the GroupSettings entities in the database.
@@ -324,6 +543,7 @@ func (gscb *GroupSettingsCreateBulk) Save(ctx context.Context) ([]*GroupSettings
 					_, err = mutators[i+1].Mutate(root, gscb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = gscb.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, gscb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -370,6 +590,166 @@ func (gscb *GroupSettingsCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (gscb *GroupSettingsCreateBulk) ExecX(ctx context.Context) {
 	if err := gscb.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.GroupSettings.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.GroupSettingsUpsert) {
+//			SetVisibility(v+v).
+//		}).
+//		Exec(ctx)
+func (gscb *GroupSettingsCreateBulk) OnConflict(opts ...sql.ConflictOption) *GroupSettingsUpsertBulk {
+	gscb.conflict = opts
+	return &GroupSettingsUpsertBulk{
+		create: gscb,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.GroupSettings.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (gscb *GroupSettingsCreateBulk) OnConflictColumns(columns ...string) *GroupSettingsUpsertBulk {
+	gscb.conflict = append(gscb.conflict, sql.ConflictColumns(columns...))
+	return &GroupSettingsUpsertBulk{
+		create: gscb,
+	}
+}
+
+// GroupSettingsUpsertBulk is the builder for "upsert"-ing
+// a bulk of GroupSettings nodes.
+type GroupSettingsUpsertBulk struct {
+	create *GroupSettingsCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.GroupSettings.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(groupsettings.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *GroupSettingsUpsertBulk) UpdateNewValues() *GroupSettingsUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(groupsettings.FieldID)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.GroupSettings.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *GroupSettingsUpsertBulk) Ignore() *GroupSettingsUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *GroupSettingsUpsertBulk) DoNothing() *GroupSettingsUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the GroupSettingsCreateBulk.OnConflict
+// documentation for more info.
+func (u *GroupSettingsUpsertBulk) Update(set func(*GroupSettingsUpsert)) *GroupSettingsUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&GroupSettingsUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetVisibility sets the "visibility" field.
+func (u *GroupSettingsUpsertBulk) SetVisibility(v groupsettings.Visibility) *GroupSettingsUpsertBulk {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.SetVisibility(v)
+	})
+}
+
+// UpdateVisibility sets the "visibility" field to the value that was provided on create.
+func (u *GroupSettingsUpsertBulk) UpdateVisibility() *GroupSettingsUpsertBulk {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.UpdateVisibility()
+	})
+}
+
+// SetJoinPolicy sets the "join_policy" field.
+func (u *GroupSettingsUpsertBulk) SetJoinPolicy(v groupsettings.JoinPolicy) *GroupSettingsUpsertBulk {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.SetJoinPolicy(v)
+	})
+}
+
+// UpdateJoinPolicy sets the "join_policy" field to the value that was provided on create.
+func (u *GroupSettingsUpsertBulk) UpdateJoinPolicy() *GroupSettingsUpsertBulk {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.UpdateJoinPolicy()
+	})
+}
+
+// SetMinimumRoleToInvite sets the "minimum_role_to_invite" field.
+func (u *GroupSettingsUpsertBulk) SetMinimumRoleToInvite(v enums.Role) *GroupSettingsUpsertBulk {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.SetMinimumRoleToInvite(v)
+	})
+}
+
+// UpdateMinimumRoleToInvite sets the "minimum_role_to_invite" field to the value that was provided on create.
+func (u *GroupSettingsUpsertBulk) UpdateMinimumRoleToInvite() *GroupSettingsUpsertBulk {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.UpdateMinimumRoleToInvite()
+	})
+}
+
+// ClearMinimumRoleToInvite clears the value of the "minimum_role_to_invite" field.
+func (u *GroupSettingsUpsertBulk) ClearMinimumRoleToInvite() *GroupSettingsUpsertBulk {
+	return u.Update(func(s *GroupSettingsUpsert) {
+		s.ClearMinimumRoleToInvite()
+	})
+}
+
+// Exec executes the query.
+func (u *GroupSettingsUpsertBulk) Exec(ctx context.Context) error {
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GroupSettingsCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for GroupSettingsCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *GroupSettingsUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

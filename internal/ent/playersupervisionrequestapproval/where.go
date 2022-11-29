@@ -33,7 +33,7 @@ func IDNEQ(id guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
 	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -44,7 +44,7 @@ func IDIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
 	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}

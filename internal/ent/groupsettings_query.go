@@ -335,6 +335,11 @@ func (gsq *GroupSettingsQuery) Select(fields ...string) *GroupSettingsSelect {
 	return selbuild
 }
 
+// Aggregate returns a GroupSettingsSelect configured with the given aggregations.
+func (gsq *GroupSettingsQuery) Aggregate(fns ...AggregateFunc) *GroupSettingsSelect {
+	return gsq.Select().Aggregate(fns...)
+}
+
 func (gsq *GroupSettingsQuery) prepareQuery(ctx context.Context) error {
 	for _, f := range gsq.fields {
 		if !groupsettings.ValidColumn(f) {
@@ -366,10 +371,10 @@ func (gsq *GroupSettingsQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, groupsettings.ForeignKeys...)
 	}
-	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*GroupSettings).scanValues(nil, columns)
 	}
-	_spec.Assign = func(columns []string, values []interface{}) error {
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &GroupSettings{config: gsq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
@@ -444,11 +449,14 @@ func (gsq *GroupSettingsQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (gsq *GroupSettingsQuery) sqlExist(ctx context.Context) (bool, error) {
-	n, err := gsq.sqlCount(ctx)
-	if err != nil {
+	switch _, err := gsq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
 		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return n > 0, nil
 }
 
 func (gsq *GroupSettingsQuery) querySpec() *sqlgraph.QuerySpec {
@@ -549,7 +557,7 @@ func (gsgb *GroupSettingsGroupBy) Aggregate(fns ...AggregateFunc) *GroupSettings
 }
 
 // Scan applies the group-by query and scans the result into the given value.
-func (gsgb *GroupSettingsGroupBy) Scan(ctx context.Context, v interface{}) error {
+func (gsgb *GroupSettingsGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := gsgb.path(ctx)
 	if err != nil {
 		return err
@@ -558,7 +566,7 @@ func (gsgb *GroupSettingsGroupBy) Scan(ctx context.Context, v interface{}) error
 	return gsgb.sqlScan(ctx, v)
 }
 
-func (gsgb *GroupSettingsGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (gsgb *GroupSettingsGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range gsgb.fields {
 		if !groupsettings.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -583,8 +591,6 @@ func (gsgb *GroupSettingsGroupBy) sqlQuery() *sql.Selector {
 	for _, fn := range gsgb.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	// If no columns were selected in a custom aggregation function, the default
-	// selection is the fields used for "group-by", and the aggregation functions.
 	if len(selector.SelectedColumns()) == 0 {
 		columns := make([]string, 0, len(gsgb.fields)+len(gsgb.fns))
 		for _, f := range gsgb.fields {
@@ -604,8 +610,14 @@ type GroupSettingsSelect struct {
 	sql *sql.Selector
 }
 
+// Aggregate adds the given aggregation functions to the selector query.
+func (gss *GroupSettingsSelect) Aggregate(fns ...AggregateFunc) *GroupSettingsSelect {
+	gss.fns = append(gss.fns, fns...)
+	return gss
+}
+
 // Scan applies the selector query and scans the result into the given value.
-func (gss *GroupSettingsSelect) Scan(ctx context.Context, v interface{}) error {
+func (gss *GroupSettingsSelect) Scan(ctx context.Context, v any) error {
 	if err := gss.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -613,7 +625,17 @@ func (gss *GroupSettingsSelect) Scan(ctx context.Context, v interface{}) error {
 	return gss.sqlScan(ctx, v)
 }
 
-func (gss *GroupSettingsSelect) sqlScan(ctx context.Context, v interface{}) error {
+func (gss *GroupSettingsSelect) sqlScan(ctx context.Context, v any) error {
+	aggregation := make([]string, 0, len(gss.fns))
+	for _, fn := range gss.fns {
+		aggregation = append(aggregation, fn(gss.sql))
+	}
+	switch n := len(*gss.selector.flds); {
+	case n == 0 && len(aggregation) > 0:
+		gss.sql.Select(aggregation...)
+	case n != 0 && len(aggregation) > 0:
+		gss.sql.AppendSelect(aggregation...)
+	}
 	rows := &sql.Rows{}
 	query, args := gss.sql.Query()
 	if err := gss.driver.Query(ctx, query, args, rows); err != nil {

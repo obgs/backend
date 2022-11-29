@@ -33,7 +33,7 @@ func IDNEQ(id guidgql.GUID) predicate.Player {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -44,7 +44,7 @@ func IDIn(ids ...guidgql.GUID) predicate.Player {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -103,7 +103,7 @@ func NameNEQ(v string) predicate.Player {
 
 // NameIn applies the In predicate on the "name" field.
 func NameIn(vs ...string) predicate.Player {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -114,7 +114,7 @@ func NameIn(vs ...string) predicate.Player {
 
 // NameNotIn applies the NotIn predicate on the "name" field.
 func NameNotIn(vs ...string) predicate.Player {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}

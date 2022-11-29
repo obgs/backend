@@ -8,13 +8,12 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
-type CreateGroupInput struct {
-	Name                string                   `json:"name"`
-	Description         *string                  `json:"description"`
-	LogoURL             string                   `json:"logoUrl"`
-	Visibility          groupsettings.Visibility `json:"visibility"`
-	JoinPolicy          groupsettings.JoinPolicy `json:"joinPolicy"`
-	MinimumRoleToInvite *enums.Role              `json:"minimumRoleToInvite"`
+type CreateOrUpdateGroupInput struct {
+	ID          *guidgql.GUID       `json:"id"`
+	Name        string              `json:"name"`
+	Description *string             `json:"description"`
+	LogoURL     string              `json:"logoUrl"`
+	Settings    *GroupSettingsInput `json:"settings"`
 }
 
 type CreatePlayerInput struct {
@@ -24,6 +23,12 @@ type CreatePlayerInput struct {
 type GroupApplicationInput struct {
 	GroupID guidgql.GUID `json:"groupId"`
 	Message *string      `json:"message"`
+}
+
+type GroupSettingsInput struct {
+	Visibility          groupsettings.Visibility `json:"visibility"`
+	JoinPolicy          groupsettings.JoinPolicy `json:"joinPolicy"`
+	MinimumRoleToInvite *enums.Role              `json:"minimumRoleToInvite"`
 }
 
 type RequestPlayerSupervisionInput struct {

@@ -172,7 +172,7 @@ func (e *JoinPolicy) UnmarshalGQL(val interface{}) error {
 
 var (
 	// enums.Role must implement graphql.Marshaler.
-	_ graphql.Marshaler = enums.Role("")
+	_ graphql.Marshaler = (*enums.Role)(nil)
 	// enums.Role must implement graphql.Unmarshaler.
 	_ graphql.Unmarshaler = (*enums.Role)(nil)
 )

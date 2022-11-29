@@ -409,6 +409,11 @@ func (psrq *PlayerSupervisionRequestQuery) Select(fields ...string) *PlayerSuper
 	return selbuild
 }
 
+// Aggregate returns a PlayerSupervisionRequestSelect configured with the given aggregations.
+func (psrq *PlayerSupervisionRequestQuery) Aggregate(fns ...AggregateFunc) *PlayerSupervisionRequestSelect {
+	return psrq.Select().Aggregate(fns...)
+}
+
 func (psrq *PlayerSupervisionRequestQuery) prepareQuery(ctx context.Context) error {
 	for _, f := range psrq.fields {
 		if !playersupervisionrequest.ValidColumn(f) {
@@ -442,10 +447,10 @@ func (psrq *PlayerSupervisionRequestQuery) sqlAll(ctx context.Context, hooks ...
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, playersupervisionrequest.ForeignKeys...)
 	}
-	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*PlayerSupervisionRequest).scanValues(nil, columns)
 	}
-	_spec.Assign = func(columns []string, values []interface{}) error {
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &PlayerSupervisionRequest{config: psrq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
@@ -604,11 +609,14 @@ func (psrq *PlayerSupervisionRequestQuery) sqlCount(ctx context.Context) (int, e
 }
 
 func (psrq *PlayerSupervisionRequestQuery) sqlExist(ctx context.Context) (bool, error) {
-	n, err := psrq.sqlCount(ctx)
-	if err != nil {
+	switch _, err := psrq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
 		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return n > 0, nil
 }
 
 func (psrq *PlayerSupervisionRequestQuery) querySpec() *sqlgraph.QuerySpec {
@@ -723,7 +731,7 @@ func (psrgb *PlayerSupervisionRequestGroupBy) Aggregate(fns ...AggregateFunc) *P
 }
 
 // Scan applies the group-by query and scans the result into the given value.
-func (psrgb *PlayerSupervisionRequestGroupBy) Scan(ctx context.Context, v interface{}) error {
+func (psrgb *PlayerSupervisionRequestGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := psrgb.path(ctx)
 	if err != nil {
 		return err
@@ -732,7 +740,7 @@ func (psrgb *PlayerSupervisionRequestGroupBy) Scan(ctx context.Context, v interf
 	return psrgb.sqlScan(ctx, v)
 }
 
-func (psrgb *PlayerSupervisionRequestGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (psrgb *PlayerSupervisionRequestGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range psrgb.fields {
 		if !playersupervisionrequest.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -757,8 +765,6 @@ func (psrgb *PlayerSupervisionRequestGroupBy) sqlQuery() *sql.Selector {
 	for _, fn := range psrgb.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	// If no columns were selected in a custom aggregation function, the default
-	// selection is the fields used for "group-by", and the aggregation functions.
 	if len(selector.SelectedColumns()) == 0 {
 		columns := make([]string, 0, len(psrgb.fields)+len(psrgb.fns))
 		for _, f := range psrgb.fields {
@@ -778,8 +784,14 @@ type PlayerSupervisionRequestSelect struct {
 	sql *sql.Selector
 }
 
+// Aggregate adds the given aggregation functions to the selector query.
+func (psrs *PlayerSupervisionRequestSelect) Aggregate(fns ...AggregateFunc) *PlayerSupervisionRequestSelect {
+	psrs.fns = append(psrs.fns, fns...)
+	return psrs
+}
+
 // Scan applies the selector query and scans the result into the given value.
-func (psrs *PlayerSupervisionRequestSelect) Scan(ctx context.Context, v interface{}) error {
+func (psrs *PlayerSupervisionRequestSelect) Scan(ctx context.Context, v any) error {
 	if err := psrs.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -787,7 +799,17 @@ func (psrs *PlayerSupervisionRequestSelect) Scan(ctx context.Context, v interfac
 	return psrs.sqlScan(ctx, v)
 }
 
-func (psrs *PlayerSupervisionRequestSelect) sqlScan(ctx context.Context, v interface{}) error {
+func (psrs *PlayerSupervisionRequestSelect) sqlScan(ctx context.Context, v any) error {
+	aggregation := make([]string, 0, len(psrs.fns))
+	for _, fn := range psrs.fns {
+		aggregation = append(aggregation, fn(psrs.sql))
+	}
+	switch n := len(*psrs.selector.flds); {
+	case n == 0 && len(aggregation) > 0:
+		psrs.sql.Select(aggregation...)
+	case n != 0 && len(aggregation) > 0:
+		psrs.sql.AppendSelect(aggregation...)
+	}
 	rows := &sql.Rows{}
 	query, args := psrs.sql.Query()
 	if err := psrs.driver.Query(ctx, query, args, rows); err != nil {

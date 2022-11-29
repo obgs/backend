@@ -34,7 +34,7 @@ func IDNEQ(id guidgql.GUID) predicate.GroupMembership {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.GroupMembership {
 	return predicate.GroupMembership(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -45,7 +45,7 @@ func IDIn(ids ...guidgql.GUID) predicate.GroupMembership {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.GroupMembership {
 	return predicate.GroupMembership(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -99,7 +99,7 @@ func RoleNEQ(v enums.Role) predicate.GroupMembership {
 
 // RoleIn applies the In predicate on the "role" field.
 func RoleIn(vs ...enums.Role) predicate.GroupMembership {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -110,7 +110,7 @@ func RoleIn(vs ...enums.Role) predicate.GroupMembership {
 
 // RoleNotIn applies the NotIn predicate on the "role" field.
 func RoleNotIn(vs ...enums.Role) predicate.GroupMembership {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}

@@ -33,7 +33,7 @@ func IDNEQ(id guidgql.GUID) predicate.PlayerSupervisionRequest {
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequest {
 	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -44,7 +44,7 @@ func IDIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequest {
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequest {
 	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		v := make([]interface{}, len(ids))
+		v := make([]any, len(ids))
 		for i := range v {
 			v[i] = ids[i]
 		}
@@ -103,7 +103,7 @@ func MessageNEQ(v string) predicate.PlayerSupervisionRequest {
 
 // MessageIn applies the In predicate on the "message" field.
 func MessageIn(vs ...string) predicate.PlayerSupervisionRequest {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
@@ -114,7 +114,7 @@ func MessageIn(vs ...string) predicate.PlayerSupervisionRequest {
 
 // MessageNotIn applies the NotIn predicate on the "message" field.
 func MessageNotIn(vs ...string) predicate.PlayerSupervisionRequest {
-	v := make([]interface{}, len(vs))
+	v := make([]any, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}

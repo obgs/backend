@@ -371,6 +371,11 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) Select(fields ...string) *Pl
 	return selbuild
 }
 
+// Aggregate returns a PlayerSupervisionRequestApprovalSelect configured with the given aggregations.
+func (psraq *PlayerSupervisionRequestApprovalQuery) Aggregate(fns ...AggregateFunc) *PlayerSupervisionRequestApprovalSelect {
+	return psraq.Select().Aggregate(fns...)
+}
+
 func (psraq *PlayerSupervisionRequestApprovalQuery) prepareQuery(ctx context.Context) error {
 	for _, f := range psraq.fields {
 		if !playersupervisionrequestapproval.ValidColumn(f) {
@@ -403,10 +408,10 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) sqlAll(ctx context.Context, 
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, playersupervisionrequestapproval.ForeignKeys...)
 	}
-	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
+	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*PlayerSupervisionRequestApproval).scanValues(nil, columns)
 	}
-	_spec.Assign = func(columns []string, values []interface{}) error {
+	_spec.Assign = func(columns []string, values []any) error {
 		node := &PlayerSupervisionRequestApproval{config: psraq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
@@ -516,11 +521,14 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) sqlCount(ctx context.Context
 }
 
 func (psraq *PlayerSupervisionRequestApprovalQuery) sqlExist(ctx context.Context) (bool, error) {
-	n, err := psraq.sqlCount(ctx)
-	if err != nil {
+	switch _, err := psraq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
 		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return n > 0, nil
 }
 
 func (psraq *PlayerSupervisionRequestApprovalQuery) querySpec() *sqlgraph.QuerySpec {
@@ -621,7 +629,7 @@ func (psragb *PlayerSupervisionRequestApprovalGroupBy) Aggregate(fns ...Aggregat
 }
 
 // Scan applies the group-by query and scans the result into the given value.
-func (psragb *PlayerSupervisionRequestApprovalGroupBy) Scan(ctx context.Context, v interface{}) error {
+func (psragb *PlayerSupervisionRequestApprovalGroupBy) Scan(ctx context.Context, v any) error {
 	query, err := psragb.path(ctx)
 	if err != nil {
 		return err
@@ -630,7 +638,7 @@ func (psragb *PlayerSupervisionRequestApprovalGroupBy) Scan(ctx context.Context,
 	return psragb.sqlScan(ctx, v)
 }
 
-func (psragb *PlayerSupervisionRequestApprovalGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (psragb *PlayerSupervisionRequestApprovalGroupBy) sqlScan(ctx context.Context, v any) error {
 	for _, f := range psragb.fields {
 		if !playersupervisionrequestapproval.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
@@ -655,8 +663,6 @@ func (psragb *PlayerSupervisionRequestApprovalGroupBy) sqlQuery() *sql.Selector 
 	for _, fn := range psragb.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	// If no columns were selected in a custom aggregation function, the default
-	// selection is the fields used for "group-by", and the aggregation functions.
 	if len(selector.SelectedColumns()) == 0 {
 		columns := make([]string, 0, len(psragb.fields)+len(psragb.fns))
 		for _, f := range psragb.fields {
@@ -676,8 +682,14 @@ type PlayerSupervisionRequestApprovalSelect struct {
 	sql *sql.Selector
 }
 
+// Aggregate adds the given aggregation functions to the selector query.
+func (psras *PlayerSupervisionRequestApprovalSelect) Aggregate(fns ...AggregateFunc) *PlayerSupervisionRequestApprovalSelect {
+	psras.fns = append(psras.fns, fns...)
+	return psras
+}
+
 // Scan applies the selector query and scans the result into the given value.
-func (psras *PlayerSupervisionRequestApprovalSelect) Scan(ctx context.Context, v interface{}) error {
+func (psras *PlayerSupervisionRequestApprovalSelect) Scan(ctx context.Context, v any) error {
 	if err := psras.prepareQuery(ctx); err != nil {
 		return err
 	}
@@ -685,7 +697,17 @@ func (psras *PlayerSupervisionRequestApprovalSelect) Scan(ctx context.Context, v
 	return psras.sqlScan(ctx, v)
 }
 
-func (psras *PlayerSupervisionRequestApprovalSelect) sqlScan(ctx context.Context, v interface{}) error {
+func (psras *PlayerSupervisionRequestApprovalSelect) sqlScan(ctx context.Context, v any) error {
+	aggregation := make([]string, 0, len(psras.fns))
+	for _, fn := range psras.fns {
+		aggregation = append(aggregation, fn(psras.sql))
+	}
+	switch n := len(*psras.selector.flds); {
+	case n == 0 && len(aggregation) > 0:
+		psras.sql.Select(aggregation...)
+	case n != 0 && len(aggregation) > 0:
+		psras.sql.AppendSelect(aggregation...)
+	}
 	rows := &sql.Rows{}
 	query, args := psras.sql.Query()
 	if err := psras.driver.Query(ctx, query, args, rows); err != nil {
