@@ -263,9 +263,7 @@ func (gma *GroupMembershipApplicationQuery) collectField(ctx context.Context, op
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
 			}
-			gma.WithNamedUser(alias, func(wq *UserQuery) {
-				*wq = *query
-			})
+			gma.withUser = query
 		case "group":
 			var (
 				alias = field.Alias
@@ -275,9 +273,7 @@ func (gma *GroupMembershipApplicationQuery) collectField(ctx context.Context, op
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
 			}
-			gma.WithNamedGroup(alias, func(wq *GroupQuery) {
-				*wq = *query
-			})
+			gma.withGroup = query
 		}
 	}
 	return nil

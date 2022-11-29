@@ -54,8 +54,8 @@ type GroupMembership implements Node {
 type GroupMembershipApplication implements Node {
   id: ID!
   message: String!
-  user: [User!]!
-  group: [Group!]!
+  user: User!
+  group: Group!
 }
 """A connection to a list of items."""
 type GroupMembershipConnection {

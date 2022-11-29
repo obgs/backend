@@ -22,8 +22,8 @@ func (GroupMembershipApplication) Fields() []ent.Field {
 
 func (GroupMembershipApplication) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("group_membership_applications").Required(),
-		edge.From("group", Group.Type).Ref("applications").Required(),
+		edge.From("user", User.Type).Ref("group_membership_applications").Required().Unique(),
+		edge.From("group", Group.Type).Ref("applications").Required().Unique(),
 	}
 }
 

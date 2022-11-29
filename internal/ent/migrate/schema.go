@@ -52,12 +52,28 @@ var (
 	GroupMembershipApplicationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
 		{Name: "message", Type: field.TypeString, Default: ""},
+		{Name: "group_applications", Type: field.TypeString},
+		{Name: "user_group_membership_applications", Type: field.TypeString},
 	}
 	// GroupMembershipApplicationsTable holds the schema information for the "group_membership_applications" table.
 	GroupMembershipApplicationsTable = &schema.Table{
 		Name:       "group_membership_applications",
 		Columns:    GroupMembershipApplicationsColumns,
 		PrimaryKey: []*schema.Column{GroupMembershipApplicationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "group_membership_applications_groups_applications",
+				Columns:    []*schema.Column{GroupMembershipApplicationsColumns[2]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "group_membership_applications_users_group_membership_applications",
+				Columns:    []*schema.Column{GroupMembershipApplicationsColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// GroupSettingsColumns holds the columns for the "group_settings" table.
 	GroupSettingsColumns = []*schema.Column{
@@ -169,31 +185,6 @@ var (
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 	}
-	// GroupApplicationsColumns holds the columns for the "group_applications" table.
-	GroupApplicationsColumns = []*schema.Column{
-		{Name: "group_id", Type: field.TypeString},
-		{Name: "group_membership_application_id", Type: field.TypeString},
-	}
-	// GroupApplicationsTable holds the schema information for the "group_applications" table.
-	GroupApplicationsTable = &schema.Table{
-		Name:       "group_applications",
-		Columns:    GroupApplicationsColumns,
-		PrimaryKey: []*schema.Column{GroupApplicationsColumns[0], GroupApplicationsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "group_applications_group_id",
-				Columns:    []*schema.Column{GroupApplicationsColumns[0]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "group_applications_group_membership_application_id",
-				Columns:    []*schema.Column{GroupApplicationsColumns[1]},
-				RefColumns: []*schema.Column{GroupMembershipApplicationsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// UserPlayersColumns holds the columns for the "user_players" table.
 	UserPlayersColumns = []*schema.Column{
 		{Name: "user_id", Type: field.TypeString},
@@ -219,31 +210,6 @@ var (
 			},
 		},
 	}
-	// UserGroupMembershipApplicationsColumns holds the columns for the "user_group_membership_applications" table.
-	UserGroupMembershipApplicationsColumns = []*schema.Column{
-		{Name: "user_id", Type: field.TypeString},
-		{Name: "group_membership_application_id", Type: field.TypeString},
-	}
-	// UserGroupMembershipApplicationsTable holds the schema information for the "user_group_membership_applications" table.
-	UserGroupMembershipApplicationsTable = &schema.Table{
-		Name:       "user_group_membership_applications",
-		Columns:    UserGroupMembershipApplicationsColumns,
-		PrimaryKey: []*schema.Column{UserGroupMembershipApplicationsColumns[0], UserGroupMembershipApplicationsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "user_group_membership_applications_user_id",
-				Columns:    []*schema.Column{UserGroupMembershipApplicationsColumns[0]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "user_group_membership_applications_group_membership_application_id",
-				Columns:    []*schema.Column{UserGroupMembershipApplicationsColumns[1]},
-				RefColumns: []*schema.Column{GroupMembershipApplicationsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		GroupsTable,
@@ -254,25 +220,21 @@ var (
 		PlayerSupervisionRequestsTable,
 		PlayerSupervisionRequestApprovalsTable,
 		UsersTable,
-		GroupApplicationsTable,
 		UserPlayersTable,
-		UserGroupMembershipApplicationsTable,
 	}
 )
 
 func init() {
 	GroupMembershipsTable.ForeignKeys[0].RefTable = GroupsTable
 	GroupMembershipsTable.ForeignKeys[1].RefTable = UsersTable
+	GroupMembershipApplicationsTable.ForeignKeys[0].RefTable = GroupsTable
+	GroupMembershipApplicationsTable.ForeignKeys[1].RefTable = UsersTable
 	GroupSettingsTable.ForeignKeys[0].RefTable = GroupsTable
 	PlayersTable.ForeignKeys[0].RefTable = UsersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[0].RefTable = PlayersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[1].RefTable = UsersTable
 	PlayerSupervisionRequestApprovalsTable.ForeignKeys[0].RefTable = PlayerSupervisionRequestsTable
 	PlayerSupervisionRequestApprovalsTable.ForeignKeys[1].RefTable = UsersTable
-	GroupApplicationsTable.ForeignKeys[0].RefTable = GroupsTable
-	GroupApplicationsTable.ForeignKeys[1].RefTable = GroupMembershipApplicationsTable
 	UserPlayersTable.ForeignKeys[0].RefTable = UsersTable
 	UserPlayersTable.ForeignKeys[1].RefTable = PlayersTable
-	UserGroupMembershipApplicationsTable.ForeignKeys[0].RefTable = UsersTable
-	UserGroupMembershipApplicationsTable.ForeignKeys[1].RefTable = GroupMembershipApplicationsTable
 }

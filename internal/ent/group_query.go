@@ -129,7 +129,7 @@ func (gq *GroupQuery) QueryApplications() *GroupMembershipApplicationQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, selector),
 			sqlgraph.To(groupmembershipapplication.Table, groupmembershipapplication.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, group.ApplicationsTable, group.ApplicationsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.ApplicationsTable, group.ApplicationsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
 		return fromU, nil
@@ -563,60 +563,33 @@ func (gq *GroupQuery) loadMembers(ctx context.Context, query *GroupMembershipQue
 	return nil
 }
 func (gq *GroupQuery) loadApplications(ctx context.Context, query *GroupMembershipApplicationQuery, nodes []*Group, init func(*Group), assign func(*Group, *GroupMembershipApplication)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[guidgql.GUID]*Group)
-	nids := make(map[guidgql.GUID]map[*Group]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID]*Group)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
 		if init != nil {
-			init(node)
+			init(nodes[i])
 		}
 	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(group.ApplicationsTable)
-		s.Join(joinT).On(s.C(groupmembershipapplication.FieldID), joinT.C(group.ApplicationsPrimaryKey[1]))
-		s.Where(sql.InValues(joinT.C(group.ApplicationsPrimaryKey[0]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(group.ApplicationsPrimaryKey[0]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
-	}
-	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-		assign := spec.Assign
-		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]any, error) {
-			values, err := values(columns[1:])
-			if err != nil {
-				return nil, err
-			}
-			return append([]any{new(guidgql.GUID)}, values...), nil
-		}
-		spec.Assign = func(columns []string, values []any) error {
-			outValue := *values[0].(*guidgql.GUID)
-			inValue := *values[1].(*guidgql.GUID)
-			if nids[inValue] == nil {
-				nids[inValue] = map[*Group]struct{}{byID[outValue]: {}}
-				return assign(columns[1:], values[1:])
-			}
-			nids[inValue][byID[outValue]] = struct{}{}
-			return nil
-		}
-	})
+	query.withFKs = true
+	query.Where(predicate.GroupMembershipApplication(func(s *sql.Selector) {
+		s.Where(sql.InValues(group.ApplicationsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
+		fk := n.group_applications
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "group_applications" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected "applications" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "group_applications" returned %v for node %v`, *fk, n.ID)
 		}
-		for kn := range nodes {
-			assign(kn, n)
-		}
+		assign(node, n)
 	}
 	return nil
 }

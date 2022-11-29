@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
 // GroupMembershipApplication is the model entity for the GroupMembershipApplication schema.
@@ -20,38 +22,45 @@ type GroupMembershipApplication struct {
 	Message string `json:"message,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupMembershipApplicationQuery when eager-loading is set.
-	Edges GroupMembershipApplicationEdges `json:"edges"`
+	Edges                              GroupMembershipApplicationEdges `json:"edges"`
+	group_applications                 *guidgql.GUID
+	user_group_membership_applications *guidgql.GUID
 }
 
 // GroupMembershipApplicationEdges holds the relations/edges for other nodes in the graph.
 type GroupMembershipApplicationEdges struct {
 	// User holds the value of the user edge.
-	User []*User `json:"user,omitempty"`
+	User *User `json:"user,omitempty"`
 	// Group holds the value of the group edge.
-	Group []*Group `json:"group,omitempty"`
+	Group *Group `json:"group,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 	// totalCount holds the count of the edges above.
 	totalCount [2]map[string]int
-
-	namedUser  map[string][]*User
-	namedGroup map[string][]*Group
 }
 
 // UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading.
-func (e GroupMembershipApplicationEdges) UserOrErr() ([]*User, error) {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e GroupMembershipApplicationEdges) UserOrErr() (*User, error) {
 	if e.loadedTypes[0] {
+		if e.User == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: user.Label}
+		}
 		return e.User, nil
 	}
 	return nil, &NotLoadedError{edge: "user"}
 }
 
 // GroupOrErr returns the Group value or an error if the edge
-// was not loaded in eager-loading.
-func (e GroupMembershipApplicationEdges) GroupOrErr() ([]*Group, error) {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e GroupMembershipApplicationEdges) GroupOrErr() (*Group, error) {
 	if e.loadedTypes[1] {
+		if e.Group == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: group.Label}
+		}
 		return e.Group, nil
 	}
 	return nil, &NotLoadedError{edge: "group"}
@@ -66,6 +75,10 @@ func (*GroupMembershipApplication) scanValues(columns []string) ([]any, error) {
 			values[i] = new(guidgql.GUID)
 		case groupmembershipapplication.FieldMessage:
 			values[i] = new(sql.NullString)
+		case groupmembershipapplication.ForeignKeys[0]: // group_applications
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
+		case groupmembershipapplication.ForeignKeys[1]: // user_group_membership_applications
+			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type GroupMembershipApplication", columns[i])
 		}
@@ -92,6 +105,20 @@ func (gma *GroupMembershipApplication) assignValues(columns []string, values []a
 				return fmt.Errorf("unexpected type %T for field message", values[i])
 			} else if value.Valid {
 				gma.Message = value.String
+			}
+		case groupmembershipapplication.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field group_applications", values[i])
+			} else if value.Valid {
+				gma.group_applications = new(guidgql.GUID)
+				*gma.group_applications = *value.S.(*guidgql.GUID)
+			}
+		case groupmembershipapplication.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field user_group_membership_applications", values[i])
+			} else if value.Valid {
+				gma.user_group_membership_applications = new(guidgql.GUID)
+				*gma.user_group_membership_applications = *value.S.(*guidgql.GUID)
 			}
 		}
 	}
@@ -135,54 +162,6 @@ func (gma *GroupMembershipApplication) String() string {
 	builder.WriteString(gma.Message)
 	builder.WriteByte(')')
 	return builder.String()
-}
-
-// NamedUser returns the User named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (gma *GroupMembershipApplication) NamedUser(name string) ([]*User, error) {
-	if gma.Edges.namedUser == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := gma.Edges.namedUser[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (gma *GroupMembershipApplication) appendNamedUser(name string, edges ...*User) {
-	if gma.Edges.namedUser == nil {
-		gma.Edges.namedUser = make(map[string][]*User)
-	}
-	if len(edges) == 0 {
-		gma.Edges.namedUser[name] = []*User{}
-	} else {
-		gma.Edges.namedUser[name] = append(gma.Edges.namedUser[name], edges...)
-	}
-}
-
-// NamedGroup returns the Group named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (gma *GroupMembershipApplication) NamedGroup(name string) ([]*Group, error) {
-	if gma.Edges.namedGroup == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := gma.Edges.namedGroup[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (gma *GroupMembershipApplication) appendNamedGroup(name string, edges ...*Group) {
-	if gma.Edges.namedGroup == nil {
-		gma.Edges.namedGroup = make(map[string][]*Group)
-	}
-	if len(edges) == 0 {
-		gma.Edges.namedGroup[name] = []*Group{}
-	} else {
-		gma.Edges.namedGroup[name] = append(gma.Edges.namedGroup[name], edges...)
-	}
 }
 
 // GroupMembershipApplications is a parsable slice of GroupMembershipApplication.

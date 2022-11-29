@@ -1153,11 +1153,9 @@ type GroupMembershipApplicationMutation struct {
 	id            *guidgql.GUID
 	message       *string
 	clearedFields map[string]struct{}
-	user          map[guidgql.GUID]struct{}
-	removeduser   map[guidgql.GUID]struct{}
+	user          *guidgql.GUID
 	cleareduser   bool
-	group         map[guidgql.GUID]struct{}
-	removedgroup  map[guidgql.GUID]struct{}
+	group         *guidgql.GUID
 	clearedgroup  bool
 	done          bool
 	oldValue      func(context.Context) (*GroupMembershipApplication, error)
@@ -1304,14 +1302,9 @@ func (m *GroupMembershipApplicationMutation) ResetMessage() {
 	m.message = nil
 }
 
-// AddUserIDs adds the "user" edge to the User entity by ids.
-func (m *GroupMembershipApplicationMutation) AddUserIDs(ids ...guidgql.GUID) {
-	if m.user == nil {
-		m.user = make(map[guidgql.GUID]struct{})
-	}
-	for i := range ids {
-		m.user[ids[i]] = struct{}{}
-	}
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *GroupMembershipApplicationMutation) SetUserID(id guidgql.GUID) {
+	m.user = &id
 }
 
 // ClearUser clears the "user" edge to the User entity.
@@ -1324,29 +1317,20 @@ func (m *GroupMembershipApplicationMutation) UserCleared() bool {
 	return m.cleareduser
 }
 
-// RemoveUserIDs removes the "user" edge to the User entity by IDs.
-func (m *GroupMembershipApplicationMutation) RemoveUserIDs(ids ...guidgql.GUID) {
-	if m.removeduser == nil {
-		m.removeduser = make(map[guidgql.GUID]struct{})
-	}
-	for i := range ids {
-		delete(m.user, ids[i])
-		m.removeduser[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedUser returns the removed IDs of the "user" edge to the User entity.
-func (m *GroupMembershipApplicationMutation) RemovedUserIDs() (ids []guidgql.GUID) {
-	for id := range m.removeduser {
-		ids = append(ids, id)
+// UserID returns the "user" edge ID in the mutation.
+func (m *GroupMembershipApplicationMutation) UserID() (id guidgql.GUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
 	}
 	return
 }
 
 // UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
 func (m *GroupMembershipApplicationMutation) UserIDs() (ids []guidgql.GUID) {
-	for id := range m.user {
-		ids = append(ids, id)
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
@@ -1355,17 +1339,11 @@ func (m *GroupMembershipApplicationMutation) UserIDs() (ids []guidgql.GUID) {
 func (m *GroupMembershipApplicationMutation) ResetUser() {
 	m.user = nil
 	m.cleareduser = false
-	m.removeduser = nil
 }
 
-// AddGroupIDs adds the "group" edge to the Group entity by ids.
-func (m *GroupMembershipApplicationMutation) AddGroupIDs(ids ...guidgql.GUID) {
-	if m.group == nil {
-		m.group = make(map[guidgql.GUID]struct{})
-	}
-	for i := range ids {
-		m.group[ids[i]] = struct{}{}
-	}
+// SetGroupID sets the "group" edge to the Group entity by id.
+func (m *GroupMembershipApplicationMutation) SetGroupID(id guidgql.GUID) {
+	m.group = &id
 }
 
 // ClearGroup clears the "group" edge to the Group entity.
@@ -1378,29 +1356,20 @@ func (m *GroupMembershipApplicationMutation) GroupCleared() bool {
 	return m.clearedgroup
 }
 
-// RemoveGroupIDs removes the "group" edge to the Group entity by IDs.
-func (m *GroupMembershipApplicationMutation) RemoveGroupIDs(ids ...guidgql.GUID) {
-	if m.removedgroup == nil {
-		m.removedgroup = make(map[guidgql.GUID]struct{})
-	}
-	for i := range ids {
-		delete(m.group, ids[i])
-		m.removedgroup[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedGroup returns the removed IDs of the "group" edge to the Group entity.
-func (m *GroupMembershipApplicationMutation) RemovedGroupIDs() (ids []guidgql.GUID) {
-	for id := range m.removedgroup {
-		ids = append(ids, id)
+// GroupID returns the "group" edge ID in the mutation.
+func (m *GroupMembershipApplicationMutation) GroupID() (id guidgql.GUID, exists bool) {
+	if m.group != nil {
+		return *m.group, true
 	}
 	return
 }
 
 // GroupIDs returns the "group" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GroupID instead. It exists only for internal usage by the builders.
 func (m *GroupMembershipApplicationMutation) GroupIDs() (ids []guidgql.GUID) {
-	for id := range m.group {
-		ids = append(ids, id)
+	if id := m.group; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
@@ -1409,7 +1378,6 @@ func (m *GroupMembershipApplicationMutation) GroupIDs() (ids []guidgql.GUID) {
 func (m *GroupMembershipApplicationMutation) ResetGroup() {
 	m.group = nil
 	m.clearedgroup = false
-	m.removedgroup = nil
 }
 
 // Where appends a list predicates to the GroupMembershipApplicationMutation builder.
@@ -1545,17 +1513,13 @@ func (m *GroupMembershipApplicationMutation) AddedEdges() []string {
 func (m *GroupMembershipApplicationMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case groupmembershipapplication.EdgeUser:
-		ids := make([]ent.Value, 0, len(m.user))
-		for id := range m.user {
-			ids = append(ids, id)
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
 	case groupmembershipapplication.EdgeGroup:
-		ids := make([]ent.Value, 0, len(m.group))
-		for id := range m.group {
-			ids = append(ids, id)
+		if id := m.group; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
 	}
 	return nil
 }
@@ -1563,32 +1527,12 @@ func (m *GroupMembershipApplicationMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroupMembershipApplicationMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.removeduser != nil {
-		edges = append(edges, groupmembershipapplication.EdgeUser)
-	}
-	if m.removedgroup != nil {
-		edges = append(edges, groupmembershipapplication.EdgeGroup)
-	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *GroupMembershipApplicationMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case groupmembershipapplication.EdgeUser:
-		ids := make([]ent.Value, 0, len(m.removeduser))
-		for id := range m.removeduser {
-			ids = append(ids, id)
-		}
-		return ids
-	case groupmembershipapplication.EdgeGroup:
-		ids := make([]ent.Value, 0, len(m.removedgroup))
-		for id := range m.removedgroup {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
@@ -1620,6 +1564,12 @@ func (m *GroupMembershipApplicationMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *GroupMembershipApplicationMutation) ClearEdge(name string) error {
 	switch name {
+	case groupmembershipapplication.EdgeUser:
+		m.ClearUser()
+		return nil
+	case groupmembershipapplication.EdgeGroup:
+		m.ClearGroup()
+		return nil
 	}
 	return fmt.Errorf("unknown GroupMembershipApplication unique edge %s", name)
 }

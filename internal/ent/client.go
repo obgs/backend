@@ -298,7 +298,7 @@ func (c *GroupClient) QueryApplications(gr *Group) *GroupMembershipApplicationQu
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(groupmembershipapplication.Table, groupmembershipapplication.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, group.ApplicationsTable, group.ApplicationsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.ApplicationsTable, group.ApplicationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
 		return fromV, nil
@@ -526,7 +526,7 @@ func (c *GroupMembershipApplicationClient) QueryUser(gma *GroupMembershipApplica
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembershipapplication.Table, groupmembershipapplication.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, groupmembershipapplication.UserTable, groupmembershipapplication.UserPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, groupmembershipapplication.UserTable, groupmembershipapplication.UserColumn),
 		)
 		fromV = sqlgraph.Neighbors(gma.driver.Dialect(), step)
 		return fromV, nil
@@ -542,7 +542,7 @@ func (c *GroupMembershipApplicationClient) QueryGroup(gma *GroupMembershipApplic
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembershipapplication.Table, groupmembershipapplication.FieldID, id),
 			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, groupmembershipapplication.GroupTable, groupmembershipapplication.GroupPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, groupmembershipapplication.GroupTable, groupmembershipapplication.GroupColumn),
 		)
 		fromV = sqlgraph.Neighbors(gma.driver.Dialect(), step)
 		return fromV, nil
@@ -1232,7 +1232,7 @@ func (c *UserClient) QueryGroupMembershipApplications(u *User) *GroupMembershipA
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(groupmembershipapplication.Table, groupmembershipapplication.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, user.GroupMembershipApplicationsTable, user.GroupMembershipApplicationsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GroupMembershipApplicationsTable, user.GroupMembershipApplicationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

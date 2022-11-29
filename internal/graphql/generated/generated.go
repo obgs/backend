@@ -107,13 +107,14 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ApplyToGroup                    func(childComplexity int, input model.GroupApplicationInput) int
-		CreateOrUpdateGroup             func(childComplexity int, input model.CreateOrUpdateGroupInput) int
-		CreatePlayer                    func(childComplexity int, input model.CreatePlayerInput) int
-		JoinGroup                       func(childComplexity int, groupID guidgql.GUID) int
-		RequestPlayerSupervision        func(childComplexity int, input *model.RequestPlayerSupervisionInput) int
-		ResolvePlayerSupervisionRequest func(childComplexity int, input model.ResolvePlayerSupervisionRequestInput) int
-		UpdateUser                      func(childComplexity int, id guidgql.GUID, input ent.UpdateUserInput) int
+		ApplyToGroup                      func(childComplexity int, input model.GroupApplicationInput) int
+		CreateOrUpdateGroup               func(childComplexity int, input model.CreateOrUpdateGroupInput) int
+		CreatePlayer                      func(childComplexity int, input model.CreatePlayerInput) int
+		JoinGroup                         func(childComplexity int, groupID guidgql.GUID) int
+		RequestPlayerSupervision          func(childComplexity int, input *model.RequestPlayerSupervisionInput) int
+		ResolveGroupMembershipApplication func(childComplexity int, applicationID guidgql.GUID, accepted bool) int
+		ResolvePlayerSupervisionRequest   func(childComplexity int, input model.ResolvePlayerSupervisionRequestInput) int
+		UpdateUser                        func(childComplexity int, id guidgql.GUID, input ent.UpdateUserInput) int
 	}
 
 	PageInfo struct {
@@ -200,6 +201,7 @@ type MutationResolver interface {
 	CreateOrUpdateGroup(ctx context.Context, input model.CreateOrUpdateGroupInput) (*ent.Group, error)
 	JoinGroup(ctx context.Context, groupID guidgql.GUID) (bool, error)
 	ApplyToGroup(ctx context.Context, input model.GroupApplicationInput) (*ent.GroupMembershipApplication, error)
+	ResolveGroupMembershipApplication(ctx context.Context, applicationID guidgql.GUID, accepted bool) (bool, error)
 	CreatePlayer(ctx context.Context, input model.CreatePlayerInput) (*ent.Player, error)
 	RequestPlayerSupervision(ctx context.Context, input *model.RequestPlayerSupervisionInput) (*ent.PlayerSupervisionRequest, error)
 	ResolvePlayerSupervisionRequest(ctx context.Context, input model.ResolvePlayerSupervisionRequestInput) (bool, error)
@@ -515,6 +517,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.RequestPlayerSupervision(childComplexity, args["input"].(*model.RequestPlayerSupervisionInput)), true
+
+	case "Mutation.resolveGroupMembershipApplication":
+		if e.complexity.Mutation.ResolveGroupMembershipApplication == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resolveGroupMembershipApplication_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ResolveGroupMembershipApplication(childComplexity, args["applicationId"].(guidgql.GUID), args["accepted"].(bool)), true
 
 	case "Mutation.resolvePlayerSupervisionRequest":
 		if e.complexity.Mutation.ResolvePlayerSupervisionRequest == nil {
@@ -1020,8 +1034,8 @@ type GroupMembership implements Node {
 type GroupMembershipApplication implements Node {
   id: ID!
   message: String!
-  user: [User!]!
-  group: [Group!]!
+  user: User!
+  group: Group!
 }
 """A connection to a list of items."""
 type GroupMembershipConnection {
@@ -1514,6 +1528,11 @@ extend type Mutation {
   joinGroup(groupId: ID!): Boolean! @authenticated
   applyToGroup(input: GroupApplicationInput!): GroupMembershipApplication!
     @authenticated
+
+  resolveGroupMembershipApplication(
+    applicationId: ID!
+    accepted: Boolean!
+  ): Boolean! @authenticated
 }
 `, BuiltIn: false},
 	{Name: "../schema/player.graphql", Input: `input CreatePlayerInput {
@@ -1684,6 +1703,30 @@ func (ec *executionContext) field_Mutation_requestPlayerSupervision_args(ctx con
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_resolveGroupMembershipApplication_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 guidgql.GUID
+	if tmp, ok := rawArgs["applicationId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("applicationId"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["applicationId"] = arg0
+	var arg1 bool
+	if tmp, ok := rawArgs["accepted"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accepted"))
+		arg1, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["accepted"] = arg1
 	return args, nil
 }
 
@@ -2970,9 +3013,9 @@ func (ec *executionContext) _GroupMembershipApplication_user(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.User)
+	res := resTmp.(*ent.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_GroupMembershipApplication_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3036,9 +3079,9 @@ func (ec *executionContext) _GroupMembershipApplication_group(ctx context.Contex
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Group)
+	res := resTmp.(*ent.Group)
 	fc.Result = res
-	return ec.marshalNGroup2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupᚄ(ctx, field.Selections, res)
+	return ec.marshalNGroup2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroup(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_GroupMembershipApplication_group(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3736,6 +3779,81 @@ func (ec *executionContext) fieldContext_Mutation_applyToGroup(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_applyToGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resolveGroupMembershipApplication(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_resolveGroupMembershipApplication(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ResolveGroupMembershipApplication(rctx, fc.Args["applicationId"].(guidgql.GUID), fc.Args["accepted"].(bool))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Authenticated == nil {
+				return nil, errors.New("directive authenticated is not implemented")
+			}
+			return ec.directives.Authenticated(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resolveGroupMembershipApplication(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resolveGroupMembershipApplication_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -10785,6 +10903,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "resolveGroupMembershipApplication":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resolveGroupMembershipApplication(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createPlayer":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -11978,50 +12105,6 @@ func (ec *executionContext) marshalNGroup2githubᚗcomᚋopenᚑboardgameᚑstat
 	return ec._Group(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNGroup2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroupᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Group) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNGroup2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroup(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
 func (ec *executionContext) marshalNGroup2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v *ent.Group) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -12408,50 +12491,6 @@ func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋopenᚑboar
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v ent.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.User) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUser(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
 }
 
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v *ent.User) graphql.Marshaler {

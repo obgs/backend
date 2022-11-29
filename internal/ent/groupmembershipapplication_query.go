@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -21,18 +20,17 @@ import (
 // GroupMembershipApplicationQuery is the builder for querying GroupMembershipApplication entities.
 type GroupMembershipApplicationQuery struct {
 	config
-	limit          *int
-	offset         *int
-	unique         *bool
-	order          []OrderFunc
-	fields         []string
-	predicates     []predicate.GroupMembershipApplication
-	withUser       *UserQuery
-	withGroup      *GroupQuery
-	modifiers      []func(*sql.Selector)
-	loadTotal      []func(context.Context, []*GroupMembershipApplication) error
-	withNamedUser  map[string]*UserQuery
-	withNamedGroup map[string]*GroupQuery
+	limit      *int
+	offset     *int
+	unique     *bool
+	order      []OrderFunc
+	fields     []string
+	predicates []predicate.GroupMembershipApplication
+	withUser   *UserQuery
+	withGroup  *GroupQuery
+	withFKs    bool
+	modifiers  []func(*sql.Selector)
+	loadTotal  []func(context.Context, []*GroupMembershipApplication) error
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -83,7 +81,7 @@ func (gmaq *GroupMembershipApplicationQuery) QueryUser() *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembershipapplication.Table, groupmembershipapplication.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, groupmembershipapplication.UserTable, groupmembershipapplication.UserPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, groupmembershipapplication.UserTable, groupmembershipapplication.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(gmaq.driver.Dialect(), step)
 		return fromU, nil
@@ -105,7 +103,7 @@ func (gmaq *GroupMembershipApplicationQuery) QueryGroup() *GroupQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembershipapplication.Table, groupmembershipapplication.FieldID, selector),
 			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, groupmembershipapplication.GroupTable, groupmembershipapplication.GroupPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, groupmembershipapplication.GroupTable, groupmembershipapplication.GroupColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(gmaq.driver.Dialect(), step)
 		return fromU, nil
@@ -397,12 +395,19 @@ func (gmaq *GroupMembershipApplicationQuery) prepareQuery(ctx context.Context) e
 func (gmaq *GroupMembershipApplicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*GroupMembershipApplication, error) {
 	var (
 		nodes       = []*GroupMembershipApplication{}
+		withFKs     = gmaq.withFKs
 		_spec       = gmaq.querySpec()
 		loadedTypes = [2]bool{
 			gmaq.withUser != nil,
 			gmaq.withGroup != nil,
 		}
 	)
+	if gmaq.withUser != nil || gmaq.withGroup != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, groupmembershipapplication.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*GroupMembershipApplication).scanValues(nil, columns)
 	}
@@ -425,30 +430,14 @@ func (gmaq *GroupMembershipApplicationQuery) sqlAll(ctx context.Context, hooks .
 		return nodes, nil
 	}
 	if query := gmaq.withUser; query != nil {
-		if err := gmaq.loadUser(ctx, query, nodes,
-			func(n *GroupMembershipApplication) { n.Edges.User = []*User{} },
-			func(n *GroupMembershipApplication, e *User) { n.Edges.User = append(n.Edges.User, e) }); err != nil {
+		if err := gmaq.loadUser(ctx, query, nodes, nil,
+			func(n *GroupMembershipApplication, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := gmaq.withGroup; query != nil {
-		if err := gmaq.loadGroup(ctx, query, nodes,
-			func(n *GroupMembershipApplication) { n.Edges.Group = []*Group{} },
-			func(n *GroupMembershipApplication, e *Group) { n.Edges.Group = append(n.Edges.Group, e) }); err != nil {
-			return nil, err
-		}
-	}
-	for name, query := range gmaq.withNamedUser {
-		if err := gmaq.loadUser(ctx, query, nodes,
-			func(n *GroupMembershipApplication) { n.appendNamedUser(name) },
-			func(n *GroupMembershipApplication, e *User) { n.appendNamedUser(name, e) }); err != nil {
-			return nil, err
-		}
-	}
-	for name, query := range gmaq.withNamedGroup {
-		if err := gmaq.loadGroup(ctx, query, nodes,
-			func(n *GroupMembershipApplication) { n.appendNamedGroup(name) },
-			func(n *GroupMembershipApplication, e *Group) { n.appendNamedGroup(name, e) }); err != nil {
+		if err := gmaq.loadGroup(ctx, query, nodes, nil,
+			func(n *GroupMembershipApplication, e *Group) { n.Edges.Group = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -461,117 +450,59 @@ func (gmaq *GroupMembershipApplicationQuery) sqlAll(ctx context.Context, hooks .
 }
 
 func (gmaq *GroupMembershipApplicationQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*GroupMembershipApplication, init func(*GroupMembershipApplication), assign func(*GroupMembershipApplication, *User)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[guidgql.GUID]*GroupMembershipApplication)
-	nids := make(map[guidgql.GUID]map[*GroupMembershipApplication]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
-		if init != nil {
-			init(node)
+	ids := make([]guidgql.GUID, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID][]*GroupMembershipApplication)
+	for i := range nodes {
+		if nodes[i].user_group_membership_applications == nil {
+			continue
 		}
+		fk := *nodes[i].user_group_membership_applications
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(groupmembershipapplication.UserTable)
-		s.Join(joinT).On(s.C(user.FieldID), joinT.C(groupmembershipapplication.UserPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(groupmembershipapplication.UserPrimaryKey[1]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(groupmembershipapplication.UserPrimaryKey[1]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
-	}
-	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-		assign := spec.Assign
-		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]any, error) {
-			values, err := values(columns[1:])
-			if err != nil {
-				return nil, err
-			}
-			return append([]any{new(guidgql.GUID)}, values...), nil
-		}
-		spec.Assign = func(columns []string, values []any) error {
-			outValue := *values[0].(*guidgql.GUID)
-			inValue := *values[1].(*guidgql.GUID)
-			if nids[inValue] == nil {
-				nids[inValue] = map[*GroupMembershipApplication]struct{}{byID[outValue]: {}}
-				return assign(columns[1:], values[1:])
-			}
-			nids[inValue][byID[outValue]] = struct{}{}
-			return nil
-		}
-	})
+	query.Where(user.IDIn(ids...))
+	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "user" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_group_membership_applications" returned %v`, n.ID)
 		}
-		for kn := range nodes {
-			assign(kn, n)
+		for i := range nodes {
+			assign(nodes[i], n)
 		}
 	}
 	return nil
 }
 func (gmaq *GroupMembershipApplicationQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes []*GroupMembershipApplication, init func(*GroupMembershipApplication), assign func(*GroupMembershipApplication, *Group)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[guidgql.GUID]*GroupMembershipApplication)
-	nids := make(map[guidgql.GUID]map[*GroupMembershipApplication]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
-		if init != nil {
-			init(node)
+	ids := make([]guidgql.GUID, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID][]*GroupMembershipApplication)
+	for i := range nodes {
+		if nodes[i].group_applications == nil {
+			continue
 		}
+		fk := *nodes[i].group_applications
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(groupmembershipapplication.GroupTable)
-		s.Join(joinT).On(s.C(group.FieldID), joinT.C(groupmembershipapplication.GroupPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(groupmembershipapplication.GroupPrimaryKey[1]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(groupmembershipapplication.GroupPrimaryKey[1]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
-	}
-	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-		assign := spec.Assign
-		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]any, error) {
-			values, err := values(columns[1:])
-			if err != nil {
-				return nil, err
-			}
-			return append([]any{new(guidgql.GUID)}, values...), nil
-		}
-		spec.Assign = func(columns []string, values []any) error {
-			outValue := *values[0].(*guidgql.GUID)
-			inValue := *values[1].(*guidgql.GUID)
-			if nids[inValue] == nil {
-				nids[inValue] = map[*GroupMembershipApplication]struct{}{byID[outValue]: {}}
-				return assign(columns[1:], values[1:])
-			}
-			nids[inValue][byID[outValue]] = struct{}{}
-			return nil
-		}
-	})
+	query.Where(group.IDIn(ids...))
+	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "group" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "group_applications" returned %v`, n.ID)
 		}
-		for kn := range nodes {
-			assign(kn, n)
+		for i := range nodes {
+			assign(nodes[i], n)
 		}
 	}
 	return nil
@@ -678,34 +609,6 @@ func (gmaq *GroupMembershipApplicationQuery) sqlQuery(ctx context.Context) *sql.
 		selector.Limit(*limit)
 	}
 	return selector
-}
-
-// WithNamedUser tells the query-builder to eager-load the nodes that are connected to the "user"
-// edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (gmaq *GroupMembershipApplicationQuery) WithNamedUser(name string, opts ...func(*UserQuery)) *GroupMembershipApplicationQuery {
-	query := &UserQuery{config: gmaq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	if gmaq.withNamedUser == nil {
-		gmaq.withNamedUser = make(map[string]*UserQuery)
-	}
-	gmaq.withNamedUser[name] = query
-	return gmaq
-}
-
-// WithNamedGroup tells the query-builder to eager-load the nodes that are connected to the "group"
-// edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (gmaq *GroupMembershipApplicationQuery) WithNamedGroup(name string, opts ...func(*GroupQuery)) *GroupMembershipApplicationQuery {
-	query := &GroupQuery{config: gmaq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	if gmaq.withNamedGroup == nil {
-		gmaq.withNamedGroup = make(map[string]*GroupQuery)
-	}
-	gmaq.withNamedGroup[name] = query
-	return gmaq
 }
 
 // GroupMembershipApplicationGroupBy is the group-by builder for GroupMembershipApplication entities.
