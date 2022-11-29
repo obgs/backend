@@ -234,6 +234,43 @@ func (r *mutationResolver) ResolveGroupMembershipApplication(ctx context.Context
 	return true, nil
 }
 
+// ChangeUserGroupMembershipRole is the resolver for the changeUserGroupMembershipRole field.
+func (r *mutationResolver) ChangeUserGroupMembershipRole(ctx context.Context, groupID guidgql.GUID, userID guidgql.GUID, role enums.Role) (bool, error) {
+	u, _ := auth.UserFromContext(ctx)
+
+	// check if the current user is a group admin or owner
+	m, err := r.client.GroupMembership.Query().
+		Where(
+			groupmembership.HasUserWith(user.ID(u.ID)),
+			groupmembership.HasGroupWith(group.ID(groupID)),
+		).
+		Only(ctx)
+	if err != nil {
+		return false, err
+	}
+	if m.Role != enums.RoleAdmin && m.Role != enums.RoleOwner {
+		return false, fmt.Errorf("you don't have permission to change user roles")
+	}
+
+	// get the target user's membership
+	m, err = r.client.GroupMembership.Query().
+		Where(
+			groupmembership.HasUserWith(user.ID(userID)),
+			groupmembership.HasGroupWith(group.ID(groupID)),
+		).
+		Only(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	// update the role
+	err = r.client.GroupMembership.UpdateOne(m).
+		SetRole(role).
+		Exec(ctx)
+
+	return err == nil, err
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 

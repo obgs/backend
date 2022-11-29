@@ -108,6 +108,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		ApplyToGroup                      func(childComplexity int, input model.GroupApplicationInput) int
+		ChangeUserGroupMembershipRole     func(childComplexity int, groupID guidgql.GUID, userID guidgql.GUID, role enums.Role) int
 		CreateOrUpdateGroup               func(childComplexity int, input model.CreateOrUpdateGroupInput) int
 		CreatePlayer                      func(childComplexity int, input model.CreatePlayerInput) int
 		JoinGroup                         func(childComplexity int, groupID guidgql.GUID) int
@@ -202,6 +203,7 @@ type MutationResolver interface {
 	JoinGroup(ctx context.Context, groupID guidgql.GUID) (bool, error)
 	ApplyToGroup(ctx context.Context, input model.GroupApplicationInput) (*ent.GroupMembershipApplication, error)
 	ResolveGroupMembershipApplication(ctx context.Context, applicationID guidgql.GUID, accepted bool) (bool, error)
+	ChangeUserGroupMembershipRole(ctx context.Context, groupID guidgql.GUID, userID guidgql.GUID, role enums.Role) (bool, error)
 	CreatePlayer(ctx context.Context, input model.CreatePlayerInput) (*ent.Player, error)
 	RequestPlayerSupervision(ctx context.Context, input *model.RequestPlayerSupervisionInput) (*ent.PlayerSupervisionRequest, error)
 	ResolvePlayerSupervisionRequest(ctx context.Context, input model.ResolvePlayerSupervisionRequestInput) (bool, error)
@@ -469,6 +471,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ApplyToGroup(childComplexity, args["input"].(model.GroupApplicationInput)), true
+
+	case "Mutation.changeUserGroupMembershipRole":
+		if e.complexity.Mutation.ChangeUserGroupMembershipRole == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_changeUserGroupMembershipRole_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ChangeUserGroupMembershipRole(childComplexity, args["groupId"].(guidgql.GUID), args["userId"].(guidgql.GUID), args["role"].(enums.Role)), true
 
 	case "Mutation.createOrUpdateGroup":
 		if e.complexity.Mutation.CreateOrUpdateGroup == nil {
@@ -1533,6 +1547,11 @@ extend type Mutation {
     applicationId: ID!
     accepted: Boolean!
   ): Boolean! @authenticated
+  changeUserGroupMembershipRole(
+    groupId: ID!
+    userId: ID!
+    role: GroupMembershipRole!
+  ): Boolean! @authenticated
 }
 `, BuiltIn: false},
 	{Name: "../schema/player.graphql", Input: `input CreatePlayerInput {
@@ -1643,6 +1662,39 @@ func (ec *executionContext) field_Mutation_applyToGroup_args(ctx context.Context
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_changeUserGroupMembershipRole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 guidgql.GUID
+	if tmp, ok := rawArgs["groupId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupId"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["groupId"] = arg0
+	var arg1 guidgql.GUID
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg1, err = ec.unmarshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg1
+	var arg2 enums.Role
+	if tmp, ok := rawArgs["role"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+		arg2, err = ec.unmarshalNGroupMembershipRole2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋenumsᚐRole(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["role"] = arg2
 	return args, nil
 }
 
@@ -3854,6 +3906,81 @@ func (ec *executionContext) fieldContext_Mutation_resolveGroupMembershipApplicat
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_resolveGroupMembershipApplication_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_changeUserGroupMembershipRole(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_changeUserGroupMembershipRole(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ChangeUserGroupMembershipRole(rctx, fc.Args["groupId"].(guidgql.GUID), fc.Args["userId"].(guidgql.GUID), fc.Args["role"].(enums.Role))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Authenticated == nil {
+				return nil, errors.New("directive authenticated is not implemented")
+			}
+			return ec.directives.Authenticated(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_changeUserGroupMembershipRole(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_changeUserGroupMembershipRole_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -10907,6 +11034,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_resolveGroupMembershipApplication(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "changeUserGroupMembershipRole":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_changeUserGroupMembershipRole(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
