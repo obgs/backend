@@ -33,4 +33,9 @@ extend type Mutation {
   joinGroup(groupId: ID!): Boolean! @authenticated
   applyToGroup(input: GroupApplicationInput!): GroupMembershipApplication!
     @authenticated
+
+  resolveGroupMembershipApplication(
+    applicationId: ID!
+    accepted: Boolean!
+  ): Boolean! @authenticated
 }

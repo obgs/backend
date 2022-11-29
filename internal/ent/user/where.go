@@ -650,7 +650,7 @@ func HasGroupMembershipApplications() predicate.User {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(GroupMembershipApplicationsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, GroupMembershipApplicationsTable, GroupMembershipApplicationsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, GroupMembershipApplicationsTable, GroupMembershipApplicationsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -662,7 +662,7 @@ func HasGroupMembershipApplicationsWith(preds ...predicate.GroupMembershipApplic
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(GroupMembershipApplicationsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, GroupMembershipApplicationsTable, GroupMembershipApplicationsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, GroupMembershipApplicationsTable, GroupMembershipApplicationsColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

@@ -176,11 +176,62 @@ func (r *mutationResolver) ApplyToGroup(ctx context.Context, input model.GroupAp
 	// create the application
 	a, err := r.client.GroupMembershipApplication.Create().
 		SetMessage(*input.Message).
-		AddGroup(g).
-		AddUser(u).
+		SetUser(u).
+		SetGroup(g).
 		Save(ctx)
 
 	return a, err
+}
+
+// ResolveGroupMembershipApplication is the resolver for the resolveGroupMembershipApplication field.
+func (r *mutationResolver) ResolveGroupMembershipApplication(ctx context.Context, applicationID guidgql.GUID, accepted bool) (bool, error) {
+	u, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	a, err := r.client.GroupMembershipApplication.Query().
+		Where(groupmembershipapplication.ID(applicationID)).
+		WithGroup().
+		WithUser().
+		Only(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	// check if the user is a group admin or owner
+	membership, err := r.client.GroupMembership.Query().
+		Where(
+			groupmembership.HasUserWith(user.ID(u.ID)),
+			groupmembership.HasGroupWith(group.ID(a.Edges.Group.ID)),
+		).
+		Only(ctx)
+	if err != nil {
+		return false, err
+	}
+	if membership.Role != enums.RoleAdmin && membership.Role != enums.RoleOwner {
+		return false, fmt.Errorf("you don't have permission to resolve this application")
+	}
+
+	// remove the application
+	err = r.client.GroupMembershipApplication.DeleteOne(a).Exec(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	// if the application was accepted, create the membership
+	if accepted {
+		_, err = r.client.GroupMembership.Create().
+			SetGroup(a.Edges.Group).
+			SetUser(a.Edges.User).
+			SetRole(enums.RoleMember).
+			Save(ctx)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return true, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

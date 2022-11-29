@@ -64,26 +64,18 @@ func (gm *GroupMembership) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
-func (gma *GroupMembershipApplication) User(ctx context.Context) (result []*User, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = gma.NamedUser(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = gma.Edges.UserOrErr()
-	}
+func (gma *GroupMembershipApplication) User(ctx context.Context) (*User, error) {
+	result, err := gma.Edges.UserOrErr()
 	if IsNotLoaded(err) {
-		result, err = gma.QueryUser().All(ctx)
+		result, err = gma.QueryUser().Only(ctx)
 	}
 	return result, err
 }
 
-func (gma *GroupMembershipApplication) Group(ctx context.Context) (result []*Group, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = gma.NamedGroup(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = gma.Edges.GroupOrErr()
-	}
+func (gma *GroupMembershipApplication) Group(ctx context.Context) (*Group, error) {
+	result, err := gma.Edges.GroupOrErr()
 	if IsNotLoaded(err) {
-		result, err = gma.QueryGroup().All(ctx)
+		result, err = gma.QueryGroup().Only(ctx)
 	}
 	return result, err
 }

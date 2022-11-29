@@ -53,34 +53,26 @@ func (gmac *GroupMembershipApplicationCreate) SetNillableID(gu *guidgql.GUID) *G
 	return gmac
 }
 
-// AddUserIDs adds the "user" edge to the User entity by IDs.
-func (gmac *GroupMembershipApplicationCreate) AddUserIDs(ids ...guidgql.GUID) *GroupMembershipApplicationCreate {
-	gmac.mutation.AddUserIDs(ids...)
+// SetUserID sets the "user" edge to the User entity by ID.
+func (gmac *GroupMembershipApplicationCreate) SetUserID(id guidgql.GUID) *GroupMembershipApplicationCreate {
+	gmac.mutation.SetUserID(id)
 	return gmac
 }
 
-// AddUser adds the "user" edges to the User entity.
-func (gmac *GroupMembershipApplicationCreate) AddUser(u ...*User) *GroupMembershipApplicationCreate {
-	ids := make([]guidgql.GUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return gmac.AddUserIDs(ids...)
+// SetUser sets the "user" edge to the User entity.
+func (gmac *GroupMembershipApplicationCreate) SetUser(u *User) *GroupMembershipApplicationCreate {
+	return gmac.SetUserID(u.ID)
 }
 
-// AddGroupIDs adds the "group" edge to the Group entity by IDs.
-func (gmac *GroupMembershipApplicationCreate) AddGroupIDs(ids ...guidgql.GUID) *GroupMembershipApplicationCreate {
-	gmac.mutation.AddGroupIDs(ids...)
+// SetGroupID sets the "group" edge to the Group entity by ID.
+func (gmac *GroupMembershipApplicationCreate) SetGroupID(id guidgql.GUID) *GroupMembershipApplicationCreate {
+	gmac.mutation.SetGroupID(id)
 	return gmac
 }
 
-// AddGroup adds the "group" edges to the Group entity.
-func (gmac *GroupMembershipApplicationCreate) AddGroup(g ...*Group) *GroupMembershipApplicationCreate {
-	ids := make([]guidgql.GUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return gmac.AddGroupIDs(ids...)
+// SetGroup sets the "group" edge to the Group entity.
+func (gmac *GroupMembershipApplicationCreate) SetGroup(g *Group) *GroupMembershipApplicationCreate {
+	return gmac.SetGroupID(g.ID)
 }
 
 // Mutation returns the GroupMembershipApplicationMutation object of the builder.
@@ -175,10 +167,10 @@ func (gmac *GroupMembershipApplicationCreate) check() error {
 	if _, ok := gmac.mutation.Message(); !ok {
 		return &ValidationError{Name: "message", err: errors.New(`ent: missing required field "GroupMembershipApplication.message"`)}
 	}
-	if len(gmac.mutation.UserIDs()) == 0 {
+	if _, ok := gmac.mutation.UserID(); !ok {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "GroupMembershipApplication.user"`)}
 	}
-	if len(gmac.mutation.GroupIDs()) == 0 {
+	if _, ok := gmac.mutation.GroupID(); !ok {
 		return &ValidationError{Name: "group", err: errors.New(`ent: missing required edge "GroupMembershipApplication.group"`)}
 	}
 	return nil
@@ -224,10 +216,10 @@ func (gmac *GroupMembershipApplicationCreate) createSpec() (*GroupMembershipAppl
 	}
 	if nodes := gmac.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   groupmembershipapplication.UserTable,
-			Columns: groupmembershipapplication.UserPrimaryKey,
+			Columns: []string{groupmembershipapplication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -239,14 +231,15 @@ func (gmac *GroupMembershipApplicationCreate) createSpec() (*GroupMembershipAppl
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.user_group_membership_applications = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := gmac.mutation.GroupIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   groupmembershipapplication.GroupTable,
-			Columns: groupmembershipapplication.GroupPrimaryKey,
+			Columns: []string{groupmembershipapplication.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -258,6 +251,7 @@ func (gmac *GroupMembershipApplicationCreate) createSpec() (*GroupMembershipAppl
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.group_applications = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

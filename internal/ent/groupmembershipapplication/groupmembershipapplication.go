@@ -19,16 +19,20 @@ const (
 	EdgeGroup = "group"
 	// Table holds the table name of the groupmembershipapplication in the database.
 	Table = "group_membership_applications"
-	// UserTable is the table that holds the user relation/edge. The primary key declared below.
-	UserTable = "user_group_membership_applications"
+	// UserTable is the table that holds the user relation/edge.
+	UserTable = "group_membership_applications"
 	// UserInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UserInverseTable = "users"
-	// GroupTable is the table that holds the group relation/edge. The primary key declared below.
-	GroupTable = "group_applications"
+	// UserColumn is the table column denoting the user relation/edge.
+	UserColumn = "user_group_membership_applications"
+	// GroupTable is the table that holds the group relation/edge.
+	GroupTable = "group_membership_applications"
 	// GroupInverseTable is the table name for the Group entity.
 	// It exists in this package in order to avoid circular dependency with the "group" package.
 	GroupInverseTable = "groups"
+	// GroupColumn is the table column denoting the group relation/edge.
+	GroupColumn = "group_applications"
 )
 
 // Columns holds all SQL columns for groupmembershipapplication fields.
@@ -37,19 +41,22 @@ var Columns = []string{
 	FieldMessage,
 }
 
-var (
-	// UserPrimaryKey and UserColumn2 are the table columns denoting the
-	// primary key for the user relation (M2M).
-	UserPrimaryKey = []string{"user_id", "group_membership_application_id"}
-	// GroupPrimaryKey and GroupColumn2 are the table columns denoting the
-	// primary key for the group relation (M2M).
-	GroupPrimaryKey = []string{"group_id", "group_membership_application_id"}
-)
+// ForeignKeys holds the SQL foreign-keys that are owned by the "group_membership_applications"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"group_applications",
+	"user_group_membership_applications",
+}
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
