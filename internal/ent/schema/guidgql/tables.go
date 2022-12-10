@@ -11,6 +11,8 @@ const (
 	GroupMembership
 	GroupMembershipApplication
 	GroupSettings
+	Game
+	GameFavorites
 )
 
 var TableNames = map[Table]string{
@@ -22,4 +24,6 @@ var TableNames = map[Table]string{
 	GroupMembership:                  "group_memberships",
 	GroupMembershipApplication:       "group_membership_applications",
 	GroupSettings:                    "group_settings",
+	Game:                             "games",
+	GameFavorites:                    "game_favorites",
 }

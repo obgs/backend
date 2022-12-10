@@ -8,6 +8,14 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (ga *Game) Author(ctx context.Context) (*User, error) {
+	result, err := ga.Edges.AuthorOrErr()
+	if IsNotLoaded(err) {
+		result, err = ga.QueryAuthor().Only(ctx)
+	}
+	return result, err
+}
+
 func (gr *Group) Settings(ctx context.Context) (*GroupSettings, error) {
 	result, err := gr.Edges.SettingsOrErr()
 	if IsNotLoaded(err) {
@@ -196,6 +204,18 @@ func (u *User) GroupMembershipApplications(ctx context.Context) (result []*Group
 	}
 	if IsNotLoaded(err) {
 		result, err = u.QueryGroupMembershipApplications().All(ctx)
+	}
+	return result, err
+}
+
+func (u *User) Games(ctx context.Context) (result []*Game, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = u.NamedGames(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = u.Edges.GamesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = u.QueryGames().All(ctx)
 	}
 	return result, err
 }

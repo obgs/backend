@@ -1,0 +1,13 @@
+type Favorites {
+  total: Int!
+  users: [User!]!
+}
+
+extend type Game {
+  favorites: Favorites!
+}
+
+extend type Mutation {
+  addOrRemoveGameFromFavorites(gameId: ID!, favorite: Boolean!): Boolean!
+    @authenticated
+}

@@ -8,6 +8,56 @@ import (
 )
 
 var (
+	// GamesColumns holds the columns for the "games" table.
+	GamesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "min_players", Type: field.TypeInt, Default: 1},
+		{Name: "max_players", Type: field.TypeInt, Default: 10},
+		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "boardgamegeek_url", Type: field.TypeString, Nullable: true},
+		{Name: "user_games", Type: field.TypeString},
+	}
+	// GamesTable holds the schema information for the "games" table.
+	GamesTable = &schema.Table{
+		Name:       "games",
+		Columns:    GamesColumns,
+		PrimaryKey: []*schema.Column{GamesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "games_users_games",
+				Columns:    []*schema.Column{GamesColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// GameFavoritesColumns holds the columns for the "game_favorites" table.
+	GameFavoritesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "game_favorites", Type: field.TypeString},
+		{Name: "user_favorite_games", Type: field.TypeString},
+	}
+	// GameFavoritesTable holds the schema information for the "game_favorites" table.
+	GameFavoritesTable = &schema.Table{
+		Name:       "game_favorites",
+		Columns:    GameFavoritesColumns,
+		PrimaryKey: []*schema.Column{GameFavoritesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "game_favorites_games_favorites",
+				Columns:    []*schema.Column{GameFavoritesColumns[1]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "game_favorites_users_favorite_games",
+				Columns:    []*schema.Column{GameFavoritesColumns[2]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -212,6 +262,8 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		GamesTable,
+		GameFavoritesTable,
 		GroupsTable,
 		GroupMembershipsTable,
 		GroupMembershipApplicationsTable,
@@ -225,6 +277,9 @@ var (
 )
 
 func init() {
+	GamesTable.ForeignKeys[0].RefTable = UsersTable
+	GameFavoritesTable.ForeignKeys[0].RefTable = GamesTable
+	GameFavoritesTable.ForeignKeys[1].RefTable = UsersTable
 	GroupMembershipsTable.ForeignKeys[0].RefTable = GroupsTable
 	GroupMembershipsTable.ForeignKeys[1].RefTable = UsersTable
 	GroupMembershipApplicationsTable.ForeignKeys[0].RefTable = GroupsTable

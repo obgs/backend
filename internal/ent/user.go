@@ -44,17 +44,23 @@ type UserEdges struct {
 	GroupMemberships []*GroupMembership `json:"group_memberships,omitempty"`
 	// GroupMembershipApplications holds the value of the group_membership_applications edge.
 	GroupMembershipApplications []*GroupMembershipApplication `json:"group_membership_applications,omitempty"`
+	// Games holds the value of the games edge.
+	Games []*Game `json:"games,omitempty"`
+	// FavoriteGames holds the value of the favorite_games edge.
+	FavoriteGames []*GameFavorite `json:"favorite_games,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [8]bool
 	// totalCount holds the count of the edges above.
-	totalCount [4]map[string]int
+	totalCount [5]map[string]int
 
 	namedPlayers                     map[string][]*Player
 	namedSentSupervisionRequests     map[string][]*PlayerSupervisionRequest
 	namedSupervisionRequestApprovals map[string][]*PlayerSupervisionRequestApproval
 	namedGroupMemberships            map[string][]*GroupMembership
 	namedGroupMembershipApplications map[string][]*GroupMembershipApplication
+	namedGames                       map[string][]*Game
+	namedFavoriteGames               map[string][]*GameFavorite
 }
 
 // PlayersOrErr returns the Players value or an error if the edge
@@ -113,6 +119,24 @@ func (e UserEdges) GroupMembershipApplicationsOrErr() ([]*GroupMembershipApplica
 		return e.GroupMembershipApplications, nil
 	}
 	return nil, &NotLoadedError{edge: "group_membership_applications"}
+}
+
+// GamesOrErr returns the Games value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GamesOrErr() ([]*Game, error) {
+	if e.loadedTypes[6] {
+		return e.Games, nil
+	}
+	return nil, &NotLoadedError{edge: "games"}
+}
+
+// FavoriteGamesOrErr returns the FavoriteGames value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) FavoriteGamesOrErr() ([]*GameFavorite, error) {
+	if e.loadedTypes[7] {
+		return e.FavoriteGames, nil
+	}
+	return nil, &NotLoadedError{edge: "favorite_games"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -202,6 +226,16 @@ func (u *User) QueryGroupMemberships() *GroupMembershipQuery {
 // QueryGroupMembershipApplications queries the "group_membership_applications" edge of the User entity.
 func (u *User) QueryGroupMembershipApplications() *GroupMembershipApplicationQuery {
 	return (&UserClient{config: u.config}).QueryGroupMembershipApplications(u)
+}
+
+// QueryGames queries the "games" edge of the User entity.
+func (u *User) QueryGames() *GameQuery {
+	return (&UserClient{config: u.config}).QueryGames(u)
+}
+
+// QueryFavoriteGames queries the "favorite_games" edge of the User entity.
+func (u *User) QueryFavoriteGames() *GameFavoriteQuery {
+	return (&UserClient{config: u.config}).QueryFavoriteGames(u)
 }
 
 // Update returns a builder for updating this User.
@@ -358,6 +392,54 @@ func (u *User) appendNamedGroupMembershipApplications(name string, edges ...*Gro
 		u.Edges.namedGroupMembershipApplications[name] = []*GroupMembershipApplication{}
 	} else {
 		u.Edges.namedGroupMembershipApplications[name] = append(u.Edges.namedGroupMembershipApplications[name], edges...)
+	}
+}
+
+// NamedGames returns the Games named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (u *User) NamedGames(name string) ([]*Game, error) {
+	if u.Edges.namedGames == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := u.Edges.namedGames[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (u *User) appendNamedGames(name string, edges ...*Game) {
+	if u.Edges.namedGames == nil {
+		u.Edges.namedGames = make(map[string][]*Game)
+	}
+	if len(edges) == 0 {
+		u.Edges.namedGames[name] = []*Game{}
+	} else {
+		u.Edges.namedGames[name] = append(u.Edges.namedGames[name], edges...)
+	}
+}
+
+// NamedFavoriteGames returns the FavoriteGames named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (u *User) NamedFavoriteGames(name string) ([]*GameFavorite, error) {
+	if u.Edges.namedFavoriteGames == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := u.Edges.namedFavoriteGames[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (u *User) appendNamedFavoriteGames(name string, edges ...*GameFavorite) {
+	if u.Edges.namedFavoriteGames == nil {
+		u.Edges.namedFavoriteGames = make(map[string][]*GameFavorite)
+	}
+	if len(edges) == 0 {
+		u.Edges.namedFavoriteGames[name] = []*GameFavorite{}
+	} else {
+		u.Edges.namedFavoriteGames[name] = append(u.Edges.namedFavoriteGames[name], edges...)
 	}
 }
 

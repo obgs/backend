@@ -11,6 +11,8 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 
+	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -30,6 +32,10 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Game is the client for interacting with the Game builders.
+	Game *GameClient
+	// GameFavorite is the client for interacting with the GameFavorite builders.
+	GameFavorite *GameFavoriteClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// GroupMembership is the client for interacting with the GroupMembership builders.
@@ -59,6 +65,8 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Game = NewGameClient(c.config)
+	c.GameFavorite = NewGameFavoriteClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.GroupMembership = NewGroupMembershipClient(c.config)
 	c.GroupMembershipApplication = NewGroupMembershipApplicationClient(c.config)
@@ -100,6 +108,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                              ctx,
 		config:                           cfg,
+		Game:                             NewGameClient(cfg),
+		GameFavorite:                     NewGameFavoriteClient(cfg),
 		Group:                            NewGroupClient(cfg),
 		GroupMembership:                  NewGroupMembershipClient(cfg),
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
@@ -127,6 +137,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                              ctx,
 		config:                           cfg,
+		Game:                             NewGameClient(cfg),
+		GameFavorite:                     NewGameFavoriteClient(cfg),
 		Group:                            NewGroupClient(cfg),
 		GroupMembership:                  NewGroupMembershipClient(cfg),
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
@@ -141,7 +153,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Group.
+//		Game.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -163,6 +175,8 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Game.Use(hooks...)
+	c.GameFavorite.Use(hooks...)
 	c.Group.Use(hooks...)
 	c.GroupMembership.Use(hooks...)
 	c.GroupMembershipApplication.Use(hooks...)
@@ -171,6 +185,250 @@ func (c *Client) Use(hooks ...Hook) {
 	c.PlayerSupervisionRequest.Use(hooks...)
 	c.PlayerSupervisionRequestApproval.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// GameClient is a client for the Game schema.
+type GameClient struct {
+	config
+}
+
+// NewGameClient returns a client for the Game from the given config.
+func NewGameClient(c config) *GameClient {
+	return &GameClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `game.Hooks(f(g(h())))`.
+func (c *GameClient) Use(hooks ...Hook) {
+	c.hooks.Game = append(c.hooks.Game, hooks...)
+}
+
+// Create returns a builder for creating a Game entity.
+func (c *GameClient) Create() *GameCreate {
+	mutation := newGameMutation(c.config, OpCreate)
+	return &GameCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Game entities.
+func (c *GameClient) CreateBulk(builders ...*GameCreate) *GameCreateBulk {
+	return &GameCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Game.
+func (c *GameClient) Update() *GameUpdate {
+	mutation := newGameMutation(c.config, OpUpdate)
+	return &GameUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GameClient) UpdateOne(ga *Game) *GameUpdateOne {
+	mutation := newGameMutation(c.config, OpUpdateOne, withGame(ga))
+	return &GameUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GameClient) UpdateOneID(id guidgql.GUID) *GameUpdateOne {
+	mutation := newGameMutation(c.config, OpUpdateOne, withGameID(id))
+	return &GameUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Game.
+func (c *GameClient) Delete() *GameDelete {
+	mutation := newGameMutation(c.config, OpDelete)
+	return &GameDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GameClient) DeleteOne(ga *Game) *GameDeleteOne {
+	return c.DeleteOneID(ga.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GameClient) DeleteOneID(id guidgql.GUID) *GameDeleteOne {
+	builder := c.Delete().Where(game.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GameDeleteOne{builder}
+}
+
+// Query returns a query builder for Game.
+func (c *GameClient) Query() *GameQuery {
+	return &GameQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Game entity by its id.
+func (c *GameClient) Get(ctx context.Context, id guidgql.GUID) (*Game, error) {
+	return c.Query().Where(game.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GameClient) GetX(ctx context.Context, id guidgql.GUID) *Game {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryAuthor queries the author edge of a Game.
+func (c *GameClient) QueryAuthor(ga *Game) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ga.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, game.AuthorTable, game.AuthorColumn),
+		)
+		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFavorites queries the favorites edge of a Game.
+func (c *GameClient) QueryFavorites(ga *Game) *GameFavoriteQuery {
+	query := &GameFavoriteQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ga.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(gamefavorite.Table, gamefavorite.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.FavoritesTable, game.FavoritesColumn),
+		)
+		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GameClient) Hooks() []Hook {
+	return c.hooks.Game
+}
+
+// GameFavoriteClient is a client for the GameFavorite schema.
+type GameFavoriteClient struct {
+	config
+}
+
+// NewGameFavoriteClient returns a client for the GameFavorite from the given config.
+func NewGameFavoriteClient(c config) *GameFavoriteClient {
+	return &GameFavoriteClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `gamefavorite.Hooks(f(g(h())))`.
+func (c *GameFavoriteClient) Use(hooks ...Hook) {
+	c.hooks.GameFavorite = append(c.hooks.GameFavorite, hooks...)
+}
+
+// Create returns a builder for creating a GameFavorite entity.
+func (c *GameFavoriteClient) Create() *GameFavoriteCreate {
+	mutation := newGameFavoriteMutation(c.config, OpCreate)
+	return &GameFavoriteCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GameFavorite entities.
+func (c *GameFavoriteClient) CreateBulk(builders ...*GameFavoriteCreate) *GameFavoriteCreateBulk {
+	return &GameFavoriteCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GameFavorite.
+func (c *GameFavoriteClient) Update() *GameFavoriteUpdate {
+	mutation := newGameFavoriteMutation(c.config, OpUpdate)
+	return &GameFavoriteUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GameFavoriteClient) UpdateOne(gf *GameFavorite) *GameFavoriteUpdateOne {
+	mutation := newGameFavoriteMutation(c.config, OpUpdateOne, withGameFavorite(gf))
+	return &GameFavoriteUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GameFavoriteClient) UpdateOneID(id guidgql.GUID) *GameFavoriteUpdateOne {
+	mutation := newGameFavoriteMutation(c.config, OpUpdateOne, withGameFavoriteID(id))
+	return &GameFavoriteUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GameFavorite.
+func (c *GameFavoriteClient) Delete() *GameFavoriteDelete {
+	mutation := newGameFavoriteMutation(c.config, OpDelete)
+	return &GameFavoriteDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GameFavoriteClient) DeleteOne(gf *GameFavorite) *GameFavoriteDeleteOne {
+	return c.DeleteOneID(gf.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GameFavoriteClient) DeleteOneID(id guidgql.GUID) *GameFavoriteDeleteOne {
+	builder := c.Delete().Where(gamefavorite.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GameFavoriteDeleteOne{builder}
+}
+
+// Query returns a query builder for GameFavorite.
+func (c *GameFavoriteClient) Query() *GameFavoriteQuery {
+	return &GameFavoriteQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a GameFavorite entity by its id.
+func (c *GameFavoriteClient) Get(ctx context.Context, id guidgql.GUID) (*GameFavorite, error) {
+	return c.Query().Where(gamefavorite.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GameFavoriteClient) GetX(ctx context.Context, id guidgql.GUID) *GameFavorite {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a GameFavorite.
+func (c *GameFavoriteClient) QueryGame(gf *GameFavorite) *GameQuery {
+	query := &GameQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gf.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gamefavorite.Table, gamefavorite.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, gamefavorite.GameTable, gamefavorite.GameColumn),
+		)
+		fromV = sqlgraph.Neighbors(gf.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a GameFavorite.
+func (c *GameFavoriteClient) QueryUser(gf *GameFavorite) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gf.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gamefavorite.Table, gamefavorite.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, gamefavorite.UserTable, gamefavorite.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(gf.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GameFavoriteClient) Hooks() []Hook {
+	return c.hooks.GameFavorite
 }
 
 // GroupClient is a client for the Group schema.
@@ -1233,6 +1491,38 @@ func (c *UserClient) QueryGroupMembershipApplications(u *User) *GroupMembershipA
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(groupmembershipapplication.Table, groupmembershipapplication.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.GroupMembershipApplicationsTable, user.GroupMembershipApplicationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGames queries the games edge of a User.
+func (c *UserClient) QueryGames(u *User) *GameQuery {
+	query := &GameQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GamesTable, user.GamesColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFavoriteGames queries the favorite_games edge of a User.
+func (c *UserClient) QueryFavoriteGames(u *User) *GameFavoriteQuery {
+	query := &GameFavoriteQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(gamefavorite.Table, gamefavorite.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.FavoriteGamesTable, user.FavoriteGamesColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil
