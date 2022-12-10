@@ -13,6 +13,7 @@ const (
 	GroupSettings
 	Game
 	GameFavorites
+	StatDescription
 )
 
 var TableNames = map[Table]string{
@@ -26,4 +27,5 @@ var TableNames = map[Table]string{
 	GroupSettings:                    "group_settings",
 	Game:                             "games",
 	GameFavorites:                    "game_favorites",
+	StatDescription:                  "stat_descriptions",
 }

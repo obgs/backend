@@ -16,6 +16,18 @@ func (ga *Game) Author(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (ga *Game) StatDescriptions(ctx context.Context) (result []*StatDescription, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = ga.NamedStatDescriptions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = ga.Edges.StatDescriptionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = ga.QueryStatDescriptions().All(ctx)
+	}
+	return result, err
+}
+
 func (gr *Group) Settings(ctx context.Context) (*GroupSettings, error) {
 	result, err := gr.Edges.SettingsOrErr()
 	if IsNotLoaded(err) {

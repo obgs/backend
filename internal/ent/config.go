@@ -33,6 +33,7 @@ type hooks struct {
 	Player                           []ent.Hook
 	PlayerSupervisionRequest         []ent.Hook
 	PlayerSupervisionRequestApproval []ent.Hook
+	StatDescription                  []ent.Hook
 	User                             []ent.Hook
 }
 

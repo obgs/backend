@@ -17,6 +17,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -66,6 +67,7 @@ type ComplexityRoot struct {
 		MaxPlayers       func(childComplexity int) int
 		MinPlayers       func(childComplexity int) int
 		Name             func(childComplexity int) int
+		StatDescriptions func(childComplexity int) int
 	}
 
 	Group struct {
@@ -186,6 +188,13 @@ type ComplexityRoot struct {
 		Nodes            func(childComplexity int, ids []*guidgql.GUID) int
 		Players          func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.PlayerWhereInput) int
 		Users            func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.UserWhereInput) int
+	}
+
+	StatDescription struct {
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Type        func(childComplexity int) int
 	}
 
 	User struct {
@@ -332,6 +341,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Game.Name(childComplexity), true
+
+	case "Game.statDescriptions":
+		if e.complexity.Game.StatDescriptions == nil {
+			break
+		}
+
+		return e.complexity.Game.StatDescriptions(childComplexity), true
 
 	case "Group.applications":
 		if e.complexity.Group.Applications == nil {
@@ -922,6 +938,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Users(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["where"].(*ent.UserWhereInput)), true
 
+	case "StatDescription.description":
+		if e.complexity.StatDescription.Description == nil {
+			break
+		}
+
+		return e.complexity.StatDescription.Description(childComplexity), true
+
+	case "StatDescription.id":
+		if e.complexity.StatDescription.ID == nil {
+			break
+		}
+
+		return e.complexity.StatDescription.ID(childComplexity), true
+
+	case "StatDescription.name":
+		if e.complexity.StatDescription.Name == nil {
+			break
+		}
+
+		return e.complexity.StatDescription.Name(childComplexity), true
+
+	case "StatDescription.type":
+		if e.complexity.StatDescription.Type == nil {
+			break
+		}
+
+		return e.complexity.StatDescription.Type(childComplexity), true
+
 	case "User.avatarURL":
 		if e.complexity.User.AvatarURL == nil {
 			break
@@ -1134,6 +1178,7 @@ type Game implements Node {
   description: String
   boardgamegeekURL: String
   author: User!
+  statDescriptions: [StatDescription!]!
 }
 """
 GameWhereInput is used for filtering Game objects.
@@ -1596,6 +1641,16 @@ type Query {
     """Filtering options for Users returned from the connection."""
     where: UserWhereInput
   ): UserConnection!
+}
+type StatDescription implements Node {
+  id: ID!
+  type: StatDescriptionStatType!
+  name: String!
+  description: String
+}
+"""StatDescriptionStatType is enum for the field type"""
+enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
+  numeric
 }
 """
 UpdateUserInput is used for update User object.
@@ -2746,6 +2801,60 @@ func (ec *executionContext) fieldContext_Game_author(ctx context.Context, field 
 				return ec.fieldContext_User_receivedSupervisionRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_statDescriptions(ctx context.Context, field graphql.CollectedField, obj *ent.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_statDescriptions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StatDescriptions(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.StatDescription)
+	fc.Result = res
+	return ec.marshalNStatDescription2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐStatDescriptionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_statDescriptions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_StatDescription_id(ctx, field)
+			case "type":
+				return ec.fieldContext_StatDescription_type(ctx, field)
+			case "name":
+				return ec.fieldContext_StatDescription_name(ctx, field)
+			case "description":
+				return ec.fieldContext_StatDescription_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StatDescription", field.Name)
 		},
 	}
 	return fc, nil
@@ -6942,6 +7051,179 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _StatDescription_id(ctx context.Context, field graphql.CollectedField, obj *ent.StatDescription) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StatDescription_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(guidgql.GUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StatDescription_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatDescription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatDescription_type(ctx context.Context, field graphql.CollectedField, obj *ent.StatDescription) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StatDescription_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(stat.StatType)
+	fc.Result = res
+	return ec.marshalNStatDescriptionStatType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋstatᚐStatType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StatDescription_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatDescription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type StatDescriptionStatType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatDescription_name(ctx context.Context, field graphql.CollectedField, obj *ent.StatDescription) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StatDescription_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StatDescription_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatDescription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StatDescription_description(ctx context.Context, field graphql.CollectedField, obj *ent.StatDescription) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StatDescription_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StatDescription_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatDescription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_id(ctx, field)
 	if err != nil {
@@ -7376,6 +7658,8 @@ func (ec *executionContext) fieldContext_User_games(ctx context.Context, field g
 				return ec.fieldContext_Game_boardgamegeekURL(ctx, field)
 			case "author":
 				return ec.fieldContext_Game_author(ctx, field)
+			case "statDescriptions":
+				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			case "favorites":
 				return ec.fieldContext_Game_favorites(ctx, field)
 			}
@@ -11840,6 +12124,11 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._PlayerSupervisionRequestApproval(ctx, sel, obj)
+	case *ent.StatDescription:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._StatDescription(ctx, sel, obj)
 	case *ent.User:
 		if obj == nil {
 			return graphql.Null
@@ -11945,6 +12234,26 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Game_author(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "statDescriptions":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_statDescriptions(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -13154,6 +13463,52 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
+var statDescriptionImplementors = []string{"StatDescription", "Node"}
+
+func (ec *executionContext) _StatDescription(ctx context.Context, sel ast.SelectionSet, obj *ent.StatDescription) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, statDescriptionImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StatDescription")
+		case "id":
+
+			out.Values[i] = ec._StatDescription_id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "type":
+
+			out.Values[i] = ec._StatDescription_type(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+
+			out.Values[i] = ec._StatDescription_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "description":
+
+			out.Values[i] = ec._StatDescription_description(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var userImplementors = []string{"User", "Node"}
 
 func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *ent.User) graphql.Marshaler {
@@ -13909,18 +14264,13 @@ func (ec *executionContext) unmarshalNGroupWhereInput2ᚖgithubᚗcomᚋopenᚑb
 }
 
 func (ec *executionContext) unmarshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx context.Context, v interface{}) (guidgql.GUID, error) {
-	res, err := guidgql.UnmarshalGUID(v)
+	var res guidgql.GUID
+	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx context.Context, sel ast.SelectionSet, v guidgql.GUID) graphql.Marshaler {
-	res := guidgql.MarshalGUID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
+	return v
 }
 
 func (ec *executionContext) unmarshalNID2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUIDᚄ(ctx context.Context, v interface{}) ([]*guidgql.GUID, error) {
@@ -13956,8 +14306,9 @@ func (ec *executionContext) marshalNID2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑs
 }
 
 func (ec *executionContext) unmarshalNID2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx context.Context, v interface{}) (*guidgql.GUID, error) {
-	res, err := guidgql.UnmarshalGUID(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
+	var res = new(guidgql.GUID)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNID2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx context.Context, sel ast.SelectionSet, v *guidgql.GUID) graphql.Marshaler {
@@ -13967,13 +14318,7 @@ func (ec *executionContext) marshalNID2ᚖgithubᚗcomᚋopenᚑboardgameᚑstat
 		}
 		return graphql.Null
 	}
-	res := guidgql.MarshalGUID(*v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
+	return v
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
@@ -14147,6 +14492,70 @@ func (ec *executionContext) unmarshalNPlayerWhereInput2ᚖgithubᚗcomᚋopenᚑ
 func (ec *executionContext) unmarshalNResolvePlayerSupervisionRequestInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐResolvePlayerSupervisionRequestInput(ctx context.Context, v interface{}) (model.ResolvePlayerSupervisionRequestInput, error) {
 	res, err := ec.unmarshalInputResolvePlayerSupervisionRequestInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNStatDescription2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐStatDescriptionᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.StatDescription) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNStatDescription2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐStatDescription(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNStatDescription2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐStatDescription(ctx context.Context, sel ast.SelectionSet, v *ent.StatDescription) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StatDescription(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNStatDescriptionStatType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋstatᚐStatType(ctx context.Context, v interface{}) (stat.StatType, error) {
+	var res stat.StatType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNStatDescriptionStatType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋstatᚐStatType(ctx context.Context, sel ast.SelectionSet, v stat.StatType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -15195,16 +15604,16 @@ func (ec *executionContext) unmarshalOID2ᚖgithubᚗcomᚋopenᚑboardgameᚑst
 	if v == nil {
 		return nil, nil
 	}
-	res, err := guidgql.UnmarshalGUID(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
+	var res = new(guidgql.GUID)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOID2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx context.Context, sel ast.SelectionSet, v *guidgql.GUID) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	res := guidgql.MarshalGUID(*v)
-	return res
+	return v
 }
 
 func (ec *executionContext) unmarshalOInt2ᚕintᚄ(ctx context.Context, v interface{}) ([]int, error) {

@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/jxskiss/base62"
 	"github.com/teris-io/shortid"
 )
@@ -28,12 +27,6 @@ func New(t Table) func() GUID {
 
 func (guid GUID) String() string {
 	return base62.EncodeToString([]byte(fmt.Sprintf("%d,%s", guid.Type, guid.ID)))
-}
-
-func MarshalGUID(g GUID) graphql.Marshaler {
-	return graphql.WriterFunc(func(w io.Writer) {
-		io.WriteString(w, strconv.Quote(g.String()))
-	})
 }
 
 func UnmarshalGUID(src interface{}) (g GUID, err error) {

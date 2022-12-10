@@ -39,5 +39,8 @@ func (Game) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("author", User.Type).Ref("games").Required().Unique(),
 		edge.To("favorites", GameFavorite.Type),
+		edge.From("stat_descriptions", StatDescription.Type).Ref("game").Required().Annotations(
+			entgql.Skip(entgql.SkipWhereInput),
+		),
 	}
 }

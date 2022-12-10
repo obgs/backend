@@ -20,6 +20,8 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
+	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 
 	"entgo.io/ent"
@@ -43,31 +45,35 @@ const (
 	TypePlayer                           = "Player"
 	TypePlayerSupervisionRequest         = "PlayerSupervisionRequest"
 	TypePlayerSupervisionRequestApproval = "PlayerSupervisionRequestApproval"
+	TypeStatDescription                  = "StatDescription"
 	TypeUser                             = "User"
 )
 
 // GameMutation represents an operation that mutates the Game nodes in the graph.
 type GameMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *guidgql.GUID
-	name              *string
-	min_players       *int
-	addmin_players    *int
-	max_players       *int
-	addmax_players    *int
-	description       *string
-	boardgamegeek_url *string
-	clearedFields     map[string]struct{}
-	author            *guidgql.GUID
-	clearedauthor     bool
-	favorites         map[guidgql.GUID]struct{}
-	removedfavorites  map[guidgql.GUID]struct{}
-	clearedfavorites  bool
-	done              bool
-	oldValue          func(context.Context) (*Game, error)
-	predicates        []predicate.Game
+	op                       Op
+	typ                      string
+	id                       *guidgql.GUID
+	name                     *string
+	min_players              *int
+	addmin_players           *int
+	max_players              *int
+	addmax_players           *int
+	description              *string
+	boardgamegeek_url        *string
+	clearedFields            map[string]struct{}
+	author                   *guidgql.GUID
+	clearedauthor            bool
+	favorites                map[guidgql.GUID]struct{}
+	removedfavorites         map[guidgql.GUID]struct{}
+	clearedfavorites         bool
+	stat_descriptions        map[guidgql.GUID]struct{}
+	removedstat_descriptions map[guidgql.GUID]struct{}
+	clearedstat_descriptions bool
+	done                     bool
+	oldValue                 func(context.Context) (*Game, error)
+	predicates               []predicate.Game
 }
 
 var _ ent.Mutation = (*GameMutation)(nil)
@@ -513,6 +519,60 @@ func (m *GameMutation) ResetFavorites() {
 	m.removedfavorites = nil
 }
 
+// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by ids.
+func (m *GameMutation) AddStatDescriptionIDs(ids ...guidgql.GUID) {
+	if m.stat_descriptions == nil {
+		m.stat_descriptions = make(map[guidgql.GUID]struct{})
+	}
+	for i := range ids {
+		m.stat_descriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearStatDescriptions clears the "stat_descriptions" edge to the StatDescription entity.
+func (m *GameMutation) ClearStatDescriptions() {
+	m.clearedstat_descriptions = true
+}
+
+// StatDescriptionsCleared reports if the "stat_descriptions" edge to the StatDescription entity was cleared.
+func (m *GameMutation) StatDescriptionsCleared() bool {
+	return m.clearedstat_descriptions
+}
+
+// RemoveStatDescriptionIDs removes the "stat_descriptions" edge to the StatDescription entity by IDs.
+func (m *GameMutation) RemoveStatDescriptionIDs(ids ...guidgql.GUID) {
+	if m.removedstat_descriptions == nil {
+		m.removedstat_descriptions = make(map[guidgql.GUID]struct{})
+	}
+	for i := range ids {
+		delete(m.stat_descriptions, ids[i])
+		m.removedstat_descriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedStatDescriptions returns the removed IDs of the "stat_descriptions" edge to the StatDescription entity.
+func (m *GameMutation) RemovedStatDescriptionsIDs() (ids []guidgql.GUID) {
+	for id := range m.removedstat_descriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// StatDescriptionsIDs returns the "stat_descriptions" edge IDs in the mutation.
+func (m *GameMutation) StatDescriptionsIDs() (ids []guidgql.GUID) {
+	for id := range m.stat_descriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetStatDescriptions resets all changes to the "stat_descriptions" edge.
+func (m *GameMutation) ResetStatDescriptions() {
+	m.stat_descriptions = nil
+	m.clearedstat_descriptions = false
+	m.removedstat_descriptions = nil
+}
+
 // Where appends a list predicates to the GameMutation builder.
 func (m *GameMutation) Where(ps ...predicate.Game) {
 	m.predicates = append(m.predicates, ps...)
@@ -741,12 +801,15 @@ func (m *GameMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GameMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.author != nil {
 		edges = append(edges, game.EdgeAuthor)
 	}
 	if m.favorites != nil {
 		edges = append(edges, game.EdgeFavorites)
+	}
+	if m.stat_descriptions != nil {
+		edges = append(edges, game.EdgeStatDescriptions)
 	}
 	return edges
 }
@@ -765,15 +828,24 @@ func (m *GameMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case game.EdgeStatDescriptions:
+		ids := make([]ent.Value, 0, len(m.stat_descriptions))
+		for id := range m.stat_descriptions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GameMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedfavorites != nil {
 		edges = append(edges, game.EdgeFavorites)
+	}
+	if m.removedstat_descriptions != nil {
+		edges = append(edges, game.EdgeStatDescriptions)
 	}
 	return edges
 }
@@ -788,18 +860,27 @@ func (m *GameMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case game.EdgeStatDescriptions:
+		ids := make([]ent.Value, 0, len(m.removedstat_descriptions))
+		for id := range m.removedstat_descriptions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GameMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedauthor {
 		edges = append(edges, game.EdgeAuthor)
 	}
 	if m.clearedfavorites {
 		edges = append(edges, game.EdgeFavorites)
+	}
+	if m.clearedstat_descriptions {
+		edges = append(edges, game.EdgeStatDescriptions)
 	}
 	return edges
 }
@@ -812,6 +893,8 @@ func (m *GameMutation) EdgeCleared(name string) bool {
 		return m.clearedauthor
 	case game.EdgeFavorites:
 		return m.clearedfavorites
+	case game.EdgeStatDescriptions:
+		return m.clearedstat_descriptions
 	}
 	return false
 }
@@ -836,6 +919,9 @@ func (m *GameMutation) ResetEdge(name string) error {
 		return nil
 	case game.EdgeFavorites:
 		m.ResetFavorites()
+		return nil
+	case game.EdgeStatDescriptions:
+		m.ResetStatDescriptions()
 		return nil
 	}
 	return fmt.Errorf("unknown Game edge %s", name)
@@ -4847,6 +4933,546 @@ func (m *PlayerSupervisionRequestApprovalMutation) ResetEdge(name string) error 
 		return nil
 	}
 	return fmt.Errorf("unknown PlayerSupervisionRequestApproval edge %s", name)
+}
+
+// StatDescriptionMutation represents an operation that mutates the StatDescription nodes in the graph.
+type StatDescriptionMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *guidgql.GUID
+	_type         *stat.StatType
+	name          *string
+	description   *string
+	clearedFields map[string]struct{}
+	game          map[guidgql.GUID]struct{}
+	removedgame   map[guidgql.GUID]struct{}
+	clearedgame   bool
+	done          bool
+	oldValue      func(context.Context) (*StatDescription, error)
+	predicates    []predicate.StatDescription
+}
+
+var _ ent.Mutation = (*StatDescriptionMutation)(nil)
+
+// statdescriptionOption allows management of the mutation configuration using functional options.
+type statdescriptionOption func(*StatDescriptionMutation)
+
+// newStatDescriptionMutation creates new mutation for the StatDescription entity.
+func newStatDescriptionMutation(c config, op Op, opts ...statdescriptionOption) *StatDescriptionMutation {
+	m := &StatDescriptionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeStatDescription,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withStatDescriptionID sets the ID field of the mutation.
+func withStatDescriptionID(id guidgql.GUID) statdescriptionOption {
+	return func(m *StatDescriptionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *StatDescription
+		)
+		m.oldValue = func(ctx context.Context) (*StatDescription, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().StatDescription.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withStatDescription sets the old StatDescription of the mutation.
+func withStatDescription(node *StatDescription) statdescriptionOption {
+	return func(m *StatDescriptionMutation) {
+		m.oldValue = func(context.Context) (*StatDescription, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m StatDescriptionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m StatDescriptionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of StatDescription entities.
+func (m *StatDescriptionMutation) SetID(id guidgql.GUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *StatDescriptionMutation) ID() (id guidgql.GUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *StatDescriptionMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []guidgql.GUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().StatDescription.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetType sets the "type" field.
+func (m *StatDescriptionMutation) SetType(st stat.StatType) {
+	m._type = &st
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *StatDescriptionMutation) GetType() (r stat.StatType, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the StatDescription entity.
+// If the StatDescription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StatDescriptionMutation) OldType(ctx context.Context) (v stat.StatType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *StatDescriptionMutation) ResetType() {
+	m._type = nil
+}
+
+// SetName sets the "name" field.
+func (m *StatDescriptionMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *StatDescriptionMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the StatDescription entity.
+// If the StatDescription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StatDescriptionMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *StatDescriptionMutation) ResetName() {
+	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *StatDescriptionMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *StatDescriptionMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the StatDescription entity.
+// If the StatDescription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StatDescriptionMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *StatDescriptionMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[statdescription.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *StatDescriptionMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[statdescription.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *StatDescriptionMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, statdescription.FieldDescription)
+}
+
+// AddGameIDs adds the "game" edge to the Game entity by ids.
+func (m *StatDescriptionMutation) AddGameIDs(ids ...guidgql.GUID) {
+	if m.game == nil {
+		m.game = make(map[guidgql.GUID]struct{})
+	}
+	for i := range ids {
+		m.game[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGame clears the "game" edge to the Game entity.
+func (m *StatDescriptionMutation) ClearGame() {
+	m.clearedgame = true
+}
+
+// GameCleared reports if the "game" edge to the Game entity was cleared.
+func (m *StatDescriptionMutation) GameCleared() bool {
+	return m.clearedgame
+}
+
+// RemoveGameIDs removes the "game" edge to the Game entity by IDs.
+func (m *StatDescriptionMutation) RemoveGameIDs(ids ...guidgql.GUID) {
+	if m.removedgame == nil {
+		m.removedgame = make(map[guidgql.GUID]struct{})
+	}
+	for i := range ids {
+		delete(m.game, ids[i])
+		m.removedgame[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGame returns the removed IDs of the "game" edge to the Game entity.
+func (m *StatDescriptionMutation) RemovedGameIDs() (ids []guidgql.GUID) {
+	for id := range m.removedgame {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GameIDs returns the "game" edge IDs in the mutation.
+func (m *StatDescriptionMutation) GameIDs() (ids []guidgql.GUID) {
+	for id := range m.game {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGame resets all changes to the "game" edge.
+func (m *StatDescriptionMutation) ResetGame() {
+	m.game = nil
+	m.clearedgame = false
+	m.removedgame = nil
+}
+
+// Where appends a list predicates to the StatDescriptionMutation builder.
+func (m *StatDescriptionMutation) Where(ps ...predicate.StatDescription) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *StatDescriptionMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (StatDescription).
+func (m *StatDescriptionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *StatDescriptionMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m._type != nil {
+		fields = append(fields, statdescription.FieldType)
+	}
+	if m.name != nil {
+		fields = append(fields, statdescription.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, statdescription.FieldDescription)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *StatDescriptionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case statdescription.FieldType:
+		return m.GetType()
+	case statdescription.FieldName:
+		return m.Name()
+	case statdescription.FieldDescription:
+		return m.Description()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *StatDescriptionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case statdescription.FieldType:
+		return m.OldType(ctx)
+	case statdescription.FieldName:
+		return m.OldName(ctx)
+	case statdescription.FieldDescription:
+		return m.OldDescription(ctx)
+	}
+	return nil, fmt.Errorf("unknown StatDescription field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *StatDescriptionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case statdescription.FieldType:
+		v, ok := value.(stat.StatType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
+		return nil
+	case statdescription.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case statdescription.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	}
+	return fmt.Errorf("unknown StatDescription field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *StatDescriptionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *StatDescriptionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *StatDescriptionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown StatDescription numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *StatDescriptionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(statdescription.FieldDescription) {
+		fields = append(fields, statdescription.FieldDescription)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *StatDescriptionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *StatDescriptionMutation) ClearField(name string) error {
+	switch name {
+	case statdescription.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown StatDescription nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *StatDescriptionMutation) ResetField(name string) error {
+	switch name {
+	case statdescription.FieldType:
+		m.ResetType()
+		return nil
+	case statdescription.FieldName:
+		m.ResetName()
+		return nil
+	case statdescription.FieldDescription:
+		m.ResetDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown StatDescription field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *StatDescriptionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.game != nil {
+		edges = append(edges, statdescription.EdgeGame)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *StatDescriptionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case statdescription.EdgeGame:
+		ids := make([]ent.Value, 0, len(m.game))
+		for id := range m.game {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *StatDescriptionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedgame != nil {
+		edges = append(edges, statdescription.EdgeGame)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *StatDescriptionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case statdescription.EdgeGame:
+		ids := make([]ent.Value, 0, len(m.removedgame))
+		for id := range m.removedgame {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *StatDescriptionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedgame {
+		edges = append(edges, statdescription.EdgeGame)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *StatDescriptionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case statdescription.EdgeGame:
+		return m.clearedgame
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *StatDescriptionMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown StatDescription unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *StatDescriptionMutation) ResetEdge(name string) error {
+	switch name {
+	case statdescription.EdgeGame:
+		m.ResetGame()
+		return nil
+	}
+	return fmt.Errorf("unknown StatDescription edge %s", name)
 }
 
 // UserMutation represents an operation that mutates the User nodes in the graph.

@@ -19,6 +19,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -54,7 +55,7 @@ func (ga *Game) Node(ctx context.Context) (node *Node, err error) {
 		ID:     ga.ID,
 		Type:   "Game",
 		Fields: make([]*Field, 5),
-		Edges:  make([]*Edge, 1),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(ga.Name); err != nil {
@@ -104,6 +105,16 @@ func (ga *Game) Node(ctx context.Context) (node *Node, err error) {
 	err = ga.QueryAuthor().
 		Select(user.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "StatDescription",
+		Name: "stat_descriptions",
+	}
+	err = ga.QueryStatDescriptions().
+		Select(statdescription.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -425,6 +436,41 @@ func (psra *PlayerSupervisionRequestApproval) Node(ctx context.Context) (node *N
 	return node, nil
 }
 
+func (sd *StatDescription) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     sd.ID,
+		Type:   "StatDescription",
+		Fields: make([]*Field, 3),
+		Edges:  make([]*Edge, 0),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(sd.Type); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "stat.StatType",
+		Name:  "type",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(sd.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(sd.Description); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "string",
+		Name:  "description",
+		Value: string(buf),
+	}
+	return node, nil
+}
+
 func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     u.ID,
@@ -704,6 +750,22 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 			return nil, err
 		}
 		return n, nil
+	case statdescription.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
+		query := c.StatDescription.Query().
+			Where(statdescription.ID(uid))
+		query, err := query.CollectFields(ctx, "StatDescription")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case user.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -909,6 +971,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 		query := c.PlayerSupervisionRequestApproval.Query().
 			Where(playersupervisionrequestapproval.IDIn(ids...))
 		query, err := query.CollectFields(ctx, "PlayerSupervisionRequestApproval")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case statdescription.Table:
+		query := c.StatDescription.Query().
+			Where(statdescription.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "StatDescription")
 		if err != nil {
 			return nil, err
 		}

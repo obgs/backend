@@ -30,6 +30,8 @@ type Tx struct {
 	PlayerSupervisionRequest *PlayerSupervisionRequestClient
 	// PlayerSupervisionRequestApproval is the client for interacting with the PlayerSupervisionRequestApproval builders.
 	PlayerSupervisionRequestApproval *PlayerSupervisionRequestApprovalClient
+	// StatDescription is the client for interacting with the StatDescription builders.
+	StatDescription *StatDescriptionClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -172,6 +174,7 @@ func (tx *Tx) init() {
 	tx.Player = NewPlayerClient(tx.config)
 	tx.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(tx.config)
 	tx.PlayerSupervisionRequestApproval = NewPlayerSupervisionRequestApprovalClient(tx.config)
+	tx.StatDescription = NewStatDescriptionClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

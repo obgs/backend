@@ -13,6 +13,7 @@ type Game implements Node {
   description: String
   boardgamegeekURL: String
   author: User!
+  statDescriptions: [StatDescription!]!
 }
 """
 GameWhereInput is used for filtering Game objects.
@@ -475,6 +476,16 @@ type Query {
     """Filtering options for Users returned from the connection."""
     where: UserWhereInput
   ): UserConnection!
+}
+type StatDescription implements Node {
+  id: ID!
+  type: StatDescriptionStatType!
+  name: String!
+  description: String
+}
+"""StatDescriptionStatType is enum for the field type"""
+enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
+  numeric
 }
 """
 UpdateUserInput is used for update User object.

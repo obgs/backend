@@ -20,6 +20,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -50,6 +51,8 @@ type Client struct {
 	PlayerSupervisionRequest *PlayerSupervisionRequestClient
 	// PlayerSupervisionRequestApproval is the client for interacting with the PlayerSupervisionRequestApproval builders.
 	PlayerSupervisionRequestApproval *PlayerSupervisionRequestApprovalClient
+	// StatDescription is the client for interacting with the StatDescription builders.
+	StatDescription *StatDescriptionClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -74,6 +77,7 @@ func (c *Client) init() {
 	c.Player = NewPlayerClient(c.config)
 	c.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(c.config)
 	c.PlayerSupervisionRequestApproval = NewPlayerSupervisionRequestApprovalClient(c.config)
+	c.StatDescription = NewStatDescriptionClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -117,6 +121,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
 		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
+		StatDescription:                  NewStatDescriptionClient(cfg),
 		User:                             NewUserClient(cfg),
 	}, nil
 }
@@ -146,6 +151,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
 		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
+		StatDescription:                  NewStatDescriptionClient(cfg),
 		User:                             NewUserClient(cfg),
 	}, nil
 }
@@ -184,6 +190,7 @@ func (c *Client) Use(hooks ...Hook) {
 	c.Player.Use(hooks...)
 	c.PlayerSupervisionRequest.Use(hooks...)
 	c.PlayerSupervisionRequestApproval.Use(hooks...)
+	c.StatDescription.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
@@ -297,6 +304,22 @@ func (c *GameClient) QueryFavorites(ga *Game) *GameFavoriteQuery {
 			sqlgraph.From(game.Table, game.FieldID, id),
 			sqlgraph.To(gamefavorite.Table, gamefavorite.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, game.FavoritesTable, game.FavoritesColumn),
+		)
+		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryStatDescriptions queries the stat_descriptions edge of a Game.
+func (c *GameClient) QueryStatDescriptions(ga *Game) *StatDescriptionQuery {
+	query := &StatDescriptionQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ga.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(statdescription.Table, statdescription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, game.StatDescriptionsTable, game.StatDescriptionsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
 		return fromV, nil
@@ -1315,6 +1338,112 @@ func (c *PlayerSupervisionRequestApprovalClient) QuerySupervisionRequest(psra *P
 // Hooks returns the client hooks.
 func (c *PlayerSupervisionRequestApprovalClient) Hooks() []Hook {
 	return c.hooks.PlayerSupervisionRequestApproval
+}
+
+// StatDescriptionClient is a client for the StatDescription schema.
+type StatDescriptionClient struct {
+	config
+}
+
+// NewStatDescriptionClient returns a client for the StatDescription from the given config.
+func NewStatDescriptionClient(c config) *StatDescriptionClient {
+	return &StatDescriptionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `statdescription.Hooks(f(g(h())))`.
+func (c *StatDescriptionClient) Use(hooks ...Hook) {
+	c.hooks.StatDescription = append(c.hooks.StatDescription, hooks...)
+}
+
+// Create returns a builder for creating a StatDescription entity.
+func (c *StatDescriptionClient) Create() *StatDescriptionCreate {
+	mutation := newStatDescriptionMutation(c.config, OpCreate)
+	return &StatDescriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of StatDescription entities.
+func (c *StatDescriptionClient) CreateBulk(builders ...*StatDescriptionCreate) *StatDescriptionCreateBulk {
+	return &StatDescriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for StatDescription.
+func (c *StatDescriptionClient) Update() *StatDescriptionUpdate {
+	mutation := newStatDescriptionMutation(c.config, OpUpdate)
+	return &StatDescriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *StatDescriptionClient) UpdateOne(sd *StatDescription) *StatDescriptionUpdateOne {
+	mutation := newStatDescriptionMutation(c.config, OpUpdateOne, withStatDescription(sd))
+	return &StatDescriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *StatDescriptionClient) UpdateOneID(id guidgql.GUID) *StatDescriptionUpdateOne {
+	mutation := newStatDescriptionMutation(c.config, OpUpdateOne, withStatDescriptionID(id))
+	return &StatDescriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for StatDescription.
+func (c *StatDescriptionClient) Delete() *StatDescriptionDelete {
+	mutation := newStatDescriptionMutation(c.config, OpDelete)
+	return &StatDescriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *StatDescriptionClient) DeleteOne(sd *StatDescription) *StatDescriptionDeleteOne {
+	return c.DeleteOneID(sd.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *StatDescriptionClient) DeleteOneID(id guidgql.GUID) *StatDescriptionDeleteOne {
+	builder := c.Delete().Where(statdescription.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &StatDescriptionDeleteOne{builder}
+}
+
+// Query returns a query builder for StatDescription.
+func (c *StatDescriptionClient) Query() *StatDescriptionQuery {
+	return &StatDescriptionQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a StatDescription entity by its id.
+func (c *StatDescriptionClient) Get(ctx context.Context, id guidgql.GUID) (*StatDescription, error) {
+	return c.Query().Where(statdescription.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *StatDescriptionClient) GetX(ctx context.Context, id guidgql.GUID) *StatDescription {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a StatDescription.
+func (c *StatDescriptionClient) QueryGame(sd *StatDescription) *GameQuery {
+	query := &GameQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := sd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(statdescription.Table, statdescription.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, statdescription.GameTable, statdescription.GamePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *StatDescriptionClient) Hooks() []Hook {
+	return c.hooks.StatDescription
 }
 
 // UserClient is a client for the User schema.

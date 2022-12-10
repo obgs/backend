@@ -221,6 +221,19 @@ var (
 			},
 		},
 	}
+	// StatDescriptionsColumns holds the columns for the "stat_descriptions" table.
+	StatDescriptionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"numeric"}},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
+	}
+	// StatDescriptionsTable holds the schema information for the "stat_descriptions" table.
+	StatDescriptionsTable = &schema.Table{
+		Name:       "stat_descriptions",
+		Columns:    StatDescriptionsColumns,
+		PrimaryKey: []*schema.Column{StatDescriptionsColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -234,6 +247,31 @@ var (
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	}
+	// StatDescriptionGameColumns holds the columns for the "stat_description_game" table.
+	StatDescriptionGameColumns = []*schema.Column{
+		{Name: "stat_description_id", Type: field.TypeString},
+		{Name: "game_id", Type: field.TypeString},
+	}
+	// StatDescriptionGameTable holds the schema information for the "stat_description_game" table.
+	StatDescriptionGameTable = &schema.Table{
+		Name:       "stat_description_game",
+		Columns:    StatDescriptionGameColumns,
+		PrimaryKey: []*schema.Column{StatDescriptionGameColumns[0], StatDescriptionGameColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "stat_description_game_stat_description_id",
+				Columns:    []*schema.Column{StatDescriptionGameColumns[0]},
+				RefColumns: []*schema.Column{StatDescriptionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "stat_description_game_game_id",
+				Columns:    []*schema.Column{StatDescriptionGameColumns[1]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
 	}
 	// UserPlayersColumns holds the columns for the "user_players" table.
 	UserPlayersColumns = []*schema.Column{
@@ -271,7 +309,9 @@ var (
 		PlayersTable,
 		PlayerSupervisionRequestsTable,
 		PlayerSupervisionRequestApprovalsTable,
+		StatDescriptionsTable,
 		UsersTable,
+		StatDescriptionGameTable,
 		UserPlayersTable,
 	}
 )
@@ -290,6 +330,8 @@ func init() {
 	PlayerSupervisionRequestsTable.ForeignKeys[1].RefTable = UsersTable
 	PlayerSupervisionRequestApprovalsTable.ForeignKeys[0].RefTable = PlayerSupervisionRequestsTable
 	PlayerSupervisionRequestApprovalsTable.ForeignKeys[1].RefTable = UsersTable
+	StatDescriptionGameTable.ForeignKeys[0].RefTable = StatDescriptionsTable
+	StatDescriptionGameTable.ForeignKeys[1].RefTable = GamesTable
 	UserPlayersTable.ForeignKeys[0].RefTable = UsersTable
 	UserPlayersTable.ForeignKeys[1].RefTable = PlayersTable
 }
