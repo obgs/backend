@@ -70,6 +70,17 @@ type ComplexityRoot struct {
 		StatDescriptions func(childComplexity int) int
 	}
 
+	GameConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	GameEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Group struct {
 		Applications func(childComplexity int) int
 		Applied      func(childComplexity int) int
@@ -182,6 +193,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Games            func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.GameWhereInput) int
 		GetFileUploadURL func(childComplexity int) int
 		Groups           func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.GroupWhereInput) int
 		Me               func(childComplexity int) int
@@ -248,6 +260,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Node(ctx context.Context, id guidgql.GUID) (ent.Noder, error)
 	Nodes(ctx context.Context, ids []*guidgql.GUID) ([]ent.Noder, error)
+	Games(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.GameWhereInput) (*ent.GameConnection, error)
 	Groups(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.GroupWhereInput) (*ent.GroupConnection, error)
 	Players(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.PlayerWhereInput) (*ent.PlayerConnection, error)
 	Users(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.UserWhereInput) (*ent.UserConnection, error)
@@ -350,6 +363,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Game.StatDescriptions(childComplexity), true
+
+	case "GameConnection.edges":
+		if e.complexity.GameConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.GameConnection.Edges(childComplexity), true
+
+	case "GameConnection.pageInfo":
+		if e.complexity.GameConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.GameConnection.PageInfo(childComplexity), true
+
+	case "GameConnection.totalCount":
+		if e.complexity.GameConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.GameConnection.TotalCount(childComplexity), true
+
+	case "GameEdge.cursor":
+		if e.complexity.GameEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.GameEdge.Cursor(childComplexity), true
+
+	case "GameEdge.node":
+		if e.complexity.GameEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.GameEdge.Node(childComplexity), true
 
 	case "Group.applications":
 		if e.complexity.Group.Applications == nil {
@@ -878,6 +926,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PlayerSupervisionRequestApproval.SupervisionRequest(childComplexity), true
 
+	case "Query.games":
+		if e.complexity.Query.Games == nil {
+			break
+		}
+
+		args, err := ec.field_Query_games_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Games(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["where"].(*ent.GameWhereInput)), true
+
 	case "Query.getFileUploadURL":
 		if e.complexity.Query.GetFileUploadURL == nil {
 			break
@@ -1195,6 +1255,22 @@ type Game implements Node {
   boardgamegeekURL: String
   author: User!
   statDescriptions: [StatDescription!]!
+}
+"""A connection to a list of items."""
+type GameConnection {
+  """A list of edges."""
+  edges: [GameEdge]
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+  """Identifies the total count of items in the connection."""
+  totalCount: Int!
+}
+"""An edge in a connection."""
+type GameEdge {
+  """The item at the end of the edge."""
+  node: Game
+  """A cursor for use in pagination."""
+  cursor: Cursor!
 }
 """
 GameWhereInput is used for filtering Game objects.
@@ -1609,6 +1685,22 @@ type Query {
     """The list of node IDs."""
     ids: [ID!]!
   ): [Node]!
+  games(
+    """Returns the elements in the list that come after the specified cursor."""
+    after: Cursor
+
+    """Returns the first _n_ elements from the list."""
+    first: Int
+
+    """Returns the elements in the list that come before the specified cursor."""
+    before: Cursor
+
+    """Returns the last _n_ elements from the list."""
+    last: Int
+
+    """Filtering options for Games returned from the connection."""
+    where: GameWhereInput
+  ): GameConnection!
   groups(
     """Returns the elements in the list that come after the specified cursor."""
     after: Cursor
@@ -2192,6 +2284,57 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_games_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *ent.Cursor
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg0, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg1
+	var arg2 *ent.Cursor
+	if tmp, ok := rawArgs["before"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+		arg2, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["before"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg3
+	var arg4 *ent.GameWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg4, err = ec.unmarshalOGameWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg4
 	return args, nil
 }
 
@@ -2953,6 +3096,256 @@ func (ec *executionContext) fieldContext_Game_favorites(ctx context.Context, fie
 				return ec.fieldContext_Favorites_users(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Favorites", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.GameConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameConnection_edges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.GameEdge)
+	fc.Result = res
+	return ec.marshalOGameEdge2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_GameEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_GameEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GameEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.GameConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameConnection_pageInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.GameConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.GameEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameEdge_node(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Game)
+	fc.Result = res
+	return ec.marshalOGame2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGame(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Game_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Game_name(ctx, field)
+			case "minPlayers":
+				return ec.fieldContext_Game_minPlayers(ctx, field)
+			case "maxPlayers":
+				return ec.fieldContext_Game_maxPlayers(ctx, field)
+			case "description":
+				return ec.fieldContext_Game_description(ctx, field)
+			case "boardgamegeekURL":
+				return ec.fieldContext_Game_boardgamegeekURL(ctx, field)
+			case "author":
+				return ec.fieldContext_Game_author(ctx, field)
+			case "statDescriptions":
+				return ec.fieldContext_Game_statDescriptions(ctx, field)
+			case "favorites":
+				return ec.fieldContext_Game_favorites(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.GameEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameEdge_cursor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.Cursor)
+	fc.Result = res
+	return ec.marshalNCursor2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6718,6 +7111,69 @@ func (ec *executionContext) fieldContext_Query_nodes(ctx context.Context, field 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_nodes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_games(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_games(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Games(rctx, fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["before"].(*ent.Cursor), fc.Args["last"].(*int), fc.Args["where"].(*ent.GameWhereInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.GameConnection)
+	fc.Result = res
+	return ec.marshalNGameConnection2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_games(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_GameConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_GameConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_GameConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GameConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_games_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -12550,6 +13006,77 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var gameConnectionImplementors = []string{"GameConnection"}
+
+func (ec *executionContext) _GameConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.GameConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gameConnectionImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GameConnection")
+		case "edges":
+
+			out.Values[i] = ec._GameConnection_edges(ctx, field, obj)
+
+		case "pageInfo":
+
+			out.Values[i] = ec._GameConnection_pageInfo(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalCount":
+
+			out.Values[i] = ec._GameConnection_totalCount(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var gameEdgeImplementors = []string{"GameEdge"}
+
+func (ec *executionContext) _GameEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.GameEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gameEdgeImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GameEdge")
+		case "node":
+
+			out.Values[i] = ec._GameEdge_node(ctx, field, obj)
+
+		case "cursor":
+
+			out.Values[i] = ec._GameEdge_cursor(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var groupImplementors = []string{"Group", "Node"}
 
 func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, obj *ent.Group) graphql.Marshaler {
@@ -13589,6 +14116,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "games":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_games(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "groups":
 			field := field
 
@@ -14402,6 +14952,20 @@ func (ec *executionContext) marshalNGame2ᚖgithubᚗcomᚋopenᚑboardgameᚑst
 		return graphql.Null
 	}
 	return ec._Game(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGameConnection2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameConnection(ctx context.Context, sel ast.SelectionSet, v ent.GameConnection) graphql.Marshaler {
+	return ec._GameConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGameConnection2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameConnection(ctx context.Context, sel ast.SelectionSet, v *ent.GameConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GameConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNGameWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameWhereInput(ctx context.Context, v interface{}) (*ent.GameWhereInput, error) {
@@ -15290,6 +15854,61 @@ func (ec *executionContext) marshalOGame2ᚕᚖgithubᚗcomᚋopenᚑboardgame�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalOGame2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGame(ctx context.Context, sel ast.SelectionSet, v *ent.Game) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Game(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOGameEdge2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.GameEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOGameEdge2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOGameEdge2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameEdge(ctx context.Context, sel ast.SelectionSet, v *ent.GameEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._GameEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOGameWhereInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.GameWhereInput, error) {

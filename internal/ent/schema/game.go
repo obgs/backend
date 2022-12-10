@@ -3,6 +3,7 @@ package schema
 import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -42,5 +43,13 @@ func (Game) Edges() []ent.Edge {
 		edge.From("stat_descriptions", StatDescription.Type).Ref("game").Required().Annotations(
 			entgql.Skip(entgql.SkipWhereInput),
 		),
+	}
+}
+
+// Annotations of the Game.
+func (Game) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entgql.RelayConnection(),
+		entgql.QueryField(),
 	}
 }
