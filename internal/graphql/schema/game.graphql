@@ -7,7 +7,24 @@ extend type Game {
   favorites: Favorites!
 }
 
+input StatDescriptionInput {
+  type: StatDescriptionStatType!
+  name: String!
+  description: String
+}
+
+input CreateGameInput {
+  name: String!
+  minPlayers: Int!
+  maxPlayers: Int!
+  description: String
+  boardgamegeekURL: String
+  statDescriptions: [StatDescriptionInput!]!
+}
+
 extend type Mutation {
+  createGame(input: CreateGameInput!): Game! @authenticated
+
   addOrRemoveGameFromFavorites(gameId: ID!, favorite: Boolean!): Boolean!
     @authenticated
 }
