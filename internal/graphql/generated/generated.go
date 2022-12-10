@@ -129,6 +129,7 @@ type ComplexityRoot struct {
 		AddOrRemoveGameFromFavorites      func(childComplexity int, gameID guidgql.GUID, favorite bool) int
 		ApplyToGroup                      func(childComplexity int, input model.GroupApplicationInput) int
 		ChangeUserGroupMembershipRole     func(childComplexity int, groupID guidgql.GUID, userID guidgql.GUID, role enums.Role) int
+		CreateGame                        func(childComplexity int, input model.CreateGameInput) int
 		CreateOrUpdateGroup               func(childComplexity int, input model.CreateOrUpdateGroupInput) int
 		CreatePlayer                      func(childComplexity int, input model.CreatePlayerInput) int
 		JoinGroup                         func(childComplexity int, groupID guidgql.GUID) int
@@ -231,6 +232,7 @@ type GroupResolver interface {
 	Applied(ctx context.Context, obj *ent.Group) (*bool, error)
 }
 type MutationResolver interface {
+	CreateGame(ctx context.Context, input model.CreateGameInput) (*ent.Game, error)
 	AddOrRemoveGameFromFavorites(ctx context.Context, gameID guidgql.GUID, favorite bool) (bool, error)
 	CreateOrUpdateGroup(ctx context.Context, input model.CreateOrUpdateGroupInput) (*ent.Group, error)
 	JoinGroup(ctx context.Context, groupID guidgql.GUID) (bool, error)
@@ -606,6 +608,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ChangeUserGroupMembershipRole(childComplexity, args["groupId"].(guidgql.GUID), args["userId"].(guidgql.GUID), args["role"].(enums.Role)), true
+
+	case "Mutation.createGame":
+		if e.complexity.Mutation.CreateGame == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createGame_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateGame(childComplexity, args["input"].(model.CreateGameInput)), true
 
 	case "Mutation.createOrUpdateGroup":
 		if e.complexity.Mutation.CreateOrUpdateGroup == nil {
@@ -1086,6 +1100,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputCreateGameInput,
 		ec.unmarshalInputCreateOrUpdateGroupInput,
 		ec.unmarshalInputCreatePlayerInput,
 		ec.unmarshalInputGameWhereInput,
@@ -1099,6 +1114,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputPlayerWhereInput,
 		ec.unmarshalInputRequestPlayerSupervisionInput,
 		ec.unmarshalInputResolvePlayerSupervisionRequestInput,
+		ec.unmarshalInputStatDescriptionInput,
 		ec.unmarshalInputUpdateUserInput,
 		ec.unmarshalInputUserWhereInput,
 	)
@@ -1764,7 +1780,24 @@ extend type Game {
   favorites: Favorites!
 }
 
+input StatDescriptionInput {
+  type: StatDescriptionStatType!
+  name: String!
+  description: String
+}
+
+input CreateGameInput {
+  name: String!
+  minPlayers: Int!
+  maxPlayers: Int!
+  description: String
+  boardgamegeekURL: String
+  statDescriptions: [StatDescriptionInput!]!
+}
+
 extend type Mutation {
+  createGame(input: CreateGameInput!): Game! @authenticated
+
   addOrRemoveGameFromFavorites(gameId: ID!, favorite: Boolean!): Boolean!
     @authenticated
 }
@@ -1982,6 +2015,21 @@ func (ec *executionContext) field_Mutation_changeUserGroupMembershipRole_args(ct
 		}
 	}
 	args["role"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createGame_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CreateGameInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateGameInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateGameInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -4435,6 +4483,101 @@ func (ec *executionContext) fieldContext_GroupSettings_minimumRoleToInvite(ctx c
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type GroupMembershipRole does not have child fields")
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createGame(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createGame(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateGame(rctx, fc.Args["input"].(model.CreateGameInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Authenticated == nil {
+				return nil, errors.New("directive authenticated is not implemented")
+			}
+			return ec.directives.Authenticated(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*ent.Game); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/open-boardgame-stats/backend/internal/ent.Game`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGame(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createGame(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Game_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Game_name(ctx, field)
+			case "minPlayers":
+				return ec.fieldContext_Game_minPlayers(ctx, field)
+			case "maxPlayers":
+				return ec.fieldContext_Game_maxPlayers(ctx, field)
+			case "description":
+				return ec.fieldContext_Game_description(ctx, field)
+			case "boardgamegeekURL":
+				return ec.fieldContext_Game_boardgamegeekURL(ctx, field)
+			case "author":
+				return ec.fieldContext_Game_author(ctx, field)
+			case "statDescriptions":
+				return ec.fieldContext_Game_statDescriptions(ctx, field)
+			case "favorites":
+				return ec.fieldContext_Game_favorites(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createGame_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -9848,6 +9991,74 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, obj interface{}) (model.CreateGameInput, error) {
+	var it model.CreateGameInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "minPlayers", "maxPlayers", "description", "boardgamegeekURL", "statDescriptions"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "minPlayers":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minPlayers"))
+			it.MinPlayers, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "maxPlayers":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxPlayers"))
+			it.MaxPlayers, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "boardgamegeekURL":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("boardgamegeekURL"))
+			it.BoardgamegeekURL, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "statDescriptions":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statDescriptions"))
+			it.StatDescriptions, err = ec.unmarshalNStatDescriptionInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐStatDescriptionInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateOrUpdateGroupInput(ctx context.Context, obj interface{}) (model.CreateOrUpdateGroupInput, error) {
 	var it model.CreateOrUpdateGroupInput
 	asMap := map[string]interface{}{}
@@ -11620,6 +11831,50 @@ func (ec *executionContext) unmarshalInputResolvePlayerSupervisionRequestInput(c
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputStatDescriptionInput(ctx context.Context, obj interface{}) (model.StatDescriptionInput, error) {
+	var it model.StatDescriptionInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"type", "name", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			it.Type, err = ec.unmarshalNStatDescriptionStatType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋstatᚐStatType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, obj interface{}) (ent.UpdateUserInput, error) {
 	var it ent.UpdateUserInput
 	asMap := map[string]interface{}{}
@@ -12792,6 +13047,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "createGame":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createGame(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "addOrRemoveGameFromFavorites":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -14087,6 +14351,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNCreateGameInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateGameInput(ctx context.Context, v interface{}) (model.CreateGameInput, error) {
+	res, err := ec.unmarshalInputCreateGameInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateOrUpdateGroupInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateOrUpdateGroupInput(ctx context.Context, v interface{}) (model.CreateOrUpdateGroupInput, error) {
 	res, err := ec.unmarshalInputCreateOrUpdateGroupInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -14119,6 +14388,10 @@ func (ec *executionContext) marshalNFavorites2ᚖgithubᚗcomᚋopenᚑboardgame
 		return graphql.Null
 	}
 	return ec._Favorites(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGame2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGame(ctx context.Context, sel ast.SelectionSet, v ent.Game) graphql.Marshaler {
+	return ec._Game(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNGame2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGame(ctx context.Context, sel ast.SelectionSet, v *ent.Game) graphql.Marshaler {
@@ -14546,6 +14819,28 @@ func (ec *executionContext) marshalNStatDescription2ᚖgithubᚗcomᚋopenᚑboa
 		return graphql.Null
 	}
 	return ec._StatDescription(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNStatDescriptionInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐStatDescriptionInputᚄ(ctx context.Context, v interface{}) ([]*model.StatDescriptionInput, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.StatDescriptionInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNStatDescriptionInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐStatDescriptionInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNStatDescriptionInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐStatDescriptionInput(ctx context.Context, v interface{}) (*model.StatDescriptionInput, error) {
+	res, err := ec.unmarshalInputStatDescriptionInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNStatDescriptionStatType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋstatᚐStatType(ctx context.Context, v interface{}) (stat.StatType, error) {

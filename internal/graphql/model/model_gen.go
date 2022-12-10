@@ -7,7 +7,17 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 )
+
+type CreateGameInput struct {
+	Name             string                  `json:"name"`
+	MinPlayers       int                     `json:"minPlayers"`
+	MaxPlayers       int                     `json:"maxPlayers"`
+	Description      *string                 `json:"description"`
+	BoardgamegeekURL *string                 `json:"boardgamegeekURL"`
+	StatDescriptions []*StatDescriptionInput `json:"statDescriptions"`
+}
 
 type CreateOrUpdateGroupInput struct {
 	ID          *guidgql.GUID       `json:"id"`
@@ -45,4 +55,10 @@ type RequestPlayerSupervisionInput struct {
 type ResolvePlayerSupervisionRequestInput struct {
 	RequestID guidgql.GUID `json:"requestId"`
 	Approved  bool         `json:"approved"`
+}
+
+type StatDescriptionInput struct {
+	Type        stat.StatType `json:"type"`
+	Name        string        `json:"name"`
+	Description *string       `json:"description"`
 }

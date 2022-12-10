@@ -39,6 +39,38 @@ func (r *gameResolver) Favorites(ctx context.Context, obj *ent.Game) (*model.Fav
 	}, nil
 }
 
+// CreateGame is the resolver for the createGame field.
+func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGameInput) (*ent.Game, error) {
+	u, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	createDescriptons := make([]*ent.StatDescriptionCreate, 0, len(input.StatDescriptions))
+	for _, desc := range input.StatDescriptions {
+		createDescriptons = append(
+			createDescriptons,
+			r.client.StatDescription.Create().
+				SetType(desc.Type).
+				SetName(desc.Name).
+				SetDescription(*desc.Description),
+		)
+	}
+
+	descriptions, err := r.client.StatDescription.CreateBulk(createDescriptons...).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.client.Game.Create().
+		SetName(input.Name).
+		SetDescription(*input.Description).
+		SetBoardgamegeekURL(*input.BoardgamegeekURL).
+		SetAuthor(u).
+		AddStatDescriptions(descriptions...).
+		Save(ctx)
+}
+
 // AddOrRemoveGameFromFavorites is the resolver for the addOrRemoveGameFromFavorites field.
 func (r *mutationResolver) AddOrRemoveGameFromFavorites(ctx context.Context, gameID guidgql.GUID, favorite bool) (bool, error) {
 	u, err := auth.UserFromContext(ctx)
