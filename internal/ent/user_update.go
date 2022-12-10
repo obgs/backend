@@ -10,6 +10,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
@@ -167,6 +169,36 @@ func (uu *UserUpdate) AddGroupMembershipApplications(g ...*GroupMembershipApplic
 	return uu.AddGroupMembershipApplicationIDs(ids...)
 }
 
+// AddGameIDs adds the "games" edge to the Game entity by IDs.
+func (uu *UserUpdate) AddGameIDs(ids ...guidgql.GUID) *UserUpdate {
+	uu.mutation.AddGameIDs(ids...)
+	return uu
+}
+
+// AddGames adds the "games" edges to the Game entity.
+func (uu *UserUpdate) AddGames(g ...*Game) *UserUpdate {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uu.AddGameIDs(ids...)
+}
+
+// AddFavoriteGameIDs adds the "favorite_games" edge to the GameFavorite entity by IDs.
+func (uu *UserUpdate) AddFavoriteGameIDs(ids ...guidgql.GUID) *UserUpdate {
+	uu.mutation.AddFavoriteGameIDs(ids...)
+	return uu
+}
+
+// AddFavoriteGames adds the "favorite_games" edges to the GameFavorite entity.
+func (uu *UserUpdate) AddFavoriteGames(g ...*GameFavorite) *UserUpdate {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uu.AddFavoriteGameIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -281,6 +313,48 @@ func (uu *UserUpdate) RemoveGroupMembershipApplications(g ...*GroupMembershipApp
 		ids[i] = g[i].ID
 	}
 	return uu.RemoveGroupMembershipApplicationIDs(ids...)
+}
+
+// ClearGames clears all "games" edges to the Game entity.
+func (uu *UserUpdate) ClearGames() *UserUpdate {
+	uu.mutation.ClearGames()
+	return uu
+}
+
+// RemoveGameIDs removes the "games" edge to Game entities by IDs.
+func (uu *UserUpdate) RemoveGameIDs(ids ...guidgql.GUID) *UserUpdate {
+	uu.mutation.RemoveGameIDs(ids...)
+	return uu
+}
+
+// RemoveGames removes "games" edges to Game entities.
+func (uu *UserUpdate) RemoveGames(g ...*Game) *UserUpdate {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uu.RemoveGameIDs(ids...)
+}
+
+// ClearFavoriteGames clears all "favorite_games" edges to the GameFavorite entity.
+func (uu *UserUpdate) ClearFavoriteGames() *UserUpdate {
+	uu.mutation.ClearFavoriteGames()
+	return uu
+}
+
+// RemoveFavoriteGameIDs removes the "favorite_games" edge to GameFavorite entities by IDs.
+func (uu *UserUpdate) RemoveFavoriteGameIDs(ids ...guidgql.GUID) *UserUpdate {
+	uu.mutation.RemoveFavoriteGameIDs(ids...)
+	return uu
+}
+
+// RemoveFavoriteGames removes "favorite_games" edges to GameFavorite entities.
+func (uu *UserUpdate) RemoveFavoriteGames(g ...*GameFavorite) *UserUpdate {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uu.RemoveFavoriteGameIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -693,6 +767,114 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.GamesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GamesTable,
+			Columns: []string{user.GamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: game.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedGamesIDs(); len(nodes) > 0 && !uu.mutation.GamesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GamesTable,
+			Columns: []string{user.GamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: game.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.GamesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GamesTable,
+			Columns: []string{user.GamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: game.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.FavoriteGamesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FavoriteGamesTable,
+			Columns: []string{user.FavoriteGamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: gamefavorite.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedFavoriteGamesIDs(); len(nodes) > 0 && !uu.mutation.FavoriteGamesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FavoriteGamesTable,
+			Columns: []string{user.FavoriteGamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: gamefavorite.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.FavoriteGamesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FavoriteGamesTable,
+			Columns: []string{user.FavoriteGamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: gamefavorite.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -846,6 +1028,36 @@ func (uuo *UserUpdateOne) AddGroupMembershipApplications(g ...*GroupMembershipAp
 	return uuo.AddGroupMembershipApplicationIDs(ids...)
 }
 
+// AddGameIDs adds the "games" edge to the Game entity by IDs.
+func (uuo *UserUpdateOne) AddGameIDs(ids ...guidgql.GUID) *UserUpdateOne {
+	uuo.mutation.AddGameIDs(ids...)
+	return uuo
+}
+
+// AddGames adds the "games" edges to the Game entity.
+func (uuo *UserUpdateOne) AddGames(g ...*Game) *UserUpdateOne {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uuo.AddGameIDs(ids...)
+}
+
+// AddFavoriteGameIDs adds the "favorite_games" edge to the GameFavorite entity by IDs.
+func (uuo *UserUpdateOne) AddFavoriteGameIDs(ids ...guidgql.GUID) *UserUpdateOne {
+	uuo.mutation.AddFavoriteGameIDs(ids...)
+	return uuo
+}
+
+// AddFavoriteGames adds the "favorite_games" edges to the GameFavorite entity.
+func (uuo *UserUpdateOne) AddFavoriteGames(g ...*GameFavorite) *UserUpdateOne {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uuo.AddFavoriteGameIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -960,6 +1172,48 @@ func (uuo *UserUpdateOne) RemoveGroupMembershipApplications(g ...*GroupMembershi
 		ids[i] = g[i].ID
 	}
 	return uuo.RemoveGroupMembershipApplicationIDs(ids...)
+}
+
+// ClearGames clears all "games" edges to the Game entity.
+func (uuo *UserUpdateOne) ClearGames() *UserUpdateOne {
+	uuo.mutation.ClearGames()
+	return uuo
+}
+
+// RemoveGameIDs removes the "games" edge to Game entities by IDs.
+func (uuo *UserUpdateOne) RemoveGameIDs(ids ...guidgql.GUID) *UserUpdateOne {
+	uuo.mutation.RemoveGameIDs(ids...)
+	return uuo
+}
+
+// RemoveGames removes "games" edges to Game entities.
+func (uuo *UserUpdateOne) RemoveGames(g ...*Game) *UserUpdateOne {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uuo.RemoveGameIDs(ids...)
+}
+
+// ClearFavoriteGames clears all "favorite_games" edges to the GameFavorite entity.
+func (uuo *UserUpdateOne) ClearFavoriteGames() *UserUpdateOne {
+	uuo.mutation.ClearFavoriteGames()
+	return uuo
+}
+
+// RemoveFavoriteGameIDs removes the "favorite_games" edge to GameFavorite entities by IDs.
+func (uuo *UserUpdateOne) RemoveFavoriteGameIDs(ids ...guidgql.GUID) *UserUpdateOne {
+	uuo.mutation.RemoveFavoriteGameIDs(ids...)
+	return uuo
+}
+
+// RemoveFavoriteGames removes "favorite_games" edges to GameFavorite entities.
+func (uuo *UserUpdateOne) RemoveFavoriteGames(g ...*GameFavorite) *UserUpdateOne {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uuo.RemoveFavoriteGameIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -1394,6 +1648,114 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.GamesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GamesTable,
+			Columns: []string{user.GamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: game.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedGamesIDs(); len(nodes) > 0 && !uuo.mutation.GamesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GamesTable,
+			Columns: []string{user.GamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: game.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.GamesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GamesTable,
+			Columns: []string{user.GamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: game.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.FavoriteGamesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FavoriteGamesTable,
+			Columns: []string{user.FavoriteGamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: gamefavorite.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedFavoriteGamesIDs(); len(nodes) > 0 && !uuo.mutation.FavoriteGamesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FavoriteGamesTable,
+			Columns: []string{user.FavoriteGamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: gamefavorite.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.FavoriteGamesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FavoriteGamesTable,
+			Columns: []string{user.FavoriteGamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: gamefavorite.FieldID,
 				},
 			},
 		}

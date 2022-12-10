@@ -16,7 +16,6 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
-	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
 
@@ -305,8 +304,3 @@ func (r *mutationResolver) KickUserFromGroup(ctx context.Context, groupID guidgq
 
 	return err == nil, err
 }
-
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
-type mutationResolver struct{ *Resolver }

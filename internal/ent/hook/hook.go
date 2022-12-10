@@ -9,6 +9,32 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent"
 )
 
+// The GameFunc type is an adapter to allow the use of ordinary
+// function as Game mutator.
+type GameFunc func(context.Context, *ent.GameMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GameFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.GameMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GameMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The GameFavoriteFunc type is an adapter to allow the use of ordinary
+// function as GameFavorite mutator.
+type GameFavoriteFunc func(context.Context, *ent.GameFavoriteMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GameFavoriteFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.GameFavoriteMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GameFavoriteMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The GroupFunc type is an adapter to allow the use of ordinary
 // function as Group mutator.
 type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)

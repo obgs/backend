@@ -6,6 +6,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Game is the predicate function for game builders.
+type Game func(*sql.Selector)
+
+// GameFavorite is the predicate function for gamefavorite builders.
+type GameFavorite func(*sql.Selector)
+
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 

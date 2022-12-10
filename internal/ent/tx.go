@@ -12,6 +12,10 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Game is the client for interacting with the Game builders.
+	Game *GameClient
+	// GameFavorite is the client for interacting with the GameFavorite builders.
+	GameFavorite *GameFavoriteClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// GroupMembership is the client for interacting with the GroupMembership builders.
@@ -159,6 +163,8 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Game = NewGameClient(tx.config)
+	tx.GameFavorite = NewGameFavoriteClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.GroupMembership = NewGroupMembershipClient(tx.config)
 	tx.GroupMembershipApplication = NewGroupMembershipApplicationClient(tx.config)
@@ -176,7 +182,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Group.QueryXXX(), the query will be executed
+// applies a query, for example: Game.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

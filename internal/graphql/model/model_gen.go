@@ -3,6 +3,7 @@
 package model
 
 import (
+	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -18,6 +19,11 @@ type CreateOrUpdateGroupInput struct {
 
 type CreatePlayerInput struct {
 	Name string `json:"name"`
+}
+
+type Favorites struct {
+	Total int         `json:"total"`
+	Users []*ent.User `json:"users"`
 }
 
 type GroupApplicationInput struct {

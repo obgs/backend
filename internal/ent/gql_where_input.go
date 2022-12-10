@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
+	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
@@ -17,6 +18,274 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
+
+// GameWhereInput represents a where input for filtering Game queries.
+type GameWhereInput struct {
+	Predicates []predicate.Game  `json:"-"`
+	Not        *GameWhereInput   `json:"not,omitempty"`
+	Or         []*GameWhereInput `json:"or,omitempty"`
+	And        []*GameWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "min_players" field predicates.
+	MinPlayers      *int  `json:"minPlayers,omitempty"`
+	MinPlayersNEQ   *int  `json:"minPlayersNEQ,omitempty"`
+	MinPlayersIn    []int `json:"minPlayersIn,omitempty"`
+	MinPlayersNotIn []int `json:"minPlayersNotIn,omitempty"`
+	MinPlayersGT    *int  `json:"minPlayersGT,omitempty"`
+	MinPlayersGTE   *int  `json:"minPlayersGTE,omitempty"`
+	MinPlayersLT    *int  `json:"minPlayersLT,omitempty"`
+	MinPlayersLTE   *int  `json:"minPlayersLTE,omitempty"`
+
+	// "max_players" field predicates.
+	MaxPlayers      *int  `json:"maxPlayers,omitempty"`
+	MaxPlayersNEQ   *int  `json:"maxPlayersNEQ,omitempty"`
+	MaxPlayersIn    []int `json:"maxPlayersIn,omitempty"`
+	MaxPlayersNotIn []int `json:"maxPlayersNotIn,omitempty"`
+	MaxPlayersGT    *int  `json:"maxPlayersGT,omitempty"`
+	MaxPlayersGTE   *int  `json:"maxPlayersGTE,omitempty"`
+	MaxPlayersLT    *int  `json:"maxPlayersLT,omitempty"`
+	MaxPlayersLTE   *int  `json:"maxPlayersLTE,omitempty"`
+
+	// "author" edge predicates.
+	HasAuthor     *bool             `json:"hasAuthor,omitempty"`
+	HasAuthorWith []*UserWhereInput `json:"hasAuthorWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *GameWhereInput) AddPredicates(predicates ...predicate.Game) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the GameWhereInput filter on the GameQuery builder.
+func (i *GameWhereInput) Filter(q *GameQuery) (*GameQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyGameWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyGameWhereInput is returned in case the GameWhereInput is empty.
+var ErrEmptyGameWhereInput = errors.New("ent: empty predicate GameWhereInput")
+
+// P returns a predicate for filtering games.
+// An error is returned if the input is empty or invalid.
+func (i *GameWhereInput) P() (predicate.Game, error) {
+	var predicates []predicate.Game
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, game.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Game, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, game.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Game, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, game.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, game.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, game.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, game.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, game.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, game.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, game.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, game.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, game.IDLTE(*i.IDLTE))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, game.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, game.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, game.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, game.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, game.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, game.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, game.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, game.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, game.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, game.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, game.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, game.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, game.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.MinPlayers != nil {
+		predicates = append(predicates, game.MinPlayersEQ(*i.MinPlayers))
+	}
+	if i.MinPlayersNEQ != nil {
+		predicates = append(predicates, game.MinPlayersNEQ(*i.MinPlayersNEQ))
+	}
+	if len(i.MinPlayersIn) > 0 {
+		predicates = append(predicates, game.MinPlayersIn(i.MinPlayersIn...))
+	}
+	if len(i.MinPlayersNotIn) > 0 {
+		predicates = append(predicates, game.MinPlayersNotIn(i.MinPlayersNotIn...))
+	}
+	if i.MinPlayersGT != nil {
+		predicates = append(predicates, game.MinPlayersGT(*i.MinPlayersGT))
+	}
+	if i.MinPlayersGTE != nil {
+		predicates = append(predicates, game.MinPlayersGTE(*i.MinPlayersGTE))
+	}
+	if i.MinPlayersLT != nil {
+		predicates = append(predicates, game.MinPlayersLT(*i.MinPlayersLT))
+	}
+	if i.MinPlayersLTE != nil {
+		predicates = append(predicates, game.MinPlayersLTE(*i.MinPlayersLTE))
+	}
+	if i.MaxPlayers != nil {
+		predicates = append(predicates, game.MaxPlayersEQ(*i.MaxPlayers))
+	}
+	if i.MaxPlayersNEQ != nil {
+		predicates = append(predicates, game.MaxPlayersNEQ(*i.MaxPlayersNEQ))
+	}
+	if len(i.MaxPlayersIn) > 0 {
+		predicates = append(predicates, game.MaxPlayersIn(i.MaxPlayersIn...))
+	}
+	if len(i.MaxPlayersNotIn) > 0 {
+		predicates = append(predicates, game.MaxPlayersNotIn(i.MaxPlayersNotIn...))
+	}
+	if i.MaxPlayersGT != nil {
+		predicates = append(predicates, game.MaxPlayersGT(*i.MaxPlayersGT))
+	}
+	if i.MaxPlayersGTE != nil {
+		predicates = append(predicates, game.MaxPlayersGTE(*i.MaxPlayersGTE))
+	}
+	if i.MaxPlayersLT != nil {
+		predicates = append(predicates, game.MaxPlayersLT(*i.MaxPlayersLT))
+	}
+	if i.MaxPlayersLTE != nil {
+		predicates = append(predicates, game.MaxPlayersLTE(*i.MaxPlayersLTE))
+	}
+
+	if i.HasAuthor != nil {
+		p := game.HasAuthor()
+		if !*i.HasAuthor {
+			p = game.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasAuthorWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasAuthorWith))
+		for _, w := range i.HasAuthorWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasAuthorWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, game.HasAuthorWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyGameWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return game.And(predicates...), nil
+	}
+}
 
 // GroupWhereInput represents a where input for filtering Group queries.
 type GroupWhereInput struct {
@@ -1264,6 +1533,10 @@ type UserWhereInput struct {
 	// "group_memberships" edge predicates.
 	HasGroupMemberships     *bool                        `json:"hasGroupMemberships,omitempty"`
 	HasGroupMembershipsWith []*GroupMembershipWhereInput `json:"hasGroupMembershipsWith,omitempty"`
+
+	// "games" edge predicates.
+	HasGames     *bool             `json:"hasGames,omitempty"`
+	HasGamesWith []*GameWhereInput `json:"hasGamesWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -1493,6 +1766,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasGroupMembershipsWith(with...))
+	}
+	if i.HasGames != nil {
+		p := user.HasGames()
+		if !*i.HasGames {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasGamesWith) > 0 {
+		with := make([]predicate.Game, 0, len(i.HasGamesWith))
+		for _, w := range i.HasGamesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasGamesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasGamesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

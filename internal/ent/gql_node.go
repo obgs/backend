@@ -10,6 +10,7 @@ import (
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/hashicorp/go-multierror"
+	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -46,6 +47,67 @@ type Edge struct {
 	Type string         `json:"type,omitempty"` // edge type.
 	Name string         `json:"name,omitempty"` // edge name.
 	IDs  []guidgql.GUID `json:"ids,omitempty"`  // node ids (where this edge point to).
+}
+
+func (ga *Game) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     ga.ID,
+		Type:   "Game",
+		Fields: make([]*Field, 5),
+		Edges:  make([]*Edge, 1),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(ga.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(ga.MinPlayers); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "int",
+		Name:  "min_players",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(ga.MaxPlayers); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "int",
+		Name:  "max_players",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(ga.Description); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "string",
+		Name:  "description",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(ga.BoardgamegeekURL); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "string",
+		Name:  "boardgamegeek_url",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "User",
+		Name: "author",
+	}
+	err = ga.QueryAuthor().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
 }
 
 func (gr *Group) Node(ctx context.Context) (node *Node, err error) {
@@ -368,7 +430,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     u.ID,
 		Type:   "User",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 4),
+		Edges:  make([]*Edge, 5),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(u.Name); err != nil {
@@ -432,6 +494,16 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	err = u.QueryGroupMembershipApplications().
 		Select(groupmembershipapplication.FieldID).
 		Scan(ctx, &node.Edges[3].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[4] = &Edge{
+		Type: "Game",
+		Name: "games",
+	}
+	err = u.QueryGames().
+		Select(game.FieldID).
+		Scan(ctx, &node.Edges[4].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -504,6 +576,22 @@ func (c *Client) Noder(ctx context.Context, id guidgql.GUID, opts ...NodeOption)
 
 func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Noder, error) {
 	switch table {
+	case game.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
+		query := c.Game.Query().
+			Where(game.ID(uid))
+		query, err := query.CollectFields(ctx, "Game")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case group.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -705,6 +793,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case game.Table:
+		query := c.Game.Query().
+			Where(game.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "Game")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case group.Table:
 		query := c.Group.Query().
 			Where(group.IDIn(ids...))

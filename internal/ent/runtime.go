@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -19,6 +21,34 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	gameFields := schema.Game{}.Fields()
+	_ = gameFields
+	// gameDescName is the schema descriptor for name field.
+	gameDescName := gameFields[1].Descriptor()
+	// game.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	game.NameValidator = gameDescName.Validators[0].(func(string) error)
+	// gameDescMinPlayers is the schema descriptor for min_players field.
+	gameDescMinPlayers := gameFields[2].Descriptor()
+	// game.DefaultMinPlayers holds the default value on creation for the min_players field.
+	game.DefaultMinPlayers = gameDescMinPlayers.Default.(int)
+	// gameDescMaxPlayers is the schema descriptor for max_players field.
+	gameDescMaxPlayers := gameFields[3].Descriptor()
+	// game.DefaultMaxPlayers holds the default value on creation for the max_players field.
+	game.DefaultMaxPlayers = gameDescMaxPlayers.Default.(int)
+	// gameDescDescription is the schema descriptor for description field.
+	gameDescDescription := gameFields[4].Descriptor()
+	// game.DefaultDescription holds the default value on creation for the description field.
+	game.DefaultDescription = gameDescDescription.Default.(string)
+	// gameDescID is the schema descriptor for id field.
+	gameDescID := gameFields[0].Descriptor()
+	// game.DefaultID holds the default value on creation for the id field.
+	game.DefaultID = gameDescID.Default.(func() guidgql.GUID)
+	gamefavoriteFields := schema.GameFavorite{}.Fields()
+	_ = gamefavoriteFields
+	// gamefavoriteDescID is the schema descriptor for id field.
+	gamefavoriteDescID := gamefavoriteFields[0].Descriptor()
+	// gamefavorite.DefaultID holds the default value on creation for the id field.
+	gamefavorite.DefaultID = gamefavoriteDescID.Default.(func() guidgql.GUID)
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescName is the schema descriptor for name field.

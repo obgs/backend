@@ -672,6 +672,62 @@ func HasGroupMembershipApplicationsWith(preds ...predicate.GroupMembershipApplic
 	})
 }
 
+// HasGames applies the HasEdge predicate on the "games" edge.
+func HasGames() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(GamesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GamesTable, GamesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGamesWith applies the HasEdge predicate on the "games" edge with a given conditions (other predicates).
+func HasGamesWith(preds ...predicate.Game) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(GamesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GamesTable, GamesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasFavoriteGames applies the HasEdge predicate on the "favorite_games" edge.
+func HasFavoriteGames() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(FavoriteGamesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, FavoriteGamesTable, FavoriteGamesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFavoriteGamesWith applies the HasEdge predicate on the "favorite_games" edge with a given conditions (other predicates).
+func HasFavoriteGamesWith(preds ...predicate.GameFavorite) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(FavoriteGamesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, FavoriteGamesTable, FavoriteGamesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(func(s *sql.Selector) {

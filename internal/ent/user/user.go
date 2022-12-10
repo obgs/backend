@@ -31,6 +31,10 @@ const (
 	EdgeGroupMemberships = "group_memberships"
 	// EdgeGroupMembershipApplications holds the string denoting the group_membership_applications edge name in mutations.
 	EdgeGroupMembershipApplications = "group_membership_applications"
+	// EdgeGames holds the string denoting the games edge name in mutations.
+	EdgeGames = "games"
+	// EdgeFavoriteGames holds the string denoting the favorite_games edge name in mutations.
+	EdgeFavoriteGames = "favorite_games"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PlayersTable is the table that holds the players relation/edge. The primary key declared below.
@@ -73,6 +77,20 @@ const (
 	GroupMembershipApplicationsInverseTable = "group_membership_applications"
 	// GroupMembershipApplicationsColumn is the table column denoting the group_membership_applications relation/edge.
 	GroupMembershipApplicationsColumn = "user_group_membership_applications"
+	// GamesTable is the table that holds the games relation/edge.
+	GamesTable = "games"
+	// GamesInverseTable is the table name for the Game entity.
+	// It exists in this package in order to avoid circular dependency with the "game" package.
+	GamesInverseTable = "games"
+	// GamesColumn is the table column denoting the games relation/edge.
+	GamesColumn = "user_games"
+	// FavoriteGamesTable is the table that holds the favorite_games relation/edge.
+	FavoriteGamesTable = "game_favorites"
+	// FavoriteGamesInverseTable is the table name for the GameFavorite entity.
+	// It exists in this package in order to avoid circular dependency with the "gamefavorite" package.
+	FavoriteGamesInverseTable = "game_favorites"
+	// FavoriteGamesColumn is the table column denoting the favorite_games relation/edge.
+	FavoriteGamesColumn = "user_favorite_games"
 )
 
 // Columns holds all SQL columns for user fields.

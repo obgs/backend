@@ -11,6 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
@@ -174,6 +176,36 @@ func (uc *UserCreate) AddGroupMembershipApplications(g ...*GroupMembershipApplic
 		ids[i] = g[i].ID
 	}
 	return uc.AddGroupMembershipApplicationIDs(ids...)
+}
+
+// AddGameIDs adds the "games" edge to the Game entity by IDs.
+func (uc *UserCreate) AddGameIDs(ids ...guidgql.GUID) *UserCreate {
+	uc.mutation.AddGameIDs(ids...)
+	return uc
+}
+
+// AddGames adds the "games" edges to the Game entity.
+func (uc *UserCreate) AddGames(g ...*Game) *UserCreate {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uc.AddGameIDs(ids...)
+}
+
+// AddFavoriteGameIDs adds the "favorite_games" edge to the GameFavorite entity by IDs.
+func (uc *UserCreate) AddFavoriteGameIDs(ids ...guidgql.GUID) *UserCreate {
+	uc.mutation.AddFavoriteGameIDs(ids...)
+	return uc
+}
+
+// AddFavoriteGames adds the "favorite_games" edges to the GameFavorite entity.
+func (uc *UserCreate) AddFavoriteGames(g ...*GameFavorite) *UserCreate {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return uc.AddFavoriteGameIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -450,6 +482,44 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: groupmembershipapplication.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.GamesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GamesTable,
+			Columns: []string{user.GamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: game.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.FavoriteGamesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FavoriteGamesTable,
+			Columns: []string{user.FavoriteGamesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: gamefavorite.FieldID,
 				},
 			},
 		}

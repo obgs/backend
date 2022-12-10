@@ -11,6 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
@@ -36,6 +38,8 @@ type UserQuery struct {
 	withSupervisionRequestApprovals      *PlayerSupervisionRequestApprovalQuery
 	withGroupMemberships                 *GroupMembershipQuery
 	withGroupMembershipApplications      *GroupMembershipApplicationQuery
+	withGames                            *GameQuery
+	withFavoriteGames                    *GameFavoriteQuery
 	modifiers                            []func(*sql.Selector)
 	loadTotal                            []func(context.Context, []*User) error
 	withNamedPlayers                     map[string]*PlayerQuery
@@ -43,6 +47,8 @@ type UserQuery struct {
 	withNamedSupervisionRequestApprovals map[string]*PlayerSupervisionRequestApprovalQuery
 	withNamedGroupMemberships            map[string]*GroupMembershipQuery
 	withNamedGroupMembershipApplications map[string]*GroupMembershipApplicationQuery
+	withNamedGames                       map[string]*GameQuery
+	withNamedFavoriteGames               map[string]*GameFavoriteQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -204,6 +210,50 @@ func (uq *UserQuery) QueryGroupMembershipApplications() *GroupMembershipApplicat
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(groupmembershipapplication.Table, groupmembershipapplication.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.GroupMembershipApplicationsTable, user.GroupMembershipApplicationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGames chains the current query on the "games" edge.
+func (uq *UserQuery) QueryGames() *GameQuery {
+	query := &GameQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GamesTable, user.GamesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFavoriteGames chains the current query on the "favorite_games" edge.
+func (uq *UserQuery) QueryFavoriteGames() *GameFavoriteQuery {
+	query := &GameFavoriteQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(gamefavorite.Table, gamefavorite.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.FavoriteGamesTable, user.FavoriteGamesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -398,6 +448,8 @@ func (uq *UserQuery) Clone() *UserQuery {
 		withSupervisionRequestApprovals: uq.withSupervisionRequestApprovals.Clone(),
 		withGroupMemberships:            uq.withGroupMemberships.Clone(),
 		withGroupMembershipApplications: uq.withGroupMembershipApplications.Clone(),
+		withGames:                       uq.withGames.Clone(),
+		withFavoriteGames:               uq.withFavoriteGames.Clone(),
 		// clone intermediate query.
 		sql:    uq.sql.Clone(),
 		path:   uq.path,
@@ -468,6 +520,28 @@ func (uq *UserQuery) WithGroupMembershipApplications(opts ...func(*GroupMembersh
 		opt(query)
 	}
 	uq.withGroupMembershipApplications = query
+	return uq
+}
+
+// WithGames tells the query-builder to eager-load the nodes that are connected to
+// the "games" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithGames(opts ...func(*GameQuery)) *UserQuery {
+	query := &GameQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withGames = query
+	return uq
+}
+
+// WithFavoriteGames tells the query-builder to eager-load the nodes that are connected to
+// the "favorite_games" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithFavoriteGames(opts ...func(*GameFavoriteQuery)) *UserQuery {
+	query := &GameFavoriteQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withFavoriteGames = query
 	return uq
 }
 
@@ -544,13 +618,15 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [8]bool{
 			uq.withPlayers != nil,
 			uq.withMainPlayer != nil,
 			uq.withSentSupervisionRequests != nil,
 			uq.withSupervisionRequestApprovals != nil,
 			uq.withGroupMemberships != nil,
 			uq.withGroupMembershipApplications != nil,
+			uq.withGames != nil,
+			uq.withFavoriteGames != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -621,6 +697,20 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := uq.withGames; query != nil {
+		if err := uq.loadGames(ctx, query, nodes,
+			func(n *User) { n.Edges.Games = []*Game{} },
+			func(n *User, e *Game) { n.Edges.Games = append(n.Edges.Games, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withFavoriteGames; query != nil {
+		if err := uq.loadFavoriteGames(ctx, query, nodes,
+			func(n *User) { n.Edges.FavoriteGames = []*GameFavorite{} },
+			func(n *User, e *GameFavorite) { n.Edges.FavoriteGames = append(n.Edges.FavoriteGames, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range uq.withNamedPlayers {
 		if err := uq.loadPlayers(ctx, query, nodes,
 			func(n *User) { n.appendNamedPlayers(name) },
@@ -653,6 +743,20 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadGroupMembershipApplications(ctx, query, nodes,
 			func(n *User) { n.appendNamedGroupMembershipApplications(name) },
 			func(n *User, e *GroupMembershipApplication) { n.appendNamedGroupMembershipApplications(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range uq.withNamedGames {
+		if err := uq.loadGames(ctx, query, nodes,
+			func(n *User) { n.appendNamedGames(name) },
+			func(n *User, e *Game) { n.appendNamedGames(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range uq.withNamedFavoriteGames {
+		if err := uq.loadFavoriteGames(ctx, query, nodes,
+			func(n *User) { n.appendNamedFavoriteGames(name) },
+			func(n *User, e *GameFavorite) { n.appendNamedFavoriteGames(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -874,6 +978,68 @@ func (uq *UserQuery) loadGroupMembershipApplications(ctx context.Context, query 
 	}
 	return nil
 }
+func (uq *UserQuery) loadGames(ctx context.Context, query *GameQuery, nodes []*User, init func(*User), assign func(*User, *Game)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Game(func(s *sql.Selector) {
+		s.Where(sql.InValues(user.GamesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_games
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_games" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_games" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadFavoriteGames(ctx context.Context, query *GameFavoriteQuery, nodes []*User, init func(*User), assign func(*User, *GameFavorite)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.GameFavorite(func(s *sql.Selector) {
+		s.Where(sql.InValues(user.FavoriteGamesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_favorite_games
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_favorite_games" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_favorite_games" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (uq *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := uq.querySpec()
@@ -1045,6 +1211,34 @@ func (uq *UserQuery) WithNamedGroupMembershipApplications(name string, opts ...f
 		uq.withNamedGroupMembershipApplications = make(map[string]*GroupMembershipApplicationQuery)
 	}
 	uq.withNamedGroupMembershipApplications[name] = query
+	return uq
+}
+
+// WithNamedGames tells the query-builder to eager-load the nodes that are connected to the "games"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithNamedGames(name string, opts ...func(*GameQuery)) *UserQuery {
+	query := &GameQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if uq.withNamedGames == nil {
+		uq.withNamedGames = make(map[string]*GameQuery)
+	}
+	uq.withNamedGames[name] = query
+	return uq
+}
+
+// WithNamedFavoriteGames tells the query-builder to eager-load the nodes that are connected to the "favorite_games"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithNamedFavoriteGames(name string, opts ...func(*GameFavoriteQuery)) *UserQuery {
+	query := &GameFavoriteQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if uq.withNamedFavoriteGames == nil {
+		uq.withNamedFavoriteGames = make(map[string]*GameFavoriteQuery)
+	}
+	uq.withNamedFavoriteGames[name] = query
 	return uq
 }
 

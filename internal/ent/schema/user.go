@@ -46,6 +46,12 @@ func (User) Edges() []ent.Edge {
 		edge.To("group_membership_applications", GroupMembershipApplication.Type).Annotations(
 			entgql.Skip(entgql.SkipMutationUpdateInput),
 		),
+		edge.To("games", Game.Type).Annotations(
+			entgql.Skip(entgql.SkipMutationUpdateInput),
+		),
+		edge.To("favorite_games", GameFavorite.Type).Annotations(
+			entgql.Skip(entgql.SkipMutationUpdateInput),
+		),
 	}
 }
 
