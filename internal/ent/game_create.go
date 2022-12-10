@@ -14,6 +14,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -125,6 +126,21 @@ func (gc *GameCreate) AddFavorites(g ...*GameFavorite) *GameCreate {
 		ids[i] = g[i].ID
 	}
 	return gc.AddFavoriteIDs(ids...)
+}
+
+// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by IDs.
+func (gc *GameCreate) AddStatDescriptionIDs(ids ...guidgql.GUID) *GameCreate {
+	gc.mutation.AddStatDescriptionIDs(ids...)
+	return gc
+}
+
+// AddStatDescriptions adds the "stat_descriptions" edges to the StatDescription entity.
+func (gc *GameCreate) AddStatDescriptions(s ...*StatDescription) *GameCreate {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return gc.AddStatDescriptionIDs(ids...)
 }
 
 // Mutation returns the GameMutation object of the builder.
@@ -241,6 +257,9 @@ func (gc *GameCreate) check() error {
 	if _, ok := gc.mutation.AuthorID(); !ok {
 		return &ValidationError{Name: "author", err: errors.New(`ent: missing required edge "Game.author"`)}
 	}
+	if len(gc.mutation.StatDescriptionsIDs()) == 0 {
+		return &ValidationError{Name: "stat_descriptions", err: errors.New(`ent: missing required edge "Game.stat_descriptions"`)}
+	}
 	return nil
 }
 
@@ -329,6 +348,25 @@ func (gc *GameCreate) createSpec() (*Game, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: gamefavorite.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := gc.mutation.StatDescriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.StatDescriptionsTable,
+			Columns: game.StatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statdescription.FieldID,
 				},
 			},
 		}

@@ -14,6 +14,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -111,6 +112,20 @@ func init() {
 	playersupervisionrequestapprovalDescID := playersupervisionrequestapprovalFields[0].Descriptor()
 	// playersupervisionrequestapproval.DefaultID holds the default value on creation for the id field.
 	playersupervisionrequestapproval.DefaultID = playersupervisionrequestapprovalDescID.Default.(func() guidgql.GUID)
+	statdescriptionFields := schema.StatDescription{}.Fields()
+	_ = statdescriptionFields
+	// statdescriptionDescName is the schema descriptor for name field.
+	statdescriptionDescName := statdescriptionFields[2].Descriptor()
+	// statdescription.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	statdescription.NameValidator = statdescriptionDescName.Validators[0].(func(string) error)
+	// statdescriptionDescDescription is the schema descriptor for description field.
+	statdescriptionDescDescription := statdescriptionFields[3].Descriptor()
+	// statdescription.DefaultDescription holds the default value on creation for the description field.
+	statdescription.DefaultDescription = statdescriptionDescDescription.Default.(string)
+	// statdescriptionDescID is the schema descriptor for id field.
+	statdescriptionDescID := statdescriptionFields[0].Descriptor()
+	// statdescription.DefaultID holds the default value on creation for the id field.
+	statdescription.DefaultID = statdescriptionDescID.Default.(func() guidgql.GUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescName is the schema descriptor for name field.

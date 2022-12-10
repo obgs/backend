@@ -14,6 +14,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -144,6 +145,21 @@ func (gu *GameUpdate) AddFavorites(g ...*GameFavorite) *GameUpdate {
 	return gu.AddFavoriteIDs(ids...)
 }
 
+// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by IDs.
+func (gu *GameUpdate) AddStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.AddStatDescriptionIDs(ids...)
+	return gu
+}
+
+// AddStatDescriptions adds the "stat_descriptions" edges to the StatDescription entity.
+func (gu *GameUpdate) AddStatDescriptions(s ...*StatDescription) *GameUpdate {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return gu.AddStatDescriptionIDs(ids...)
+}
+
 // Mutation returns the GameMutation object of the builder.
 func (gu *GameUpdate) Mutation() *GameMutation {
 	return gu.mutation
@@ -174,6 +190,27 @@ func (gu *GameUpdate) RemoveFavorites(g ...*GameFavorite) *GameUpdate {
 		ids[i] = g[i].ID
 	}
 	return gu.RemoveFavoriteIDs(ids...)
+}
+
+// ClearStatDescriptions clears all "stat_descriptions" edges to the StatDescription entity.
+func (gu *GameUpdate) ClearStatDescriptions() *GameUpdate {
+	gu.mutation.ClearStatDescriptions()
+	return gu
+}
+
+// RemoveStatDescriptionIDs removes the "stat_descriptions" edge to StatDescription entities by IDs.
+func (gu *GameUpdate) RemoveStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.RemoveStatDescriptionIDs(ids...)
+	return gu
+}
+
+// RemoveStatDescriptions removes "stat_descriptions" edges to StatDescription entities.
+func (gu *GameUpdate) RemoveStatDescriptions(s ...*StatDescription) *GameUpdate {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return gu.RemoveStatDescriptionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -383,6 +420,60 @@ func (gu *GameUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if gu.mutation.StatDescriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.StatDescriptionsTable,
+			Columns: game.StatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statdescription.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gu.mutation.RemovedStatDescriptionsIDs(); len(nodes) > 0 && !gu.mutation.StatDescriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.StatDescriptionsTable,
+			Columns: game.StatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gu.mutation.StatDescriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.StatDescriptionsTable,
+			Columns: game.StatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, gu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{game.Label}
@@ -516,6 +607,21 @@ func (guo *GameUpdateOne) AddFavorites(g ...*GameFavorite) *GameUpdateOne {
 	return guo.AddFavoriteIDs(ids...)
 }
 
+// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by IDs.
+func (guo *GameUpdateOne) AddStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.AddStatDescriptionIDs(ids...)
+	return guo
+}
+
+// AddStatDescriptions adds the "stat_descriptions" edges to the StatDescription entity.
+func (guo *GameUpdateOne) AddStatDescriptions(s ...*StatDescription) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return guo.AddStatDescriptionIDs(ids...)
+}
+
 // Mutation returns the GameMutation object of the builder.
 func (guo *GameUpdateOne) Mutation() *GameMutation {
 	return guo.mutation
@@ -546,6 +652,27 @@ func (guo *GameUpdateOne) RemoveFavorites(g ...*GameFavorite) *GameUpdateOne {
 		ids[i] = g[i].ID
 	}
 	return guo.RemoveFavoriteIDs(ids...)
+}
+
+// ClearStatDescriptions clears all "stat_descriptions" edges to the StatDescription entity.
+func (guo *GameUpdateOne) ClearStatDescriptions() *GameUpdateOne {
+	guo.mutation.ClearStatDescriptions()
+	return guo
+}
+
+// RemoveStatDescriptionIDs removes the "stat_descriptions" edge to StatDescription entities by IDs.
+func (guo *GameUpdateOne) RemoveStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.RemoveStatDescriptionIDs(ids...)
+	return guo
+}
+
+// RemoveStatDescriptions removes "stat_descriptions" edges to StatDescription entities.
+func (guo *GameUpdateOne) RemoveStatDescriptions(s ...*StatDescription) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return guo.RemoveStatDescriptionIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -777,6 +904,60 @@ func (guo *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: gamefavorite.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if guo.mutation.StatDescriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.StatDescriptionsTable,
+			Columns: game.StatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statdescription.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := guo.mutation.RemovedStatDescriptionsIDs(); len(nodes) > 0 && !guo.mutation.StatDescriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.StatDescriptionsTable,
+			Columns: game.StatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := guo.mutation.StatDescriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.StatDescriptionsTable,
+			Columns: game.StatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statdescription.FieldID,
 				},
 			},
 		}

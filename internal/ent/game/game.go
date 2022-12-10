@@ -25,6 +25,8 @@ const (
 	EdgeAuthor = "author"
 	// EdgeFavorites holds the string denoting the favorites edge name in mutations.
 	EdgeFavorites = "favorites"
+	// EdgeStatDescriptions holds the string denoting the stat_descriptions edge name in mutations.
+	EdgeStatDescriptions = "stat_descriptions"
 	// Table holds the table name of the game in the database.
 	Table = "games"
 	// AuthorTable is the table that holds the author relation/edge.
@@ -41,6 +43,11 @@ const (
 	FavoritesInverseTable = "game_favorites"
 	// FavoritesColumn is the table column denoting the favorites relation/edge.
 	FavoritesColumn = "game_favorites"
+	// StatDescriptionsTable is the table that holds the stat_descriptions relation/edge. The primary key declared below.
+	StatDescriptionsTable = "stat_description_game"
+	// StatDescriptionsInverseTable is the table name for the StatDescription entity.
+	// It exists in this package in order to avoid circular dependency with the "statdescription" package.
+	StatDescriptionsInverseTable = "stat_descriptions"
 )
 
 // Columns holds all SQL columns for game fields.
@@ -58,6 +65,12 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"user_games",
 }
+
+var (
+	// StatDescriptionsPrimaryKey and StatDescriptionsColumn2 are the table columns denoting the
+	// primary key for the stat_descriptions relation (M2M).
+	StatDescriptionsPrimaryKey = []string{"stat_description_id", "game_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

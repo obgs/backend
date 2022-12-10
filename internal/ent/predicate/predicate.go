@@ -33,5 +33,8 @@ type PlayerSupervisionRequest func(*sql.Selector)
 // PlayerSupervisionRequestApproval is the predicate function for playersupervisionrequestapproval builders.
 type PlayerSupervisionRequestApproval func(*sql.Selector)
 
+// StatDescription is the predicate function for statdescription builders.
+type StatDescription func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

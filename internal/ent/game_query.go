@@ -15,24 +15,27 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
 // GameQuery is the builder for querying Game entities.
 type GameQuery struct {
 	config
-	limit              *int
-	offset             *int
-	unique             *bool
-	order              []OrderFunc
-	fields             []string
-	predicates         []predicate.Game
-	withAuthor         *UserQuery
-	withFavorites      *GameFavoriteQuery
-	withFKs            bool
-	modifiers          []func(*sql.Selector)
-	loadTotal          []func(context.Context, []*Game) error
-	withNamedFavorites map[string]*GameFavoriteQuery
+	limit                     *int
+	offset                    *int
+	unique                    *bool
+	order                     []OrderFunc
+	fields                    []string
+	predicates                []predicate.Game
+	withAuthor                *UserQuery
+	withFavorites             *GameFavoriteQuery
+	withStatDescriptions      *StatDescriptionQuery
+	withFKs                   bool
+	modifiers                 []func(*sql.Selector)
+	loadTotal                 []func(context.Context, []*Game) error
+	withNamedFavorites        map[string]*GameFavoriteQuery
+	withNamedStatDescriptions map[string]*StatDescriptionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -106,6 +109,28 @@ func (gq *GameQuery) QueryFavorites() *GameFavoriteQuery {
 			sqlgraph.From(game.Table, game.FieldID, selector),
 			sqlgraph.To(gamefavorite.Table, gamefavorite.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, game.FavoritesTable, game.FavoritesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryStatDescriptions chains the current query on the "stat_descriptions" edge.
+func (gq *GameQuery) QueryStatDescriptions() *StatDescriptionQuery {
+	query := &StatDescriptionQuery{config: gq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := gq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := gq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, selector),
+			sqlgraph.To(statdescription.Table, statdescription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, game.StatDescriptionsTable, game.StatDescriptionsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
 		return fromU, nil
@@ -289,13 +314,14 @@ func (gq *GameQuery) Clone() *GameQuery {
 		return nil
 	}
 	return &GameQuery{
-		config:        gq.config,
-		limit:         gq.limit,
-		offset:        gq.offset,
-		order:         append([]OrderFunc{}, gq.order...),
-		predicates:    append([]predicate.Game{}, gq.predicates...),
-		withAuthor:    gq.withAuthor.Clone(),
-		withFavorites: gq.withFavorites.Clone(),
+		config:               gq.config,
+		limit:                gq.limit,
+		offset:               gq.offset,
+		order:                append([]OrderFunc{}, gq.order...),
+		predicates:           append([]predicate.Game{}, gq.predicates...),
+		withAuthor:           gq.withAuthor.Clone(),
+		withFavorites:        gq.withFavorites.Clone(),
+		withStatDescriptions: gq.withStatDescriptions.Clone(),
 		// clone intermediate query.
 		sql:    gq.sql.Clone(),
 		path:   gq.path,
@@ -322,6 +348,17 @@ func (gq *GameQuery) WithFavorites(opts ...func(*GameFavoriteQuery)) *GameQuery 
 		opt(query)
 	}
 	gq.withFavorites = query
+	return gq
+}
+
+// WithStatDescriptions tells the query-builder to eager-load the nodes that are connected to
+// the "stat_descriptions" edge. The optional arguments are used to configure the query builder of the edge.
+func (gq *GameQuery) WithStatDescriptions(opts ...func(*StatDescriptionQuery)) *GameQuery {
+	query := &StatDescriptionQuery{config: gq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	gq.withStatDescriptions = query
 	return gq
 }
 
@@ -399,9 +436,10 @@ func (gq *GameQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Game, e
 		nodes       = []*Game{}
 		withFKs     = gq.withFKs
 		_spec       = gq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			gq.withAuthor != nil,
 			gq.withFavorites != nil,
+			gq.withStatDescriptions != nil,
 		}
 	)
 	if gq.withAuthor != nil {
@@ -444,10 +482,24 @@ func (gq *GameQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Game, e
 			return nil, err
 		}
 	}
+	if query := gq.withStatDescriptions; query != nil {
+		if err := gq.loadStatDescriptions(ctx, query, nodes,
+			func(n *Game) { n.Edges.StatDescriptions = []*StatDescription{} },
+			func(n *Game, e *StatDescription) { n.Edges.StatDescriptions = append(n.Edges.StatDescriptions, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range gq.withNamedFavorites {
 		if err := gq.loadFavorites(ctx, query, nodes,
 			func(n *Game) { n.appendNamedFavorites(name) },
 			func(n *Game, e *GameFavorite) { n.appendNamedFavorites(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range gq.withNamedStatDescriptions {
+		if err := gq.loadStatDescriptions(ctx, query, nodes,
+			func(n *Game) { n.appendNamedStatDescriptions(name) },
+			func(n *Game, e *StatDescription) { n.appendNamedStatDescriptions(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -516,6 +568,64 @@ func (gq *GameQuery) loadFavorites(ctx context.Context, query *GameFavoriteQuery
 			return fmt.Errorf(`unexpected foreign-key "game_favorites" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
+	}
+	return nil
+}
+func (gq *GameQuery) loadStatDescriptions(ctx context.Context, query *StatDescriptionQuery, nodes []*Game, init func(*Game), assign func(*Game, *StatDescription)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[guidgql.GUID]*Game)
+	nids := make(map[guidgql.GUID]map[*Game]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(game.StatDescriptionsTable)
+		s.Join(joinT).On(s.C(statdescription.FieldID), joinT.C(game.StatDescriptionsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(game.StatDescriptionsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(game.StatDescriptionsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]any, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]any{new(guidgql.GUID)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []any) error {
+			outValue := *values[0].(*guidgql.GUID)
+			inValue := *values[1].(*guidgql.GUID)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*Game]struct{}{byID[outValue]: {}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "stat_descriptions" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }
@@ -634,6 +744,20 @@ func (gq *GameQuery) WithNamedFavorites(name string, opts ...func(*GameFavoriteQ
 		gq.withNamedFavorites = make(map[string]*GameFavoriteQuery)
 	}
 	gq.withNamedFavorites[name] = query
+	return gq
+}
+
+// WithNamedStatDescriptions tells the query-builder to eager-load the nodes that are connected to the "stat_descriptions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (gq *GameQuery) WithNamedStatDescriptions(name string, opts ...func(*StatDescriptionQuery)) *GameQuery {
+	query := &StatDescriptionQuery{config: gq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if gq.withNamedStatDescriptions == nil {
+		gq.withNamedStatDescriptions = make(map[string]*StatDescriptionQuery)
+	}
+	gq.withNamedStatDescriptions[name] = query
 	return gq
 }
 

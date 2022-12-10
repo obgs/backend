@@ -19,6 +19,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -49,6 +50,7 @@ func columnChecker(table string) func(string) error {
 		player.Table:                           player.ValidColumn,
 		playersupervisionrequest.Table:         playersupervisionrequest.ValidColumn,
 		playersupervisionrequestapproval.Table: playersupervisionrequestapproval.ValidColumn,
+		statdescription.Table:                  statdescription.ValidColumn,
 		user.Table:                             user.ValidColumn,
 	}
 	check, ok := checks[table]

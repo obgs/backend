@@ -624,6 +624,34 @@ func HasFavoritesWith(preds ...predicate.GameFavorite) predicate.Game {
 	})
 }
 
+// HasStatDescriptions applies the HasEdge predicate on the "stat_descriptions" edge.
+func HasStatDescriptions() predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(StatDescriptionsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, StatDescriptionsTable, StatDescriptionsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasStatDescriptionsWith applies the HasEdge predicate on the "stat_descriptions" edge with a given conditions (other predicates).
+func HasStatDescriptionsWith(preds ...predicate.StatDescription) predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(StatDescriptionsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, StatDescriptionsTable, StatDescriptionsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Game) predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {
