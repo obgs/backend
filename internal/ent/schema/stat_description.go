@@ -20,7 +20,7 @@ func (StatDescription) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.StatDescription)),
 		field.Enum("type").GoType(stat.StatType(stat.Numeric)),
-		field.String("name").NotEmpty().Unique(),
+		field.String("name").NotEmpty(),
 		field.String("description").Optional().Default(""),
 	}
 }
