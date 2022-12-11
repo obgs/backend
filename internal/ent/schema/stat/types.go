@@ -31,13 +31,9 @@ func (t StatType) String() string {
 }
 
 func (t StatType) Values() []string {
-	switch t {
-	case Numeric:
-		return []string{"numeric"}
-	case Enum:
-		return []string{"enum"}
-	default:
-		return []string{"unknown"}
+	return []string{
+		Numeric.String(),
+		Enum.String(),
 	}
 }
 

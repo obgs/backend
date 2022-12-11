@@ -518,6 +518,7 @@ type StatDescription implements Node {
 """StatDescriptionStatType is enum for the field type"""
 enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
   numeric
+  enum
 }
 """
 UpdateUserInput is used for update User object.

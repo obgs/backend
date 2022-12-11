@@ -224,7 +224,7 @@ var (
 	// StatDescriptionsColumns holds the columns for the "stat_descriptions" table.
 	StatDescriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"numeric"}},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"numeric", "enum"}},
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
 	}
