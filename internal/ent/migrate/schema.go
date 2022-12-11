@@ -225,7 +225,7 @@ var (
 	StatDescriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"numeric"}},
-		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
 	}
 	// StatDescriptionsTable holds the schema information for the "stat_descriptions" table.

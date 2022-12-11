@@ -64,6 +64,7 @@ type ComplexityRoot struct {
 		Description      func(childComplexity int) int
 		Favorites        func(childComplexity int) int
 		ID               func(childComplexity int) int
+		IsFavorite       func(childComplexity int) int
 		MaxPlayers       func(childComplexity int) int
 		MinPlayers       func(childComplexity int) int
 		Name             func(childComplexity int) int
@@ -238,6 +239,7 @@ type ComplexityRoot struct {
 
 type GameResolver interface {
 	Favorites(ctx context.Context, obj *ent.Game) (*model.Favorites, error)
+	IsFavorite(ctx context.Context, obj *ent.Game) (bool, error)
 }
 type GroupResolver interface {
 	Role(ctx context.Context, obj *ent.Group) (*enums.Role, error)
@@ -335,6 +337,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Game.ID(childComplexity), true
+
+	case "Game.isFavorite":
+		if e.complexity.Game.IsFavorite == nil {
+			break
+		}
+
+		return e.complexity.Game.IsFavorite(childComplexity), true
 
 	case "Game.maxPlayers":
 		if e.complexity.Game.MaxPlayers == nil {
@@ -1870,6 +1879,10 @@ input UserWhereInput {
 
 extend type Game {
   favorites: Favorites!
+  """
+  Whether the current user has favorited this game
+  """
+  isFavorite: Boolean!
 }
 
 input StatDescriptionInput {
@@ -3101,6 +3114,50 @@ func (ec *executionContext) fieldContext_Game_favorites(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Game_isFavorite(ctx context.Context, field graphql.CollectedField, obj *ent.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_isFavorite(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().IsFavorite(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_isFavorite(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _GameConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.GameConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_GameConnection_edges(ctx, field)
 	if err != nil {
@@ -3300,6 +3357,8 @@ func (ec *executionContext) fieldContext_GameEdge_node(ctx context.Context, fiel
 				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			case "favorites":
 				return ec.fieldContext_Game_favorites(ctx, field)
+			case "isFavorite":
+				return ec.fieldContext_Game_isFavorite(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
 		},
@@ -4957,6 +5016,8 @@ func (ec *executionContext) fieldContext_Mutation_createGame(ctx context.Context
 				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			case "favorites":
 				return ec.fieldContext_Game_favorites(ctx, field)
+			case "isFavorite":
+				return ec.fieldContext_Game_isFavorite(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
 		},
@@ -8261,6 +8322,8 @@ func (ec *executionContext) fieldContext_User_games(ctx context.Context, field g
 				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			case "favorites":
 				return ec.fieldContext_Game_favorites(ctx, field)
+			case "isFavorite":
+				return ec.fieldContext_Game_isFavorite(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
 		},
@@ -12985,6 +13048,26 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Game_favorites(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "isFavorite":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_isFavorite(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

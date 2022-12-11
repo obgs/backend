@@ -39,6 +39,16 @@ func (r *gameResolver) Favorites(ctx context.Context, obj *ent.Game) (*model.Fav
 	}, nil
 }
 
+// IsFavorite is the resolver for the isFavorite field.
+func (r *gameResolver) IsFavorite(ctx context.Context, obj *ent.Game) (bool, error) {
+	u, _ := auth.UserFromContext(ctx)
+	if u == nil {
+		return false, nil
+	}
+
+	return obj.QueryFavorites().Where(gamefavorite.HasUserWith(user.ID(u.ID))).Exist(ctx)
+}
+
 // CreateGame is the resolver for the createGame field.
 func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGameInput) (*ent.Game, error) {
 	u, err := auth.UserFromContext(ctx)

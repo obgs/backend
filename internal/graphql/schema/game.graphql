@@ -5,6 +5,10 @@ type Favorites {
 
 extend type Game {
   favorites: Favorites!
+  """
+  Whether the current user has favorited this game
+  """
+  isFavorite: Boolean!
 }
 
 input StatDescriptionInput {
