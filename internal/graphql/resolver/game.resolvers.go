@@ -67,6 +67,8 @@ func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGam
 		SetDescription(*input.Description).
 		SetBoardgamegeekURL(*input.BoardgamegeekURL).
 		SetAuthor(u).
+		SetMinPlayers(input.MinPlayers).
+		SetMaxPlayers(input.MaxPlayers).
 		AddStatDescriptions(descriptions...).
 		Save(ctx)
 }
