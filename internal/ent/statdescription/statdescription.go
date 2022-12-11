@@ -68,7 +68,7 @@ var (
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type stat.StatType) error {
 	switch _type.String() {
-	case "numeric":
+	case "numeric", "enum":
 		return nil
 	default:
 		return fmt.Errorf("statdescription: invalid enum value for type field: %q", _type)
