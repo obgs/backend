@@ -31,6 +31,10 @@ type CreatePlayerInput struct {
 	Name string `json:"name"`
 }
 
+type EnumStatInput struct {
+	PossibleValues []string `json:"possibleValues"`
+}
+
 type Favorites struct {
 	Total int         `json:"total"`
 	Users []*ent.User `json:"users"`
@@ -61,4 +65,6 @@ type StatDescriptionInput struct {
 	Type        stat.StatType `json:"type"`
 	Name        string        `json:"name"`
 	Description *string       `json:"description"`
+	// Possible values for this stat. Provide this only for enum type, otherwise an error will be thrown
+	EnumStatInput *EnumStatInput `json:"enumStatInput"`
 }

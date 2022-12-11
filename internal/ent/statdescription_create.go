@@ -51,6 +51,12 @@ func (sdc *StatDescriptionCreate) SetNillableDescription(s *string) *StatDescrip
 	return sdc
 }
 
+// SetPossibleValues sets the "possible_values" field.
+func (sdc *StatDescriptionCreate) SetPossibleValues(s []string) *StatDescriptionCreate {
+	sdc.mutation.SetPossibleValues(s)
+	return sdc
+}
+
 // SetID sets the "id" field.
 func (sdc *StatDescriptionCreate) SetID(gu guidgql.GUID) *StatDescriptionCreate {
 	sdc.mutation.SetID(gu)
@@ -234,6 +240,10 @@ func (sdc *StatDescriptionCreate) createSpec() (*StatDescription, *sqlgraph.Crea
 		_spec.SetField(statdescription.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
+	if value, ok := sdc.mutation.PossibleValues(); ok {
+		_spec.SetField(statdescription.FieldPossibleValues, field.TypeJSON, value)
+		_node.PossibleValues = value
+	}
 	if nodes := sdc.mutation.GameIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -347,6 +357,24 @@ func (u *StatDescriptionUpsert) ClearDescription() *StatDescriptionUpsert {
 	return u
 }
 
+// SetPossibleValues sets the "possible_values" field.
+func (u *StatDescriptionUpsert) SetPossibleValues(v []string) *StatDescriptionUpsert {
+	u.Set(statdescription.FieldPossibleValues, v)
+	return u
+}
+
+// UpdatePossibleValues sets the "possible_values" field to the value that was provided on create.
+func (u *StatDescriptionUpsert) UpdatePossibleValues() *StatDescriptionUpsert {
+	u.SetExcluded(statdescription.FieldPossibleValues)
+	return u
+}
+
+// ClearPossibleValues clears the value of the "possible_values" field.
+func (u *StatDescriptionUpsert) ClearPossibleValues() *StatDescriptionUpsert {
+	u.SetNull(statdescription.FieldPossibleValues)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -441,6 +469,27 @@ func (u *StatDescriptionUpsertOne) UpdateDescription() *StatDescriptionUpsertOne
 func (u *StatDescriptionUpsertOne) ClearDescription() *StatDescriptionUpsertOne {
 	return u.Update(func(s *StatDescriptionUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetPossibleValues sets the "possible_values" field.
+func (u *StatDescriptionUpsertOne) SetPossibleValues(v []string) *StatDescriptionUpsertOne {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.SetPossibleValues(v)
+	})
+}
+
+// UpdatePossibleValues sets the "possible_values" field to the value that was provided on create.
+func (u *StatDescriptionUpsertOne) UpdatePossibleValues() *StatDescriptionUpsertOne {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.UpdatePossibleValues()
+	})
+}
+
+// ClearPossibleValues clears the value of the "possible_values" field.
+func (u *StatDescriptionUpsertOne) ClearPossibleValues() *StatDescriptionUpsertOne {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.ClearPossibleValues()
 	})
 }
 
@@ -701,6 +750,27 @@ func (u *StatDescriptionUpsertBulk) UpdateDescription() *StatDescriptionUpsertBu
 func (u *StatDescriptionUpsertBulk) ClearDescription() *StatDescriptionUpsertBulk {
 	return u.Update(func(s *StatDescriptionUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetPossibleValues sets the "possible_values" field.
+func (u *StatDescriptionUpsertBulk) SetPossibleValues(v []string) *StatDescriptionUpsertBulk {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.SetPossibleValues(v)
+	})
+}
+
+// UpdatePossibleValues sets the "possible_values" field to the value that was provided on create.
+func (u *StatDescriptionUpsertBulk) UpdatePossibleValues() *StatDescriptionUpsertBulk {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.UpdatePossibleValues()
+	})
+}
+
+// ClearPossibleValues clears the value of the "possible_values" field.
+func (u *StatDescriptionUpsertBulk) ClearPossibleValues() *StatDescriptionUpsertBulk {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.ClearPossibleValues()
 	})
 }
 

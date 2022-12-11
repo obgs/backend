@@ -4938,19 +4938,21 @@ func (m *PlayerSupervisionRequestApprovalMutation) ResetEdge(name string) error 
 // StatDescriptionMutation represents an operation that mutates the StatDescription nodes in the graph.
 type StatDescriptionMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *guidgql.GUID
-	_type         *stat.StatType
-	name          *string
-	description   *string
-	clearedFields map[string]struct{}
-	game          map[guidgql.GUID]struct{}
-	removedgame   map[guidgql.GUID]struct{}
-	clearedgame   bool
-	done          bool
-	oldValue      func(context.Context) (*StatDescription, error)
-	predicates    []predicate.StatDescription
+	op                    Op
+	typ                   string
+	id                    *guidgql.GUID
+	_type                 *stat.StatType
+	name                  *string
+	description           *string
+	possible_values       *[]string
+	appendpossible_values []string
+	clearedFields         map[string]struct{}
+	game                  map[guidgql.GUID]struct{}
+	removedgame           map[guidgql.GUID]struct{}
+	clearedgame           bool
+	done                  bool
+	oldValue              func(context.Context) (*StatDescription, error)
+	predicates            []predicate.StatDescription
 }
 
 var _ ent.Mutation = (*StatDescriptionMutation)(nil)
@@ -5178,6 +5180,71 @@ func (m *StatDescriptionMutation) ResetDescription() {
 	delete(m.clearedFields, statdescription.FieldDescription)
 }
 
+// SetPossibleValues sets the "possible_values" field.
+func (m *StatDescriptionMutation) SetPossibleValues(s []string) {
+	m.possible_values = &s
+	m.appendpossible_values = nil
+}
+
+// PossibleValues returns the value of the "possible_values" field in the mutation.
+func (m *StatDescriptionMutation) PossibleValues() (r []string, exists bool) {
+	v := m.possible_values
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPossibleValues returns the old "possible_values" field's value of the StatDescription entity.
+// If the StatDescription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StatDescriptionMutation) OldPossibleValues(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPossibleValues is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPossibleValues requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPossibleValues: %w", err)
+	}
+	return oldValue.PossibleValues, nil
+}
+
+// AppendPossibleValues adds s to the "possible_values" field.
+func (m *StatDescriptionMutation) AppendPossibleValues(s []string) {
+	m.appendpossible_values = append(m.appendpossible_values, s...)
+}
+
+// AppendedPossibleValues returns the list of values that were appended to the "possible_values" field in this mutation.
+func (m *StatDescriptionMutation) AppendedPossibleValues() ([]string, bool) {
+	if len(m.appendpossible_values) == 0 {
+		return nil, false
+	}
+	return m.appendpossible_values, true
+}
+
+// ClearPossibleValues clears the value of the "possible_values" field.
+func (m *StatDescriptionMutation) ClearPossibleValues() {
+	m.possible_values = nil
+	m.appendpossible_values = nil
+	m.clearedFields[statdescription.FieldPossibleValues] = struct{}{}
+}
+
+// PossibleValuesCleared returns if the "possible_values" field was cleared in this mutation.
+func (m *StatDescriptionMutation) PossibleValuesCleared() bool {
+	_, ok := m.clearedFields[statdescription.FieldPossibleValues]
+	return ok
+}
+
+// ResetPossibleValues resets all changes to the "possible_values" field.
+func (m *StatDescriptionMutation) ResetPossibleValues() {
+	m.possible_values = nil
+	m.appendpossible_values = nil
+	delete(m.clearedFields, statdescription.FieldPossibleValues)
+}
+
 // AddGameIDs adds the "game" edge to the Game entity by ids.
 func (m *StatDescriptionMutation) AddGameIDs(ids ...guidgql.GUID) {
 	if m.game == nil {
@@ -5251,7 +5318,7 @@ func (m *StatDescriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *StatDescriptionMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m._type != nil {
 		fields = append(fields, statdescription.FieldType)
 	}
@@ -5260,6 +5327,9 @@ func (m *StatDescriptionMutation) Fields() []string {
 	}
 	if m.description != nil {
 		fields = append(fields, statdescription.FieldDescription)
+	}
+	if m.possible_values != nil {
+		fields = append(fields, statdescription.FieldPossibleValues)
 	}
 	return fields
 }
@@ -5275,6 +5345,8 @@ func (m *StatDescriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case statdescription.FieldDescription:
 		return m.Description()
+	case statdescription.FieldPossibleValues:
+		return m.PossibleValues()
 	}
 	return nil, false
 }
@@ -5290,6 +5362,8 @@ func (m *StatDescriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldName(ctx)
 	case statdescription.FieldDescription:
 		return m.OldDescription(ctx)
+	case statdescription.FieldPossibleValues:
+		return m.OldPossibleValues(ctx)
 	}
 	return nil, fmt.Errorf("unknown StatDescription field %s", name)
 }
@@ -5319,6 +5393,13 @@ func (m *StatDescriptionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDescription(v)
+		return nil
+	case statdescription.FieldPossibleValues:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPossibleValues(v)
 		return nil
 	}
 	return fmt.Errorf("unknown StatDescription field %s", name)
@@ -5353,6 +5434,9 @@ func (m *StatDescriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(statdescription.FieldDescription) {
 		fields = append(fields, statdescription.FieldDescription)
 	}
+	if m.FieldCleared(statdescription.FieldPossibleValues) {
+		fields = append(fields, statdescription.FieldPossibleValues)
+	}
 	return fields
 }
 
@@ -5370,6 +5454,9 @@ func (m *StatDescriptionMutation) ClearField(name string) error {
 	case statdescription.FieldDescription:
 		m.ClearDescription()
 		return nil
+	case statdescription.FieldPossibleValues:
+		m.ClearPossibleValues()
+		return nil
 	}
 	return fmt.Errorf("unknown StatDescription nullable field %s", name)
 }
@@ -5386,6 +5473,9 @@ func (m *StatDescriptionMutation) ResetField(name string) error {
 		return nil
 	case statdescription.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case statdescription.FieldPossibleValues:
+		m.ResetPossibleValues()
 		return nil
 	}
 	return fmt.Errorf("unknown StatDescription field %s", name)
