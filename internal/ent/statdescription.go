@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -23,6 +24,8 @@ type StatDescription struct {
 	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
+	// PossibleValues holds the value of the "possible_values" field.
+	PossibleValues []string `json:"possible_values,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the StatDescriptionQuery when eager-loading is set.
 	Edges StatDescriptionEdges `json:"edges"`
@@ -53,6 +56,8 @@ func (*StatDescription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case statdescription.FieldPossibleValues:
+			values[i] = new([]byte)
 		case statdescription.FieldID:
 			values[i] = new(guidgql.GUID)
 		case statdescription.FieldName, statdescription.FieldDescription:
@@ -98,6 +103,14 @@ func (sd *StatDescription) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				sd.Description = value.String
 			}
+		case statdescription.FieldPossibleValues:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field possible_values", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &sd.PossibleValues); err != nil {
+					return fmt.Errorf("unmarshal field possible_values: %w", err)
+				}
+			}
 		}
 	}
 	return nil
@@ -139,6 +152,9 @@ func (sd *StatDescription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(sd.Description)
+	builder.WriteString(", ")
+	builder.WriteString("possible_values=")
+	builder.WriteString(fmt.Sprintf("%v", sd.PossibleValues))
 	builder.WriteByte(')')
 	return builder.String()
 }

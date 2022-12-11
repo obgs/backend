@@ -22,6 +22,7 @@ func (StatDescription) Fields() []ent.Field {
 		field.Enum("type").GoType(stat.StatType(stat.Numeric)),
 		field.String("name").NotEmpty(),
 		field.String("description").Optional().Default(""),
+		field.Strings("possible_values").Optional().Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }
 

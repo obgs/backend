@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
@@ -59,6 +60,24 @@ func (sdu *StatDescriptionUpdate) SetNillableDescription(s *string) *StatDescrip
 // ClearDescription clears the value of the "description" field.
 func (sdu *StatDescriptionUpdate) ClearDescription() *StatDescriptionUpdate {
 	sdu.mutation.ClearDescription()
+	return sdu
+}
+
+// SetPossibleValues sets the "possible_values" field.
+func (sdu *StatDescriptionUpdate) SetPossibleValues(s []string) *StatDescriptionUpdate {
+	sdu.mutation.SetPossibleValues(s)
+	return sdu
+}
+
+// AppendPossibleValues appends s to the "possible_values" field.
+func (sdu *StatDescriptionUpdate) AppendPossibleValues(s []string) *StatDescriptionUpdate {
+	sdu.mutation.AppendPossibleValues(s)
+	return sdu
+}
+
+// ClearPossibleValues clears the value of the "possible_values" field.
+func (sdu *StatDescriptionUpdate) ClearPossibleValues() *StatDescriptionUpdate {
+	sdu.mutation.ClearPossibleValues()
 	return sdu
 }
 
@@ -208,6 +227,17 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 	if sdu.mutation.DescriptionCleared() {
 		_spec.ClearField(statdescription.FieldDescription, field.TypeString)
 	}
+	if value, ok := sdu.mutation.PossibleValues(); ok {
+		_spec.SetField(statdescription.FieldPossibleValues, field.TypeJSON, value)
+	}
+	if value, ok := sdu.mutation.AppendedPossibleValues(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, statdescription.FieldPossibleValues, value)
+		})
+	}
+	if sdu.mutation.PossibleValuesCleared() {
+		_spec.ClearField(statdescription.FieldPossibleValues, field.TypeJSON)
+	}
 	if sdu.mutation.GameCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -310,6 +340,24 @@ func (sduo *StatDescriptionUpdateOne) SetNillableDescription(s *string) *StatDes
 // ClearDescription clears the value of the "description" field.
 func (sduo *StatDescriptionUpdateOne) ClearDescription() *StatDescriptionUpdateOne {
 	sduo.mutation.ClearDescription()
+	return sduo
+}
+
+// SetPossibleValues sets the "possible_values" field.
+func (sduo *StatDescriptionUpdateOne) SetPossibleValues(s []string) *StatDescriptionUpdateOne {
+	sduo.mutation.SetPossibleValues(s)
+	return sduo
+}
+
+// AppendPossibleValues appends s to the "possible_values" field.
+func (sduo *StatDescriptionUpdateOne) AppendPossibleValues(s []string) *StatDescriptionUpdateOne {
+	sduo.mutation.AppendPossibleValues(s)
+	return sduo
+}
+
+// ClearPossibleValues clears the value of the "possible_values" field.
+func (sduo *StatDescriptionUpdateOne) ClearPossibleValues() *StatDescriptionUpdateOne {
+	sduo.mutation.ClearPossibleValues()
 	return sduo
 }
 
@@ -488,6 +536,17 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 	}
 	if sduo.mutation.DescriptionCleared() {
 		_spec.ClearField(statdescription.FieldDescription, field.TypeString)
+	}
+	if value, ok := sduo.mutation.PossibleValues(); ok {
+		_spec.SetField(statdescription.FieldPossibleValues, field.TypeJSON, value)
+	}
+	if value, ok := sduo.mutation.AppendedPossibleValues(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, statdescription.FieldPossibleValues, value)
+		})
+	}
+	if sduo.mutation.PossibleValuesCleared() {
+		_spec.ClearField(statdescription.FieldPossibleValues, field.TypeJSON)
 	}
 	if sduo.mutation.GameCleared() {
 		edge := &sqlgraph.EdgeSpec{

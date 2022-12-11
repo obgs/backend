@@ -343,6 +343,20 @@ func DescriptionContainsFold(v string) predicate.StatDescription {
 	})
 }
 
+// PossibleValuesIsNil applies the IsNil predicate on the "possible_values" field.
+func PossibleValuesIsNil() predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldPossibleValues)))
+	})
+}
+
+// PossibleValuesNotNil applies the NotNil predicate on the "possible_values" field.
+func PossibleValuesNotNil() predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldPossibleValues)))
+	})
+}
+
 // HasGame applies the HasEdge predicate on the "game" edge.
 func HasGame() predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {

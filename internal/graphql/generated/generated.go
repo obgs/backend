@@ -205,10 +205,11 @@ type ComplexityRoot struct {
 	}
 
 	StatDescription struct {
-		Description func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Name        func(childComplexity int) int
-		Type        func(childComplexity int) int
+		Description    func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Name           func(childComplexity int) int
+		PossibleValues func(childComplexity int) int
+		Type           func(childComplexity int) int
 	}
 
 	User struct {
@@ -1042,6 +1043,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.StatDescription.Name(childComplexity), true
 
+	case "StatDescription.possibleValues":
+		if e.complexity.StatDescription.PossibleValues == nil {
+			break
+		}
+
+		return e.complexity.StatDescription.PossibleValues(childComplexity), true
+
 	case "StatDescription.type":
 		if e.complexity.StatDescription.Type == nil {
 			break
@@ -1172,6 +1180,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateGameInput,
 		ec.unmarshalInputCreateOrUpdateGroupInput,
 		ec.unmarshalInputCreatePlayerInput,
+		ec.unmarshalInputEnumStatInput,
 		ec.unmarshalInputGameWhereInput,
 		ec.unmarshalInputGroupApplicationInput,
 		ec.unmarshalInputGroupMembershipWhereInput,
@@ -1764,6 +1773,7 @@ type StatDescription implements Node {
   type: StatDescriptionStatType!
   name: String!
   description: String
+  possibleValues: [String!]
 }
 """StatDescriptionStatType is enum for the field type"""
 enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
@@ -1886,10 +1896,18 @@ extend type Game {
   isFavorite: Boolean!
 }
 
+input EnumStatInput {
+  possibleValues: [String!]!
+}
+
 input StatDescriptionInput {
   type: StatDescriptionStatType!
   name: String!
   description: String
+  """
+  Possible values for this stat. Provide this only for enum type, otherwise an error will be thrown
+  """
+  enumStatInput: EnumStatInput
 }
 
 input CreateGameInput {
@@ -3058,6 +3076,8 @@ func (ec *executionContext) fieldContext_Game_statDescriptions(ctx context.Conte
 				return ec.fieldContext_StatDescription_name(ctx, field)
 			case "description":
 				return ec.fieldContext_StatDescription_description(ctx, field)
+			case "possibleValues":
+				return ec.fieldContext_StatDescription_possibleValues(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StatDescription", field.Name)
 		},
@@ -7885,6 +7905,47 @@ func (ec *executionContext) fieldContext_StatDescription_description(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _StatDescription_possibleValues(ctx context.Context, field graphql.CollectedField, obj *ent.StatDescription) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StatDescription_possibleValues(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PossibleValues, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StatDescription_possibleValues(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatDescription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_id(ctx, field)
 	if err != nil {
@@ -10667,6 +10728,34 @@ func (ec *executionContext) unmarshalInputCreatePlayerInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputEnumStatInput(ctx context.Context, obj interface{}) (model.EnumStatInput, error) {
+	var it model.EnumStatInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"possibleValues"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "possibleValues":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("possibleValues"))
+			it.PossibleValues, err = ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputGameWhereInput(ctx context.Context, obj interface{}) (ent.GameWhereInput, error) {
 	var it ent.GameWhereInput
 	asMap := map[string]interface{}{}
@@ -12358,7 +12447,7 @@ func (ec *executionContext) unmarshalInputStatDescriptionInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"type", "name", "description"}
+	fieldsInOrder := [...]string{"type", "name", "description", "enumStatInput"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -12386,6 +12475,14 @@ func (ec *executionContext) unmarshalInputStatDescriptionInput(ctx context.Conte
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "enumStatInput":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enumStatInput"))
+			it.EnumStatInput, err = ec.unmarshalOEnumStatInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumStatInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -14396,6 +14493,10 @@ func (ec *executionContext) _StatDescription(ctx context.Context, sel ast.Select
 
 			out.Values[i] = ec._StatDescription_description(ctx, field, obj)
 
+		case "possibleValues":
+
+			out.Values[i] = ec._StatDescription_possibleValues(ctx, field, obj)
+
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -15516,6 +15617,38 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUpdateUserInput(ctx context.Context, v interface{}) (ent.UpdateUserInput, error) {
 	res, err := ec.unmarshalInputUpdateUserInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -15891,6 +16024,14 @@ func (ec *executionContext) marshalOCursor2ᚖgithubᚗcomᚋopenᚑboardgameᚑ
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalOEnumStatInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumStatInput(ctx context.Context, v interface{}) (*model.EnumStatInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputEnumStatInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOGame2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Game) graphql.Marshaler {

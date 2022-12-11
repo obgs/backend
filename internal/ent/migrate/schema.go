@@ -227,6 +227,7 @@ var (
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"numeric", "enum"}},
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "possible_values", Type: field.TypeJSON, Nullable: true},
 	}
 	// StatDescriptionsTable holds the schema information for the "stat_descriptions" table.
 	StatDescriptionsTable = &schema.Table{

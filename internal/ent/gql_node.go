@@ -440,7 +440,7 @@ func (sd *StatDescription) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     sd.ID,
 		Type:   "StatDescription",
-		Fields: make([]*Field, 3),
+		Fields: make([]*Field, 4),
 		Edges:  make([]*Edge, 0),
 	}
 	var buf []byte
@@ -466,6 +466,14 @@ func (sd *StatDescription) Node(ctx context.Context) (node *Node, err error) {
 	node.Fields[2] = &Field{
 		Type:  "string",
 		Name:  "description",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(sd.PossibleValues); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "[]string",
+		Name:  "possible_values",
 		Value: string(buf),
 	}
 	return node, nil
