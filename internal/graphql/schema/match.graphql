@@ -1,0 +1,18 @@
+input StatInput {
+  """
+  The StatDescription ID of the stat to be created
+  """
+  statId: ID!
+  value: String!
+  playerId: ID!
+}
+
+input CreateMatchInput {
+  gameId: ID!
+  playerIds: [ID!]!
+  stats: [StatInput!]!
+}
+
+extend type Mutation {
+  createMatch(match: CreateMatchInput!): Match! @authenticated
+}

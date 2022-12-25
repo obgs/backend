@@ -149,6 +149,7 @@ type ComplexityRoot struct {
 		ApplyToGroup                      func(childComplexity int, input model.GroupApplicationInput) int
 		ChangeUserGroupMembershipRole     func(childComplexity int, groupID guidgql.GUID, userID guidgql.GUID, role enums.Role) int
 		CreateGame                        func(childComplexity int, input model.CreateGameInput) int
+		CreateMatch                       func(childComplexity int, match model.CreateMatchInput) int
 		CreateOrUpdateGroup               func(childComplexity int, input model.CreateOrUpdateGroupInput) int
 		CreatePlayer                      func(childComplexity int, input model.CreatePlayerInput) int
 		JoinGroup                         func(childComplexity int, groupID guidgql.GUID) int
@@ -271,6 +272,7 @@ type MutationResolver interface {
 	ResolveGroupMembershipApplication(ctx context.Context, applicationID guidgql.GUID, accepted bool) (bool, error)
 	ChangeUserGroupMembershipRole(ctx context.Context, groupID guidgql.GUID, userID guidgql.GUID, role enums.Role) (bool, error)
 	KickUserFromGroup(ctx context.Context, groupID guidgql.GUID, userID guidgql.GUID) (bool, error)
+	CreateMatch(ctx context.Context, match model.CreateMatchInput) (*ent.Match, error)
 	CreatePlayer(ctx context.Context, input model.CreatePlayerInput) (*ent.Player, error)
 	RequestPlayerSupervision(ctx context.Context, input *model.RequestPlayerSupervisionInput) (*ent.PlayerSupervisionRequest, error)
 	ResolvePlayerSupervisionRequest(ctx context.Context, input model.ResolvePlayerSupervisionRequestInput) (bool, error)
@@ -722,6 +724,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateGame(childComplexity, args["input"].(model.CreateGameInput)), true
+
+	case "Mutation.createMatch":
+		if e.complexity.Mutation.CreateMatch == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createMatch_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateMatch(childComplexity, args["match"].(model.CreateMatchInput)), true
 
 	case "Mutation.createOrUpdateGroup":
 		if e.complexity.Mutation.CreateOrUpdateGroup == nil {
@@ -1264,6 +1278,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputCreateGameInput,
+		ec.unmarshalInputCreateMatchInput,
 		ec.unmarshalInputCreateOrUpdateGroupInput,
 		ec.unmarshalInputCreatePlayerInput,
 		ec.unmarshalInputEnumStatInput,
@@ -1280,6 +1295,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRequestPlayerSupervisionInput,
 		ec.unmarshalInputResolvePlayerSupervisionRequestInput,
 		ec.unmarshalInputStatDescriptionInput,
+		ec.unmarshalInputStatInput,
 		ec.unmarshalInputUpdateUserInput,
 		ec.unmarshalInputUserWhereInput,
 	)
@@ -2099,6 +2115,25 @@ extend type Mutation {
   kickUserFromGroup(groupId: ID!, userId: ID!): Boolean! @authenticated
 }
 `, BuiltIn: false},
+	{Name: "../schema/match.graphql", Input: `input StatInput {
+  """
+  The StatDescription ID of the stat to be created
+  """
+  statId: ID!
+  value: String!
+  playerId: ID!
+}
+
+input CreateMatchInput {
+  gameId: ID!
+  playerIds: [ID!]!
+  stats: [StatInput!]!
+}
+
+extend type Mutation {
+  createMatch(match: CreateMatchInput!): Match! @authenticated
+}
+`, BuiltIn: false},
 	{Name: "../schema/player.graphql", Input: `input CreatePlayerInput {
   name: String!
 }
@@ -2279,6 +2314,21 @@ func (ec *executionContext) field_Mutation_createGame_args(ctx context.Context, 
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createMatch_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CreateMatchInput
+	if tmp, ok := rawArgs["match"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("match"))
+		arg0, err = ec.unmarshalNCreateMatchInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateMatchInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["match"] = arg0
 	return args, nil
 }
 
@@ -5952,6 +6002,91 @@ func (ec *executionContext) fieldContext_Mutation_kickUserFromGroup(ctx context.
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_kickUserFromGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createMatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createMatch(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateMatch(rctx, fc.Args["match"].(model.CreateMatchInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Authenticated == nil {
+				return nil, errors.New("directive authenticated is not implemented")
+			}
+			return ec.directives.Authenticated(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*ent.Match); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/open-boardgame-stats/backend/internal/ent.Match`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Match)
+	fc.Result = res
+	return ec.marshalNMatch2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐMatch(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createMatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Match_id(ctx, field)
+			case "game":
+				return ec.fieldContext_Match_game(ctx, field)
+			case "players":
+				return ec.fieldContext_Match_players(ctx, field)
+			case "stats":
+				return ec.fieldContext_Match_stats(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Match", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createMatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -11303,6 +11438,50 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateMatchInput(ctx context.Context, obj interface{}) (model.CreateMatchInput, error) {
+	var it model.CreateMatchInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"gameId", "playerIds", "stats"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "gameId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gameId"))
+			it.GameID, err = ec.unmarshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "playerIds":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("playerIds"))
+			it.PlayerIds, err = ec.unmarshalNID2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "stats":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stats"))
+			it.Stats, err = ec.unmarshalNStatInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐStatInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateOrUpdateGroupInput(ctx context.Context, obj interface{}) (model.CreateOrUpdateGroupInput, error) {
 	var it model.CreateOrUpdateGroupInput
 	asMap := map[string]interface{}{}
@@ -13295,6 +13474,50 @@ func (ec *executionContext) unmarshalInputStatDescriptionInput(ctx context.Conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputStatInput(ctx context.Context, obj interface{}) (model.StatInput, error) {
+	var it model.StatInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"statId", "value", "playerId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "statId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statId"))
+			it.StatID, err = ec.unmarshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "value":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			it.Value, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "playerId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("playerId"))
+			it.PlayerID, err = ec.unmarshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, obj interface{}) (ent.UpdateUserInput, error) {
 	var it ent.UpdateUserInput
 	asMap := map[string]interface{}{}
@@ -14725,6 +14948,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createMatch":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createMatch(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createPlayer":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -16101,6 +16333,11 @@ func (ec *executionContext) unmarshalNCreateGameInput2githubᚗcomᚋopenᚑboar
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCreateMatchInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateMatchInput(ctx context.Context, v interface{}) (model.CreateMatchInput, error) {
+	res, err := ec.unmarshalInputCreateMatchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateOrUpdateGroupInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateOrUpdateGroupInput(ctx context.Context, v interface{}) (model.CreateOrUpdateGroupInput, error) {
 	res, err := ec.unmarshalInputCreateOrUpdateGroupInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -16366,6 +16603,10 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNMatch2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐMatch(ctx context.Context, sel ast.SelectionSet, v ent.Match) graphql.Marshaler {
+	return ec._Match(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNMatch2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐMatch(ctx context.Context, sel ast.SelectionSet, v *ent.Match) graphql.Marshaler {
@@ -16669,6 +16910,28 @@ func (ec *executionContext) unmarshalNStatDescriptionStatType2githubᚗcomᚋope
 
 func (ec *executionContext) marshalNStatDescriptionStatType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋstatᚐStatType(ctx context.Context, sel ast.SelectionSet, v stat.StatType) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNStatInput2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐStatInputᚄ(ctx context.Context, v interface{}) ([]*model.StatInput, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.StatInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNStatInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐStatInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNStatInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐStatInput(ctx context.Context, v interface{}) (*model.StatInput, error) {
+	res, err := ec.unmarshalInputStatInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNStatistic2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐStatistic(ctx context.Context, sel ast.SelectionSet, v *ent.Statistic) graphql.Marshaler {

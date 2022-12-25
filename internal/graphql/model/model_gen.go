@@ -19,6 +19,12 @@ type CreateGameInput struct {
 	StatDescriptions []*StatDescriptionInput `json:"statDescriptions"`
 }
 
+type CreateMatchInput struct {
+	GameID    guidgql.GUID    `json:"gameId"`
+	PlayerIds []*guidgql.GUID `json:"playerIds"`
+	Stats     []*StatInput    `json:"stats"`
+}
+
 type CreateOrUpdateGroupInput struct {
 	ID          *guidgql.GUID       `json:"id"`
 	Name        string              `json:"name"`
@@ -67,4 +73,11 @@ type StatDescriptionInput struct {
 	Description *string       `json:"description"`
 	// Possible values for this stat. Provide this only for enum type, otherwise an error will be thrown
 	EnumStatInput *EnumStatInput `json:"enumStatInput"`
+}
+
+type StatInput struct {
+	// The StatDescription ID of the stat to be created
+	StatID   guidgql.GUID `json:"statId"`
+	Value    string       `json:"value"`
+	PlayerID guidgql.GUID `json:"playerId"`
 }
