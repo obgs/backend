@@ -16,6 +16,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 )
 
 // StatDescriptionUpdate is the builder for updating StatDescription entities.
@@ -96,6 +97,21 @@ func (sdu *StatDescriptionUpdate) AddGame(g ...*Game) *StatDescriptionUpdate {
 	return sdu.AddGameIDs(ids...)
 }
 
+// AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
+func (sdu *StatDescriptionUpdate) AddStatIDs(ids ...guidgql.GUID) *StatDescriptionUpdate {
+	sdu.mutation.AddStatIDs(ids...)
+	return sdu
+}
+
+// AddStats adds the "stats" edges to the Statistic entity.
+func (sdu *StatDescriptionUpdate) AddStats(s ...*Statistic) *StatDescriptionUpdate {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return sdu.AddStatIDs(ids...)
+}
+
 // Mutation returns the StatDescriptionMutation object of the builder.
 func (sdu *StatDescriptionUpdate) Mutation() *StatDescriptionMutation {
 	return sdu.mutation
@@ -120,6 +136,27 @@ func (sdu *StatDescriptionUpdate) RemoveGame(g ...*Game) *StatDescriptionUpdate 
 		ids[i] = g[i].ID
 	}
 	return sdu.RemoveGameIDs(ids...)
+}
+
+// ClearStats clears all "stats" edges to the Statistic entity.
+func (sdu *StatDescriptionUpdate) ClearStats() *StatDescriptionUpdate {
+	sdu.mutation.ClearStats()
+	return sdu
+}
+
+// RemoveStatIDs removes the "stats" edge to Statistic entities by IDs.
+func (sdu *StatDescriptionUpdate) RemoveStatIDs(ids ...guidgql.GUID) *StatDescriptionUpdate {
+	sdu.mutation.RemoveStatIDs(ids...)
+	return sdu
+}
+
+// RemoveStats removes "stats" edges to Statistic entities.
+func (sdu *StatDescriptionUpdate) RemoveStats(s ...*Statistic) *StatDescriptionUpdate {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return sdu.RemoveStatIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -292,6 +329,60 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if sdu.mutation.StatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   statdescription.StatsTable,
+			Columns: []string{statdescription.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := sdu.mutation.RemovedStatsIDs(); len(nodes) > 0 && !sdu.mutation.StatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   statdescription.StatsTable,
+			Columns: []string{statdescription.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := sdu.mutation.StatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   statdescription.StatsTable,
+			Columns: []string{statdescription.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, sdu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{statdescription.Label}
@@ -376,6 +467,21 @@ func (sduo *StatDescriptionUpdateOne) AddGame(g ...*Game) *StatDescriptionUpdate
 	return sduo.AddGameIDs(ids...)
 }
 
+// AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
+func (sduo *StatDescriptionUpdateOne) AddStatIDs(ids ...guidgql.GUID) *StatDescriptionUpdateOne {
+	sduo.mutation.AddStatIDs(ids...)
+	return sduo
+}
+
+// AddStats adds the "stats" edges to the Statistic entity.
+func (sduo *StatDescriptionUpdateOne) AddStats(s ...*Statistic) *StatDescriptionUpdateOne {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return sduo.AddStatIDs(ids...)
+}
+
 // Mutation returns the StatDescriptionMutation object of the builder.
 func (sduo *StatDescriptionUpdateOne) Mutation() *StatDescriptionMutation {
 	return sduo.mutation
@@ -400,6 +506,27 @@ func (sduo *StatDescriptionUpdateOne) RemoveGame(g ...*Game) *StatDescriptionUpd
 		ids[i] = g[i].ID
 	}
 	return sduo.RemoveGameIDs(ids...)
+}
+
+// ClearStats clears all "stats" edges to the Statistic entity.
+func (sduo *StatDescriptionUpdateOne) ClearStats() *StatDescriptionUpdateOne {
+	sduo.mutation.ClearStats()
+	return sduo
+}
+
+// RemoveStatIDs removes the "stats" edge to Statistic entities by IDs.
+func (sduo *StatDescriptionUpdateOne) RemoveStatIDs(ids ...guidgql.GUID) *StatDescriptionUpdateOne {
+	sduo.mutation.RemoveStatIDs(ids...)
+	return sduo
+}
+
+// RemoveStats removes "stats" edges to Statistic entities.
+func (sduo *StatDescriptionUpdateOne) RemoveStats(s ...*Statistic) *StatDescriptionUpdateOne {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return sduo.RemoveStatIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -594,6 +721,60 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: game.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if sduo.mutation.StatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   statdescription.StatsTable,
+			Columns: []string{statdescription.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := sduo.mutation.RemovedStatsIDs(); len(nodes) > 0 && !sduo.mutation.StatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   statdescription.StatsTable,
+			Columns: []string{statdescription.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := sduo.mutation.StatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   statdescription.StatsTable,
+			Columns: []string{statdescription.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
 				},
 			},
 		}

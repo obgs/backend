@@ -25,6 +25,8 @@ const (
 	FieldPossibleValues = "possible_values"
 	// EdgeGame holds the string denoting the game edge name in mutations.
 	EdgeGame = "game"
+	// EdgeStats holds the string denoting the stats edge name in mutations.
+	EdgeStats = "stats"
 	// Table holds the table name of the statdescription in the database.
 	Table = "stat_descriptions"
 	// GameTable is the table that holds the game relation/edge. The primary key declared below.
@@ -32,6 +34,13 @@ const (
 	// GameInverseTable is the table name for the Game entity.
 	// It exists in this package in order to avoid circular dependency with the "game" package.
 	GameInverseTable = "games"
+	// StatsTable is the table that holds the stats relation/edge.
+	StatsTable = "statistics"
+	// StatsInverseTable is the table name for the Statistic entity.
+	// It exists in this package in order to avoid circular dependency with the "statistic" package.
+	StatsInverseTable = "statistics"
+	// StatsColumn is the table column denoting the stats relation/edge.
+	StatsColumn = "stat_description_stats"
 )
 
 // Columns holds all SQL columns for statdescription fields.

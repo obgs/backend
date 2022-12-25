@@ -19,6 +19,10 @@ const (
 	EdgeSupervisors = "supervisors"
 	// EdgeSupervisionRequests holds the string denoting the supervision_requests edge name in mutations.
 	EdgeSupervisionRequests = "supervision_requests"
+	// EdgeMatches holds the string denoting the matches edge name in mutations.
+	EdgeMatches = "matches"
+	// EdgeStats holds the string denoting the stats edge name in mutations.
+	EdgeStats = "stats"
 	// Table holds the table name of the player in the database.
 	Table = "players"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -40,6 +44,18 @@ const (
 	SupervisionRequestsInverseTable = "player_supervision_requests"
 	// SupervisionRequestsColumn is the table column denoting the supervision_requests relation/edge.
 	SupervisionRequestsColumn = "player_supervision_requests"
+	// MatchesTable is the table that holds the matches relation/edge. The primary key declared below.
+	MatchesTable = "match_players"
+	// MatchesInverseTable is the table name for the Match entity.
+	// It exists in this package in order to avoid circular dependency with the "match" package.
+	MatchesInverseTable = "matches"
+	// StatsTable is the table that holds the stats relation/edge.
+	StatsTable = "statistics"
+	// StatsInverseTable is the table name for the Statistic entity.
+	// It exists in this package in order to avoid circular dependency with the "statistic" package.
+	StatsInverseTable = "statistics"
+	// StatsColumn is the table column denoting the stats relation/edge.
+	StatsColumn = "player_stats"
 )
 
 // Columns holds all SQL columns for player fields.
@@ -58,6 +74,9 @@ var (
 	// SupervisorsPrimaryKey and SupervisorsColumn2 are the table columns denoting the
 	// primary key for the supervisors relation (M2M).
 	SupervisorsPrimaryKey = []string{"user_id", "player_id"}
+	// MatchesPrimaryKey and MatchesColumn2 are the table columns denoting the
+	// primary key for the matches relation (M2M).
+	MatchesPrimaryKey = []string{"match_id", "player_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

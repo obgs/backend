@@ -30,6 +30,7 @@ func (StatDescription) Fields() []ent.Field {
 func (StatDescription) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("game", Game.Type).Annotations(entgql.Skip(entgql.SkipAll)),
+		edge.To("stats", Statistic.Type).Annotations(entgql.Skip(entgql.SkipAll)),
 	}
 }
 

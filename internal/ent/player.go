@@ -33,14 +33,20 @@ type PlayerEdges struct {
 	Supervisors []*User `json:"supervisors,omitempty"`
 	// SupervisionRequests holds the value of the supervision_requests edge.
 	SupervisionRequests []*PlayerSupervisionRequest `json:"supervision_requests,omitempty"`
+	// Matches holds the value of the matches edge.
+	Matches []*Match `json:"matches,omitempty"`
+	// Stats holds the value of the stats edge.
+	Stats []*Statistic `json:"stats,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [4]map[string]int
 
 	namedSupervisors         map[string][]*User
 	namedSupervisionRequests map[string][]*PlayerSupervisionRequest
+	namedMatches             map[string][]*Match
+	namedStats               map[string][]*Statistic
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -72,6 +78,24 @@ func (e PlayerEdges) SupervisionRequestsOrErr() ([]*PlayerSupervisionRequest, er
 		return e.SupervisionRequests, nil
 	}
 	return nil, &NotLoadedError{edge: "supervision_requests"}
+}
+
+// MatchesOrErr returns the Matches value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlayerEdges) MatchesOrErr() ([]*Match, error) {
+	if e.loadedTypes[3] {
+		return e.Matches, nil
+	}
+	return nil, &NotLoadedError{edge: "matches"}
+}
+
+// StatsOrErr returns the Stats value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlayerEdges) StatsOrErr() ([]*Statistic, error) {
+	if e.loadedTypes[4] {
+		return e.Stats, nil
+	}
+	return nil, &NotLoadedError{edge: "stats"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -137,6 +161,16 @@ func (pl *Player) QuerySupervisors() *UserQuery {
 // QuerySupervisionRequests queries the "supervision_requests" edge of the Player entity.
 func (pl *Player) QuerySupervisionRequests() *PlayerSupervisionRequestQuery {
 	return (&PlayerClient{config: pl.config}).QuerySupervisionRequests(pl)
+}
+
+// QueryMatches queries the "matches" edge of the Player entity.
+func (pl *Player) QueryMatches() *MatchQuery {
+	return (&PlayerClient{config: pl.config}).QueryMatches(pl)
+}
+
+// QueryStats queries the "stats" edge of the Player entity.
+func (pl *Player) QueryStats() *StatisticQuery {
+	return (&PlayerClient{config: pl.config}).QueryStats(pl)
 }
 
 // Update returns a builder for updating this Player.
@@ -213,6 +247,54 @@ func (pl *Player) appendNamedSupervisionRequests(name string, edges ...*PlayerSu
 		pl.Edges.namedSupervisionRequests[name] = []*PlayerSupervisionRequest{}
 	} else {
 		pl.Edges.namedSupervisionRequests[name] = append(pl.Edges.namedSupervisionRequests[name], edges...)
+	}
+}
+
+// NamedMatches returns the Matches named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (pl *Player) NamedMatches(name string) ([]*Match, error) {
+	if pl.Edges.namedMatches == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := pl.Edges.namedMatches[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (pl *Player) appendNamedMatches(name string, edges ...*Match) {
+	if pl.Edges.namedMatches == nil {
+		pl.Edges.namedMatches = make(map[string][]*Match)
+	}
+	if len(edges) == 0 {
+		pl.Edges.namedMatches[name] = []*Match{}
+	} else {
+		pl.Edges.namedMatches[name] = append(pl.Edges.namedMatches[name], edges...)
+	}
+}
+
+// NamedStats returns the Stats named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (pl *Player) NamedStats(name string) ([]*Statistic, error) {
+	if pl.Edges.namedStats == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := pl.Edges.namedStats[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (pl *Player) appendNamedStats(name string, edges ...*Statistic) {
+	if pl.Edges.namedStats == nil {
+		pl.Edges.namedStats = make(map[string][]*Statistic)
+	}
+	if len(edges) == 0 {
+		pl.Edges.namedStats[name] = []*Statistic{}
+	} else {
+		pl.Edges.namedStats[name] = append(pl.Edges.namedStats[name], edges...)
 	}
 }
 

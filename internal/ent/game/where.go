@@ -652,6 +652,34 @@ func HasStatDescriptionsWith(preds ...predicate.StatDescription) predicate.Game 
 	})
 }
 
+// HasMatches applies the HasEdge predicate on the "matches" edge.
+func HasMatches() predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MatchesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MatchesTable, MatchesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMatchesWith applies the HasEdge predicate on the "matches" edge with a given conditions (other predicates).
+func HasMatchesWith(preds ...predicate.Match) predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MatchesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MatchesTable, MatchesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Game) predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {

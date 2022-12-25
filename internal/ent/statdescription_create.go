@@ -15,6 +15,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 )
 
 // StatDescriptionCreate is the builder for creating a StatDescription entity.
@@ -84,6 +85,21 @@ func (sdc *StatDescriptionCreate) AddGame(g ...*Game) *StatDescriptionCreate {
 		ids[i] = g[i].ID
 	}
 	return sdc.AddGameIDs(ids...)
+}
+
+// AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
+func (sdc *StatDescriptionCreate) AddStatIDs(ids ...guidgql.GUID) *StatDescriptionCreate {
+	sdc.mutation.AddStatIDs(ids...)
+	return sdc
+}
+
+// AddStats adds the "stats" edges to the Statistic entity.
+func (sdc *StatDescriptionCreate) AddStats(s ...*Statistic) *StatDescriptionCreate {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return sdc.AddStatIDs(ids...)
 }
 
 // Mutation returns the StatDescriptionMutation object of the builder.
@@ -255,6 +271,25 @@ func (sdc *StatDescriptionCreate) createSpec() (*StatDescription, *sqlgraph.Crea
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: game.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := sdc.mutation.StatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   statdescription.StatsTable,
+			Columns: []string{statdescription.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
 				},
 			},
 		}

@@ -424,6 +424,90 @@ func newGroupSettingsPaginateArgs(rv map[string]interface{}) *groupsettingsPagin
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (m *MatchQuery) CollectFields(ctx context.Context, satisfies ...string) (*MatchQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return m, nil
+	}
+	if err := m.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (m *MatchQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "game":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &GameQuery{config: m.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			m.withGame = query
+		case "players":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PlayerQuery{config: m.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			m.WithNamedPlayers(alias, func(wq *PlayerQuery) {
+				*wq = *query
+			})
+		case "stats":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &StatisticQuery{config: m.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			m.WithNamedStats(alias, func(wq *StatisticQuery) {
+				*wq = *query
+			})
+		}
+	}
+	return nil
+}
+
+type matchPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []MatchPaginateOption
+}
+
+func newMatchPaginateArgs(rv map[string]interface{}) *matchPaginateArgs {
+	args := &matchPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*MatchWhereInput); ok {
+		args.opts = append(args.opts, WithMatchFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (pl *PlayerQuery) CollectFields(ctx context.Context, satisfies ...string) (*PlayerQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -471,6 +555,18 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 				return err
 			}
 			pl.WithNamedSupervisionRequests(alias, func(wq *PlayerSupervisionRequestQuery) {
+				*wq = *query
+			})
+		case "matches":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &MatchQuery{config: pl.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			pl.WithNamedMatches(alias, func(wq *MatchQuery) {
 				*wq = *query
 			})
 		}
@@ -684,6 +780,83 @@ type statdescriptionPaginateArgs struct {
 
 func newStatDescriptionPaginateArgs(rv map[string]interface{}) *statdescriptionPaginateArgs {
 	args := &statdescriptionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (s *StatisticQuery) CollectFields(ctx context.Context, satisfies ...string) (*StatisticQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return s, nil
+	}
+	if err := s.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func (s *StatisticQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "match":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &MatchQuery{config: s.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			s.withMatch = query
+		case "statDescription":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &StatDescriptionQuery{config: s.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			s.withStatDescription = query
+		case "player":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = &PlayerQuery{config: s.config}
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			s.withPlayer = query
+		}
+	}
+	return nil
+}
+
+type statisticPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []StatisticPaginateOption
+}
+
+func newStatisticPaginateArgs(rv map[string]interface{}) *statisticPaginateArgs {
+	args := &statisticPaginateArgs{}
 	if rv == nil {
 		return args
 	}

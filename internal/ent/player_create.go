@@ -11,9 +11,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -100,6 +102,36 @@ func (pc *PlayerCreate) AddSupervisionRequests(p ...*PlayerSupervisionRequest) *
 		ids[i] = p[i].ID
 	}
 	return pc.AddSupervisionRequestIDs(ids...)
+}
+
+// AddMatchIDs adds the "matches" edge to the Match entity by IDs.
+func (pc *PlayerCreate) AddMatchIDs(ids ...guidgql.GUID) *PlayerCreate {
+	pc.mutation.AddMatchIDs(ids...)
+	return pc
+}
+
+// AddMatches adds the "matches" edges to the Match entity.
+func (pc *PlayerCreate) AddMatches(m ...*Match) *PlayerCreate {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return pc.AddMatchIDs(ids...)
+}
+
+// AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
+func (pc *PlayerCreate) AddStatIDs(ids ...guidgql.GUID) *PlayerCreate {
+	pc.mutation.AddStatIDs(ids...)
+	return pc
+}
+
+// AddStats adds the "stats" edges to the Statistic entity.
+func (pc *PlayerCreate) AddStats(s ...*Statistic) *PlayerCreate {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return pc.AddStatIDs(ids...)
 }
 
 // Mutation returns the PlayerMutation object of the builder.
@@ -285,6 +317,44 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.MatchesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   player.MatchesTable,
+			Columns: player.MatchesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.StatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.StatsTable,
+			Columns: []string{player.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
 				},
 			},
 		}

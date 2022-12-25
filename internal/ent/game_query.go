@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
@@ -31,11 +32,13 @@ type GameQuery struct {
 	withAuthor                *UserQuery
 	withFavorites             *GameFavoriteQuery
 	withStatDescriptions      *StatDescriptionQuery
+	withMatches               *MatchQuery
 	withFKs                   bool
 	modifiers                 []func(*sql.Selector)
 	loadTotal                 []func(context.Context, []*Game) error
 	withNamedFavorites        map[string]*GameFavoriteQuery
 	withNamedStatDescriptions map[string]*StatDescriptionQuery
+	withNamedMatches          map[string]*MatchQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -131,6 +134,28 @@ func (gq *GameQuery) QueryStatDescriptions() *StatDescriptionQuery {
 			sqlgraph.From(game.Table, game.FieldID, selector),
 			sqlgraph.To(statdescription.Table, statdescription.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, game.StatDescriptionsTable, game.StatDescriptionsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMatches chains the current query on the "matches" edge.
+func (gq *GameQuery) QueryMatches() *MatchQuery {
+	query := &MatchQuery{config: gq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := gq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := gq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, selector),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.MatchesTable, game.MatchesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
 		return fromU, nil
@@ -322,6 +347,7 @@ func (gq *GameQuery) Clone() *GameQuery {
 		withAuthor:           gq.withAuthor.Clone(),
 		withFavorites:        gq.withFavorites.Clone(),
 		withStatDescriptions: gq.withStatDescriptions.Clone(),
+		withMatches:          gq.withMatches.Clone(),
 		// clone intermediate query.
 		sql:    gq.sql.Clone(),
 		path:   gq.path,
@@ -359,6 +385,17 @@ func (gq *GameQuery) WithStatDescriptions(opts ...func(*StatDescriptionQuery)) *
 		opt(query)
 	}
 	gq.withStatDescriptions = query
+	return gq
+}
+
+// WithMatches tells the query-builder to eager-load the nodes that are connected to
+// the "matches" edge. The optional arguments are used to configure the query builder of the edge.
+func (gq *GameQuery) WithMatches(opts ...func(*MatchQuery)) *GameQuery {
+	query := &MatchQuery{config: gq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	gq.withMatches = query
 	return gq
 }
 
@@ -436,10 +473,11 @@ func (gq *GameQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Game, e
 		nodes       = []*Game{}
 		withFKs     = gq.withFKs
 		_spec       = gq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			gq.withAuthor != nil,
 			gq.withFavorites != nil,
 			gq.withStatDescriptions != nil,
+			gq.withMatches != nil,
 		}
 	)
 	if gq.withAuthor != nil {
@@ -489,6 +527,13 @@ func (gq *GameQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Game, e
 			return nil, err
 		}
 	}
+	if query := gq.withMatches; query != nil {
+		if err := gq.loadMatches(ctx, query, nodes,
+			func(n *Game) { n.Edges.Matches = []*Match{} },
+			func(n *Game, e *Match) { n.Edges.Matches = append(n.Edges.Matches, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range gq.withNamedFavorites {
 		if err := gq.loadFavorites(ctx, query, nodes,
 			func(n *Game) { n.appendNamedFavorites(name) },
@@ -500,6 +545,13 @@ func (gq *GameQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Game, e
 		if err := gq.loadStatDescriptions(ctx, query, nodes,
 			func(n *Game) { n.appendNamedStatDescriptions(name) },
 			func(n *Game, e *StatDescription) { n.appendNamedStatDescriptions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range gq.withNamedMatches {
+		if err := gq.loadMatches(ctx, query, nodes,
+			func(n *Game) { n.appendNamedMatches(name) },
+			func(n *Game, e *Match) { n.appendNamedMatches(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -626,6 +678,37 @@ func (gq *GameQuery) loadStatDescriptions(ctx context.Context, query *StatDescri
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (gq *GameQuery) loadMatches(ctx context.Context, query *MatchQuery, nodes []*Game, init func(*Game), assign func(*Game, *Match)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID]*Game)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Match(func(s *sql.Selector) {
+		s.Where(sql.InValues(game.MatchesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.game_matches
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "game_matches" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "game_matches" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }
@@ -758,6 +841,20 @@ func (gq *GameQuery) WithNamedStatDescriptions(name string, opts ...func(*StatDe
 		gq.withNamedStatDescriptions = make(map[string]*StatDescriptionQuery)
 	}
 	gq.withNamedStatDescriptions[name] = query
+	return gq
+}
+
+// WithNamedMatches tells the query-builder to eager-load the nodes that are connected to the "matches"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (gq *GameQuery) WithNamedMatches(name string, opts ...func(*MatchQuery)) *GameQuery {
+	query := &MatchQuery{config: gq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if gq.withNamedMatches == nil {
+		gq.withNamedMatches = make(map[string]*MatchQuery)
+	}
+	gq.withNamedMatches[name] = query
 	return gq
 }
 

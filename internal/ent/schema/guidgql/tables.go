@@ -14,6 +14,8 @@ const (
 	Game
 	GameFavorites
 	StatDescription
+	Match
+	Statistic
 )
 
 var TableNames = map[Table]string{
@@ -28,4 +30,6 @@ var TableNames = map[Table]string{
 	Game:                             "games",
 	GameFavorites:                    "game_favorites",
 	StatDescription:                  "stat_descriptions",
+	Match:                            "matches",
+	Statistic:                        "statistics",
 }

@@ -27,6 +27,8 @@ const (
 	EdgeFavorites = "favorites"
 	// EdgeStatDescriptions holds the string denoting the stat_descriptions edge name in mutations.
 	EdgeStatDescriptions = "stat_descriptions"
+	// EdgeMatches holds the string denoting the matches edge name in mutations.
+	EdgeMatches = "matches"
 	// Table holds the table name of the game in the database.
 	Table = "games"
 	// AuthorTable is the table that holds the author relation/edge.
@@ -48,6 +50,13 @@ const (
 	// StatDescriptionsInverseTable is the table name for the StatDescription entity.
 	// It exists in this package in order to avoid circular dependency with the "statdescription" package.
 	StatDescriptionsInverseTable = "stat_descriptions"
+	// MatchesTable is the table that holds the matches relation/edge.
+	MatchesTable = "matches"
+	// MatchesInverseTable is the table name for the Match entity.
+	// It exists in this package in order to avoid circular dependency with the "match" package.
+	MatchesInverseTable = "matches"
+	// MatchesColumn is the table column denoting the matches relation/edge.
+	MatchesColumn = "game_matches"
 )
 
 // Columns holds all SQL columns for game fields.

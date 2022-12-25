@@ -43,6 +43,7 @@ func (Game) Edges() []ent.Edge {
 		edge.From("stat_descriptions", StatDescription.Type).Ref("game").Required().Annotations(
 			entgql.Skip(entgql.SkipWhereInput),
 		),
+		edge.To("matches", Match.Type).Annotations(entgql.Skip(entgql.SkipAll)),
 	}
 }
 

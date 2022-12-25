@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
@@ -141,6 +142,21 @@ func (gc *GameCreate) AddStatDescriptions(s ...*StatDescription) *GameCreate {
 		ids[i] = s[i].ID
 	}
 	return gc.AddStatDescriptionIDs(ids...)
+}
+
+// AddMatchIDs adds the "matches" edge to the Match entity by IDs.
+func (gc *GameCreate) AddMatchIDs(ids ...guidgql.GUID) *GameCreate {
+	gc.mutation.AddMatchIDs(ids...)
+	return gc
+}
+
+// AddMatches adds the "matches" edges to the Match entity.
+func (gc *GameCreate) AddMatches(m ...*Match) *GameCreate {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return gc.AddMatchIDs(ids...)
 }
 
 // Mutation returns the GameMutation object of the builder.
@@ -367,6 +383,25 @@ func (gc *GameCreate) createSpec() (*Game, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: statdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := gc.mutation.MatchesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.MatchesTable,
+			Columns: []string{game.MatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
 				},
 			},
 		}
