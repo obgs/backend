@@ -56,6 +56,11 @@ func (r *queryResolver) Groups(ctx context.Context, after *ent.Cursor, first *in
 	)
 }
 
+// Matches is the resolver for the matches field.
+func (r *queryResolver) Matches(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.MatchWhereInput) (*ent.MatchConnection, error) {
+	return r.client.Match.Query().Paginate(ctx, after, first, before, last, ent.WithMatchFilter(where.Filter))
+}
+
 // Players is the resolver for the players field.
 func (r *queryResolver) Players(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.PlayerWhereInput) (*ent.PlayerConnection, error) {
 	return r.client.Player.Query().Paginate(ctx, after, first, before, last, ent.WithPlayerFilter(where.Filter))
