@@ -14,13 +14,15 @@ import (
 
 // CreateMatch is the resolver for the createMatch field.
 func (r *mutationResolver) CreateMatch(ctx context.Context, input model.CreateMatchInput) (*ent.Match, error) {
+	client := ent.FromContext(ctx)
+
 	playerIds := make([]guidgql.GUID, len(input.PlayerIds))
 	for i, player := range input.PlayerIds {
 		playerIds[i] = *player
 	}
 
 	// TODO: add checks for the current user to have access to players
-	m, err := r.client.Match.Create().
+	m, err := client.Match.Create().
 		SetGameID(input.GameID).
 		AddPlayerIDs(playerIds...).
 		Save(ctx)
@@ -43,14 +45,14 @@ func (r *mutationResolver) CreateMatch(ctx context.Context, input model.CreateMa
 			return nil, fmt.Errorf("player %s is not in the player list", stat.PlayerID.ID)
 		}
 
-		stats[i] = r.client.Statistic.Create().
+		stats[i] = client.Statistic.Create().
 			SetPlayerID(stat.PlayerID).
 			SetValue(stat.Value).
 			SetStatDescriptionID(stat.StatID).
 			SetMatch(m)
 	}
 
-	_, err = r.client.Statistic.CreateBulk(stats...).Save(ctx)
+	_, err = client.Statistic.CreateBulk(stats...).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
