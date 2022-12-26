@@ -160,7 +160,7 @@ type ComplexityRoot struct {
 		ApplyToGroup                      func(childComplexity int, input model.GroupApplicationInput) int
 		ChangeUserGroupMembershipRole     func(childComplexity int, groupID guidgql.GUID, userID guidgql.GUID, role enums.Role) int
 		CreateGame                        func(childComplexity int, input model.CreateGameInput) int
-		CreateMatch                       func(childComplexity int, match model.CreateMatchInput) int
+		CreateMatch                       func(childComplexity int, input model.CreateMatchInput) int
 		CreateOrUpdateGroup               func(childComplexity int, input model.CreateOrUpdateGroupInput) int
 		CreatePlayer                      func(childComplexity int, input model.CreatePlayerInput) int
 		JoinGroup                         func(childComplexity int, groupID guidgql.GUID) int
@@ -284,7 +284,7 @@ type MutationResolver interface {
 	ResolveGroupMembershipApplication(ctx context.Context, applicationID guidgql.GUID, accepted bool) (bool, error)
 	ChangeUserGroupMembershipRole(ctx context.Context, groupID guidgql.GUID, userID guidgql.GUID, role enums.Role) (bool, error)
 	KickUserFromGroup(ctx context.Context, groupID guidgql.GUID, userID guidgql.GUID) (bool, error)
-	CreateMatch(ctx context.Context, match model.CreateMatchInput) (*ent.Match, error)
+	CreateMatch(ctx context.Context, input model.CreateMatchInput) (*ent.Match, error)
 	CreatePlayer(ctx context.Context, input model.CreatePlayerInput) (*ent.Player, error)
 	RequestPlayerSupervision(ctx context.Context, input *model.RequestPlayerSupervisionInput) (*ent.PlayerSupervisionRequest, error)
 	ResolvePlayerSupervisionRequest(ctx context.Context, input model.ResolvePlayerSupervisionRequestInput) (bool, error)
@@ -783,7 +783,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateMatch(childComplexity, args["match"].(model.CreateMatchInput)), true
+		return e.complexity.Mutation.CreateMatch(childComplexity, args["input"].(model.CreateMatchInput)), true
 
 	case "Mutation.createOrUpdateGroup":
 		if e.complexity.Mutation.CreateOrUpdateGroup == nil {
@@ -2223,7 +2223,7 @@ input CreateMatchInput {
 }
 
 extend type Mutation {
-  createMatch(match: CreateMatchInput!): Match! @authenticated
+  createMatch(input: CreateMatchInput!): Match! @authenticated
 }
 `, BuiltIn: false},
 	{Name: "../schema/player.graphql", Input: `input CreatePlayerInput {
@@ -2413,14 +2413,14 @@ func (ec *executionContext) field_Mutation_createMatch_args(ctx context.Context,
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.CreateMatchInput
-	if tmp, ok := rawArgs["match"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("match"))
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateMatchInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐCreateMatchInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["match"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -6406,7 +6406,7 @@ func (ec *executionContext) _Mutation_createMatch(ctx context.Context, field gra
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().CreateMatch(rctx, fc.Args["match"].(model.CreateMatchInput))
+			return ec.resolvers.Mutation().CreateMatch(rctx, fc.Args["input"].(model.CreateMatchInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Authenticated == nil {

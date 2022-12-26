@@ -14,5 +14,5 @@ input CreateMatchInput {
 }
 
 extend type Mutation {
-  createMatch(match: CreateMatchInput!): Match! @authenticated
+  createMatch(input: CreateMatchInput!): Match! @authenticated
 }
