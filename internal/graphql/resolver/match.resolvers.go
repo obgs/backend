@@ -32,10 +32,15 @@ func (r *mutationResolver) CreateMatch(ctx context.Context, input model.CreateMa
 
 	for i, stat := range input.Stats {
 		// check that the player is in the player list
+		playerIsPresent := false
 		for _, player := range input.PlayerIds {
-			if player.ID != stat.PlayerID.ID {
-				return nil, fmt.Errorf("player %s is not in the player list", stat.PlayerID.String())
+			if player.ID == stat.PlayerID.ID {
+				playerIsPresent = true
+				break
 			}
+		}
+		if !playerIsPresent {
+			return nil, fmt.Errorf("player %s is not in the player list", stat.PlayerID.ID)
 		}
 
 		stats[i] = r.client.Statistic.Create().
