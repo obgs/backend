@@ -15,11 +15,13 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -299,12 +301,52 @@ func (gs *GroupSettings) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
+func (m *Match) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     m.ID,
+		Type:   "Match",
+		Fields: make([]*Field, 0),
+		Edges:  make([]*Edge, 3),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Game",
+		Name: "game",
+	}
+	err = m.QueryGame().
+		Select(game.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Player",
+		Name: "players",
+	}
+	err = m.QueryPlayers().
+		Select(player.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "Statistic",
+		Name: "stats",
+	}
+	err = m.QueryStats().
+		Select(statistic.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
 func (pl *Player) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     pl.ID,
 		Type:   "Player",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(pl.Name); err != nil {
@@ -342,6 +384,16 @@ func (pl *Player) Node(ctx context.Context) (node *Node, err error) {
 	err = pl.QuerySupervisionRequests().
 		Select(playersupervisionrequest.FieldID).
 		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		Type: "Match",
+		Name: "matches",
+	}
+	err = pl.QueryMatches().
+		Select(match.FieldID).
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -475,6 +527,55 @@ func (sd *StatDescription) Node(ctx context.Context) (node *Node, err error) {
 		Type:  "[]string",
 		Name:  "possible_values",
 		Value: string(buf),
+	}
+	return node, nil
+}
+
+func (s *Statistic) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     s.ID,
+		Type:   "Statistic",
+		Fields: make([]*Field, 1),
+		Edges:  make([]*Edge, 3),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(s.Value); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "value",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Match",
+		Name: "match",
+	}
+	err = s.QueryMatch().
+		Select(match.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "StatDescription",
+		Name: "stat_description",
+	}
+	err = s.QueryStatDescription().
+		Select(statdescription.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "Player",
+		Name: "player",
+	}
+	err = s.QueryPlayer().
+		Select(player.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
 	}
 	return node, nil
 }
@@ -710,6 +811,22 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 			return nil, err
 		}
 		return n, nil
+	case match.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
+		query := c.Match.Query().
+			Where(match.ID(uid))
+		query, err := query.CollectFields(ctx, "Match")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case player.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -766,6 +883,22 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		query := c.StatDescription.Query().
 			Where(statdescription.ID(uid))
 		query, err := query.CollectFields(ctx, "StatDescription")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case statistic.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
+		query := c.Statistic.Query().
+			Where(statistic.ID(uid))
+		query, err := query.CollectFields(ctx, "Statistic")
 		if err != nil {
 			return nil, err
 		}
@@ -943,6 +1076,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 				*noder = node
 			}
 		}
+	case match.Table:
+		query := c.Match.Query().
+			Where(match.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "Match")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case player.Table:
 		query := c.Player.Query().
 			Where(player.IDIn(ids...))
@@ -995,6 +1144,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 		query := c.StatDescription.Query().
 			Where(statdescription.IDIn(ids...))
 		query, err := query.CollectFields(ctx, "StatDescription")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case statistic.Table:
+		query := c.Statistic.Query().
+			Where(statistic.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "Statistic")
 		if err != nil {
 			return nil, err
 		}

@@ -24,6 +24,8 @@ type Tx struct {
 	GroupMembershipApplication *GroupMembershipApplicationClient
 	// GroupSettings is the client for interacting with the GroupSettings builders.
 	GroupSettings *GroupSettingsClient
+	// Match is the client for interacting with the Match builders.
+	Match *MatchClient
 	// Player is the client for interacting with the Player builders.
 	Player *PlayerClient
 	// PlayerSupervisionRequest is the client for interacting with the PlayerSupervisionRequest builders.
@@ -32,6 +34,8 @@ type Tx struct {
 	PlayerSupervisionRequestApproval *PlayerSupervisionRequestApprovalClient
 	// StatDescription is the client for interacting with the StatDescription builders.
 	StatDescription *StatDescriptionClient
+	// Statistic is the client for interacting with the Statistic builders.
+	Statistic *StatisticClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -171,10 +175,12 @@ func (tx *Tx) init() {
 	tx.GroupMembership = NewGroupMembershipClient(tx.config)
 	tx.GroupMembershipApplication = NewGroupMembershipApplicationClient(tx.config)
 	tx.GroupSettings = NewGroupSettingsClient(tx.config)
+	tx.Match = NewMatchClient(tx.config)
 	tx.Player = NewPlayerClient(tx.config)
 	tx.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(tx.config)
 	tx.PlayerSupervisionRequestApproval = NewPlayerSupervisionRequestApprovalClient(tx.config)
 	tx.StatDescription = NewStatDescriptionClient(tx.config)
+	tx.Statistic = NewStatisticClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

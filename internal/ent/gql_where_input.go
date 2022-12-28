@@ -11,6 +11,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -852,6 +853,174 @@ func (i *GroupSettingsWhereInput) P() (predicate.GroupSettings, error) {
 		return predicates[0], nil
 	default:
 		return groupsettings.And(predicates...), nil
+	}
+}
+
+// MatchWhereInput represents a where input for filtering Match queries.
+type MatchWhereInput struct {
+	Predicates []predicate.Match  `json:"-"`
+	Not        *MatchWhereInput   `json:"not,omitempty"`
+	Or         []*MatchWhereInput `json:"or,omitempty"`
+	And        []*MatchWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
+
+	// "game" edge predicates.
+	HasGame     *bool             `json:"hasGame,omitempty"`
+	HasGameWith []*GameWhereInput `json:"hasGameWith,omitempty"`
+
+	// "players" edge predicates.
+	HasPlayers     *bool               `json:"hasPlayers,omitempty"`
+	HasPlayersWith []*PlayerWhereInput `json:"hasPlayersWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *MatchWhereInput) AddPredicates(predicates ...predicate.Match) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the MatchWhereInput filter on the MatchQuery builder.
+func (i *MatchWhereInput) Filter(q *MatchQuery) (*MatchQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyMatchWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyMatchWhereInput is returned in case the MatchWhereInput is empty.
+var ErrEmptyMatchWhereInput = errors.New("ent: empty predicate MatchWhereInput")
+
+// P returns a predicate for filtering matches.
+// An error is returned if the input is empty or invalid.
+func (i *MatchWhereInput) P() (predicate.Match, error) {
+	var predicates []predicate.Match
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, match.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Match, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, match.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Match, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, match.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, match.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, match.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, match.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, match.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, match.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, match.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, match.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, match.IDLTE(*i.IDLTE))
+	}
+
+	if i.HasGame != nil {
+		p := match.HasGame()
+		if !*i.HasGame {
+			p = match.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasGameWith) > 0 {
+		with := make([]predicate.Game, 0, len(i.HasGameWith))
+		for _, w := range i.HasGameWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasGameWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, match.HasGameWith(with...))
+	}
+	if i.HasPlayers != nil {
+		p := match.HasPlayers()
+		if !*i.HasPlayers {
+			p = match.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasPlayersWith) > 0 {
+		with := make([]predicate.Player, 0, len(i.HasPlayersWith))
+		for _, w := range i.HasPlayersWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasPlayersWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, match.HasPlayersWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyMatchWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return match.And(predicates...), nil
 	}
 }
 

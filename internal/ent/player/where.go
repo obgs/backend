@@ -270,6 +270,62 @@ func HasSupervisionRequestsWith(preds ...predicate.PlayerSupervisionRequest) pre
 	})
 }
 
+// HasMatches applies the HasEdge predicate on the "matches" edge.
+func HasMatches() predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MatchesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, MatchesTable, MatchesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMatchesWith applies the HasEdge predicate on the "matches" edge with a given conditions (other predicates).
+func HasMatchesWith(preds ...predicate.Match) predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MatchesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, MatchesTable, MatchesPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasStats applies the HasEdge predicate on the "stats" edge.
+func HasStats() predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(StatsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, StatsTable, StatsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasStatsWith applies the HasEdge predicate on the "stats" edge with a given conditions (other predicates).
+func HasStatsWith(preds ...predicate.Statistic) predicate.Player {
+	return predicate.Player(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(StatsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, StatsTable, StatsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Player) predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {

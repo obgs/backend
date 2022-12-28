@@ -10,10 +10,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -93,6 +95,36 @@ func (pu *PlayerUpdate) AddSupervisionRequests(p ...*PlayerSupervisionRequest) *
 	return pu.AddSupervisionRequestIDs(ids...)
 }
 
+// AddMatchIDs adds the "matches" edge to the Match entity by IDs.
+func (pu *PlayerUpdate) AddMatchIDs(ids ...guidgql.GUID) *PlayerUpdate {
+	pu.mutation.AddMatchIDs(ids...)
+	return pu
+}
+
+// AddMatches adds the "matches" edges to the Match entity.
+func (pu *PlayerUpdate) AddMatches(m ...*Match) *PlayerUpdate {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return pu.AddMatchIDs(ids...)
+}
+
+// AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
+func (pu *PlayerUpdate) AddStatIDs(ids ...guidgql.GUID) *PlayerUpdate {
+	pu.mutation.AddStatIDs(ids...)
+	return pu
+}
+
+// AddStats adds the "stats" edges to the Statistic entity.
+func (pu *PlayerUpdate) AddStats(s ...*Statistic) *PlayerUpdate {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return pu.AddStatIDs(ids...)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (pu *PlayerUpdate) Mutation() *PlayerMutation {
 	return pu.mutation
@@ -144,6 +176,48 @@ func (pu *PlayerUpdate) RemoveSupervisionRequests(p ...*PlayerSupervisionRequest
 		ids[i] = p[i].ID
 	}
 	return pu.RemoveSupervisionRequestIDs(ids...)
+}
+
+// ClearMatches clears all "matches" edges to the Match entity.
+func (pu *PlayerUpdate) ClearMatches() *PlayerUpdate {
+	pu.mutation.ClearMatches()
+	return pu
+}
+
+// RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
+func (pu *PlayerUpdate) RemoveMatchIDs(ids ...guidgql.GUID) *PlayerUpdate {
+	pu.mutation.RemoveMatchIDs(ids...)
+	return pu
+}
+
+// RemoveMatches removes "matches" edges to Match entities.
+func (pu *PlayerUpdate) RemoveMatches(m ...*Match) *PlayerUpdate {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return pu.RemoveMatchIDs(ids...)
+}
+
+// ClearStats clears all "stats" edges to the Statistic entity.
+func (pu *PlayerUpdate) ClearStats() *PlayerUpdate {
+	pu.mutation.ClearStats()
+	return pu
+}
+
+// RemoveStatIDs removes the "stats" edge to Statistic entities by IDs.
+func (pu *PlayerUpdate) RemoveStatIDs(ids ...guidgql.GUID) *PlayerUpdate {
+	pu.mutation.RemoveStatIDs(ids...)
+	return pu
+}
+
+// RemoveStats removes "stats" edges to Statistic entities.
+func (pu *PlayerUpdate) RemoveStats(s ...*Statistic) *PlayerUpdate {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return pu.RemoveStatIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -364,6 +438,114 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if pu.mutation.MatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   player.MatchesTable,
+			Columns: player.MatchesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedMatchesIDs(); len(nodes) > 0 && !pu.mutation.MatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   player.MatchesTable,
+			Columns: player.MatchesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.MatchesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   player.MatchesTable,
+			Columns: player.MatchesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.StatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.StatsTable,
+			Columns: []string{player.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedStatsIDs(); len(nodes) > 0 && !pu.mutation.StatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.StatsTable,
+			Columns: []string{player.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.StatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.StatsTable,
+			Columns: []string{player.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{player.Label}
@@ -446,6 +628,36 @@ func (puo *PlayerUpdateOne) AddSupervisionRequests(p ...*PlayerSupervisionReques
 	return puo.AddSupervisionRequestIDs(ids...)
 }
 
+// AddMatchIDs adds the "matches" edge to the Match entity by IDs.
+func (puo *PlayerUpdateOne) AddMatchIDs(ids ...guidgql.GUID) *PlayerUpdateOne {
+	puo.mutation.AddMatchIDs(ids...)
+	return puo
+}
+
+// AddMatches adds the "matches" edges to the Match entity.
+func (puo *PlayerUpdateOne) AddMatches(m ...*Match) *PlayerUpdateOne {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return puo.AddMatchIDs(ids...)
+}
+
+// AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
+func (puo *PlayerUpdateOne) AddStatIDs(ids ...guidgql.GUID) *PlayerUpdateOne {
+	puo.mutation.AddStatIDs(ids...)
+	return puo
+}
+
+// AddStats adds the "stats" edges to the Statistic entity.
+func (puo *PlayerUpdateOne) AddStats(s ...*Statistic) *PlayerUpdateOne {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return puo.AddStatIDs(ids...)
+}
+
 // Mutation returns the PlayerMutation object of the builder.
 func (puo *PlayerUpdateOne) Mutation() *PlayerMutation {
 	return puo.mutation
@@ -497,6 +709,48 @@ func (puo *PlayerUpdateOne) RemoveSupervisionRequests(p ...*PlayerSupervisionReq
 		ids[i] = p[i].ID
 	}
 	return puo.RemoveSupervisionRequestIDs(ids...)
+}
+
+// ClearMatches clears all "matches" edges to the Match entity.
+func (puo *PlayerUpdateOne) ClearMatches() *PlayerUpdateOne {
+	puo.mutation.ClearMatches()
+	return puo
+}
+
+// RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
+func (puo *PlayerUpdateOne) RemoveMatchIDs(ids ...guidgql.GUID) *PlayerUpdateOne {
+	puo.mutation.RemoveMatchIDs(ids...)
+	return puo
+}
+
+// RemoveMatches removes "matches" edges to Match entities.
+func (puo *PlayerUpdateOne) RemoveMatches(m ...*Match) *PlayerUpdateOne {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return puo.RemoveMatchIDs(ids...)
+}
+
+// ClearStats clears all "stats" edges to the Statistic entity.
+func (puo *PlayerUpdateOne) ClearStats() *PlayerUpdateOne {
+	puo.mutation.ClearStats()
+	return puo
+}
+
+// RemoveStatIDs removes the "stats" edge to Statistic entities by IDs.
+func (puo *PlayerUpdateOne) RemoveStatIDs(ids ...guidgql.GUID) *PlayerUpdateOne {
+	puo.mutation.RemoveStatIDs(ids...)
+	return puo
+}
+
+// RemoveStats removes "stats" edges to Statistic entities.
+func (puo *PlayerUpdateOne) RemoveStats(s ...*Statistic) *PlayerUpdateOne {
+	ids := make([]guidgql.GUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return puo.RemoveStatIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -739,6 +993,114 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: playersupervisionrequest.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.MatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   player.MatchesTable,
+			Columns: player.MatchesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedMatchesIDs(); len(nodes) > 0 && !puo.mutation.MatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   player.MatchesTable,
+			Columns: player.MatchesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.MatchesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   player.MatchesTable,
+			Columns: player.MatchesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.StatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.StatsTable,
+			Columns: []string{player.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedStatsIDs(); len(nodes) > 0 && !puo.mutation.StatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.StatsTable,
+			Columns: []string{player.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.StatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.StatsTable,
+			Columns: []string{player.StatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: statistic.FieldID,
 				},
 			},
 		}

@@ -30,10 +30,12 @@ type hooks struct {
 	GroupMembership                  []ent.Hook
 	GroupMembershipApplication       []ent.Hook
 	GroupSettings                    []ent.Hook
+	Match                            []ent.Hook
 	Player                           []ent.Hook
 	PlayerSupervisionRequest         []ent.Hook
 	PlayerSupervisionRequestApproval []ent.Hook
 	StatDescription                  []ent.Hook
+	Statistic                        []ent.Hook
 	User                             []ent.Hook
 }
 

@@ -17,10 +17,12 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -45,6 +47,8 @@ type Client struct {
 	GroupMembershipApplication *GroupMembershipApplicationClient
 	// GroupSettings is the client for interacting with the GroupSettings builders.
 	GroupSettings *GroupSettingsClient
+	// Match is the client for interacting with the Match builders.
+	Match *MatchClient
 	// Player is the client for interacting with the Player builders.
 	Player *PlayerClient
 	// PlayerSupervisionRequest is the client for interacting with the PlayerSupervisionRequest builders.
@@ -53,6 +57,8 @@ type Client struct {
 	PlayerSupervisionRequestApproval *PlayerSupervisionRequestApprovalClient
 	// StatDescription is the client for interacting with the StatDescription builders.
 	StatDescription *StatDescriptionClient
+	// Statistic is the client for interacting with the Statistic builders.
+	Statistic *StatisticClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -74,10 +80,12 @@ func (c *Client) init() {
 	c.GroupMembership = NewGroupMembershipClient(c.config)
 	c.GroupMembershipApplication = NewGroupMembershipApplicationClient(c.config)
 	c.GroupSettings = NewGroupSettingsClient(c.config)
+	c.Match = NewMatchClient(c.config)
 	c.Player = NewPlayerClient(c.config)
 	c.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(c.config)
 	c.PlayerSupervisionRequestApproval = NewPlayerSupervisionRequestApprovalClient(c.config)
 	c.StatDescription = NewStatDescriptionClient(c.config)
+	c.Statistic = NewStatisticClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -118,10 +126,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		GroupMembership:                  NewGroupMembershipClient(cfg),
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
 		GroupSettings:                    NewGroupSettingsClient(cfg),
+		Match:                            NewMatchClient(cfg),
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
 		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
 		StatDescription:                  NewStatDescriptionClient(cfg),
+		Statistic:                        NewStatisticClient(cfg),
 		User:                             NewUserClient(cfg),
 	}, nil
 }
@@ -148,10 +158,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		GroupMembership:                  NewGroupMembershipClient(cfg),
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
 		GroupSettings:                    NewGroupSettingsClient(cfg),
+		Match:                            NewMatchClient(cfg),
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
 		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
 		StatDescription:                  NewStatDescriptionClient(cfg),
+		Statistic:                        NewStatisticClient(cfg),
 		User:                             NewUserClient(cfg),
 	}, nil
 }
@@ -187,10 +199,12 @@ func (c *Client) Use(hooks ...Hook) {
 	c.GroupMembership.Use(hooks...)
 	c.GroupMembershipApplication.Use(hooks...)
 	c.GroupSettings.Use(hooks...)
+	c.Match.Use(hooks...)
 	c.Player.Use(hooks...)
 	c.PlayerSupervisionRequest.Use(hooks...)
 	c.PlayerSupervisionRequestApproval.Use(hooks...)
 	c.StatDescription.Use(hooks...)
+	c.Statistic.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
@@ -320,6 +334,22 @@ func (c *GameClient) QueryStatDescriptions(ga *Game) *StatDescriptionQuery {
 			sqlgraph.From(game.Table, game.FieldID, id),
 			sqlgraph.To(statdescription.Table, statdescription.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, game.StatDescriptionsTable, game.StatDescriptionsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMatches queries the matches edge of a Game.
+func (c *GameClient) QueryMatches(ga *Game) *MatchQuery {
+	query := &MatchQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ga.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, game.MatchesTable, game.MatchesColumn),
 		)
 		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
 		return fromV, nil
@@ -942,6 +972,144 @@ func (c *GroupSettingsClient) Hooks() []Hook {
 	return c.hooks.GroupSettings
 }
 
+// MatchClient is a client for the Match schema.
+type MatchClient struct {
+	config
+}
+
+// NewMatchClient returns a client for the Match from the given config.
+func NewMatchClient(c config) *MatchClient {
+	return &MatchClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `match.Hooks(f(g(h())))`.
+func (c *MatchClient) Use(hooks ...Hook) {
+	c.hooks.Match = append(c.hooks.Match, hooks...)
+}
+
+// Create returns a builder for creating a Match entity.
+func (c *MatchClient) Create() *MatchCreate {
+	mutation := newMatchMutation(c.config, OpCreate)
+	return &MatchCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Match entities.
+func (c *MatchClient) CreateBulk(builders ...*MatchCreate) *MatchCreateBulk {
+	return &MatchCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Match.
+func (c *MatchClient) Update() *MatchUpdate {
+	mutation := newMatchMutation(c.config, OpUpdate)
+	return &MatchUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MatchClient) UpdateOne(m *Match) *MatchUpdateOne {
+	mutation := newMatchMutation(c.config, OpUpdateOne, withMatch(m))
+	return &MatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MatchClient) UpdateOneID(id guidgql.GUID) *MatchUpdateOne {
+	mutation := newMatchMutation(c.config, OpUpdateOne, withMatchID(id))
+	return &MatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Match.
+func (c *MatchClient) Delete() *MatchDelete {
+	mutation := newMatchMutation(c.config, OpDelete)
+	return &MatchDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MatchClient) DeleteOne(m *Match) *MatchDeleteOne {
+	return c.DeleteOneID(m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MatchClient) DeleteOneID(id guidgql.GUID) *MatchDeleteOne {
+	builder := c.Delete().Where(match.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MatchDeleteOne{builder}
+}
+
+// Query returns a query builder for Match.
+func (c *MatchClient) Query() *MatchQuery {
+	return &MatchQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Match entity by its id.
+func (c *MatchClient) Get(ctx context.Context, id guidgql.GUID) (*Match, error) {
+	return c.Query().Where(match.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MatchClient) GetX(ctx context.Context, id guidgql.GUID) *Match {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a Match.
+func (c *MatchClient) QueryGame(m *Match) *GameQuery {
+	query := &GameQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(match.Table, match.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, match.GameTable, match.GameColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPlayers queries the players edge of a Match.
+func (c *MatchClient) QueryPlayers(m *Match) *PlayerQuery {
+	query := &PlayerQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(match.Table, match.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, match.PlayersTable, match.PlayersPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryStats queries the stats edge of a Match.
+func (c *MatchClient) QueryStats(m *Match) *StatisticQuery {
+	query := &StatisticQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(match.Table, match.FieldID, id),
+			sqlgraph.To(statistic.Table, statistic.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, match.StatsTable, match.StatsColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MatchClient) Hooks() []Hook {
+	return c.hooks.Match
+}
+
 // PlayerClient is a client for the Player schema.
 type PlayerClient struct {
 	config
@@ -1068,6 +1236,38 @@ func (c *PlayerClient) QuerySupervisionRequests(pl *Player) *PlayerSupervisionRe
 			sqlgraph.From(player.Table, player.FieldID, id),
 			sqlgraph.To(playersupervisionrequest.Table, playersupervisionrequest.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, player.SupervisionRequestsTable, player.SupervisionRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMatches queries the matches edge of a Player.
+func (c *PlayerClient) QueryMatches(pl *Player) *MatchQuery {
+	query := &MatchQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, player.MatchesTable, player.MatchesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryStats queries the stats edge of a Player.
+func (c *PlayerClient) QueryStats(pl *Player) *StatisticQuery {
+	query := &StatisticQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(statistic.Table, statistic.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.StatsTable, player.StatsColumn),
 		)
 		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
 		return fromV, nil
@@ -1441,9 +1641,163 @@ func (c *StatDescriptionClient) QueryGame(sd *StatDescription) *GameQuery {
 	return query
 }
 
+// QueryStats queries the stats edge of a StatDescription.
+func (c *StatDescriptionClient) QueryStats(sd *StatDescription) *StatisticQuery {
+	query := &StatisticQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := sd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(statdescription.Table, statdescription.FieldID, id),
+			sqlgraph.To(statistic.Table, statistic.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, statdescription.StatsTable, statdescription.StatsColumn),
+		)
+		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *StatDescriptionClient) Hooks() []Hook {
 	return c.hooks.StatDescription
+}
+
+// StatisticClient is a client for the Statistic schema.
+type StatisticClient struct {
+	config
+}
+
+// NewStatisticClient returns a client for the Statistic from the given config.
+func NewStatisticClient(c config) *StatisticClient {
+	return &StatisticClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `statistic.Hooks(f(g(h())))`.
+func (c *StatisticClient) Use(hooks ...Hook) {
+	c.hooks.Statistic = append(c.hooks.Statistic, hooks...)
+}
+
+// Create returns a builder for creating a Statistic entity.
+func (c *StatisticClient) Create() *StatisticCreate {
+	mutation := newStatisticMutation(c.config, OpCreate)
+	return &StatisticCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Statistic entities.
+func (c *StatisticClient) CreateBulk(builders ...*StatisticCreate) *StatisticCreateBulk {
+	return &StatisticCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Statistic.
+func (c *StatisticClient) Update() *StatisticUpdate {
+	mutation := newStatisticMutation(c.config, OpUpdate)
+	return &StatisticUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *StatisticClient) UpdateOne(s *Statistic) *StatisticUpdateOne {
+	mutation := newStatisticMutation(c.config, OpUpdateOne, withStatistic(s))
+	return &StatisticUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *StatisticClient) UpdateOneID(id guidgql.GUID) *StatisticUpdateOne {
+	mutation := newStatisticMutation(c.config, OpUpdateOne, withStatisticID(id))
+	return &StatisticUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Statistic.
+func (c *StatisticClient) Delete() *StatisticDelete {
+	mutation := newStatisticMutation(c.config, OpDelete)
+	return &StatisticDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *StatisticClient) DeleteOne(s *Statistic) *StatisticDeleteOne {
+	return c.DeleteOneID(s.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *StatisticClient) DeleteOneID(id guidgql.GUID) *StatisticDeleteOne {
+	builder := c.Delete().Where(statistic.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &StatisticDeleteOne{builder}
+}
+
+// Query returns a query builder for Statistic.
+func (c *StatisticClient) Query() *StatisticQuery {
+	return &StatisticQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Statistic entity by its id.
+func (c *StatisticClient) Get(ctx context.Context, id guidgql.GUID) (*Statistic, error) {
+	return c.Query().Where(statistic.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *StatisticClient) GetX(ctx context.Context, id guidgql.GUID) *Statistic {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryMatch queries the match edge of a Statistic.
+func (c *StatisticClient) QueryMatch(s *Statistic) *MatchQuery {
+	query := &MatchQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(statistic.Table, statistic.FieldID, id),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, statistic.MatchTable, statistic.MatchColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryStatDescription queries the stat_description edge of a Statistic.
+func (c *StatisticClient) QueryStatDescription(s *Statistic) *StatDescriptionQuery {
+	query := &StatDescriptionQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(statistic.Table, statistic.FieldID, id),
+			sqlgraph.To(statdescription.Table, statdescription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, statistic.StatDescriptionTable, statistic.StatDescriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPlayer queries the player edge of a Statistic.
+func (c *StatisticClient) QueryPlayer(s *Statistic) *PlayerQuery {
+	query := &PlayerQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(statistic.Table, statistic.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, statistic.PlayerTable, statistic.PlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *StatisticClient) Hooks() []Hook {
+	return c.hooks.Statistic
 }
 
 // UserClient is a client for the User schema.

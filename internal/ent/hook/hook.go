@@ -87,6 +87,19 @@ func (f GroupSettingsFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Valu
 	return f(ctx, mv)
 }
 
+// The MatchFunc type is an adapter to allow the use of ordinary
+// function as Match mutator.
+type MatchFunc func(context.Context, *ent.MatchMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MatchFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.MatchMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MatchMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The PlayerFunc type is an adapter to allow the use of ordinary
 // function as Player mutator.
 type PlayerFunc func(context.Context, *ent.PlayerMutation) (ent.Value, error)
@@ -135,6 +148,19 @@ func (f StatDescriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	mv, ok := m.(*ent.StatDescriptionMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatDescriptionMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The StatisticFunc type is an adapter to allow the use of ordinary
+// function as Statistic mutator.
+type StatisticFunc func(context.Context, *ent.StatisticMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f StatisticFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.StatisticMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatisticMutation", m)
 	}
 	return f(ctx, mv)
 }

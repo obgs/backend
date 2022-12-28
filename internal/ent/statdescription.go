@@ -35,11 +35,14 @@ type StatDescription struct {
 type StatDescriptionEdges struct {
 	// Game holds the value of the game edge.
 	Game []*Game `json:"game,omitempty"`
+	// Stats holds the value of the stats edge.
+	Stats []*Statistic `json:"stats,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 
-	namedGame map[string][]*Game
+	namedGame  map[string][]*Game
+	namedStats map[string][]*Statistic
 }
 
 // GameOrErr returns the Game value or an error if the edge
@@ -49,6 +52,15 @@ func (e StatDescriptionEdges) GameOrErr() ([]*Game, error) {
 		return e.Game, nil
 	}
 	return nil, &NotLoadedError{edge: "game"}
+}
+
+// StatsOrErr returns the Stats value or an error if the edge
+// was not loaded in eager-loading.
+func (e StatDescriptionEdges) StatsOrErr() ([]*Statistic, error) {
+	if e.loadedTypes[1] {
+		return e.Stats, nil
+	}
+	return nil, &NotLoadedError{edge: "stats"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -121,6 +133,11 @@ func (sd *StatDescription) QueryGame() *GameQuery {
 	return (&StatDescriptionClient{config: sd.config}).QueryGame(sd)
 }
 
+// QueryStats queries the "stats" edge of the StatDescription entity.
+func (sd *StatDescription) QueryStats() *StatisticQuery {
+	return (&StatDescriptionClient{config: sd.config}).QueryStats(sd)
+}
+
 // Update returns a builder for updating this StatDescription.
 // Note that you need to call StatDescription.Unwrap() before calling this method if this StatDescription
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -180,6 +197,30 @@ func (sd *StatDescription) appendNamedGame(name string, edges ...*Game) {
 		sd.Edges.namedGame[name] = []*Game{}
 	} else {
 		sd.Edges.namedGame[name] = append(sd.Edges.namedGame[name], edges...)
+	}
+}
+
+// NamedStats returns the Stats named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (sd *StatDescription) NamedStats(name string) ([]*Statistic, error) {
+	if sd.Edges.namedStats == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := sd.Edges.namedStats[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (sd *StatDescription) appendNamedStats(name string, edges ...*Statistic) {
+	if sd.Edges.namedStats == nil {
+		sd.Edges.namedStats = make(map[string][]*Statistic)
+	}
+	if len(edges) == 0 {
+		sd.Edges.namedStats[name] = []*Statistic{}
+	} else {
+		sd.Edges.namedStats[name] = append(sd.Edges.namedStats[name], edges...)
 	}
 }
 

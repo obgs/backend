@@ -41,14 +41,17 @@ type GameEdges struct {
 	Favorites []*GameFavorite `json:"favorites,omitempty"`
 	// StatDescriptions holds the value of the stat_descriptions edge.
 	StatDescriptions []*StatDescription `json:"stat_descriptions,omitempty"`
+	// Matches holds the value of the matches edge.
+	Matches []*Match `json:"matches,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
 	totalCount [2]map[string]int
 
 	namedFavorites        map[string][]*GameFavorite
 	namedStatDescriptions map[string][]*StatDescription
+	namedMatches          map[string][]*Match
 }
 
 // AuthorOrErr returns the Author value or an error if the edge
@@ -80,6 +83,15 @@ func (e GameEdges) StatDescriptionsOrErr() ([]*StatDescription, error) {
 		return e.StatDescriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "stat_descriptions"}
+}
+
+// MatchesOrErr returns the Matches value or an error if the edge
+// was not loaded in eager-loading.
+func (e GameEdges) MatchesOrErr() ([]*Match, error) {
+	if e.loadedTypes[3] {
+		return e.Matches, nil
+	}
+	return nil, &NotLoadedError{edge: "matches"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -173,6 +185,11 @@ func (ga *Game) QueryStatDescriptions() *StatDescriptionQuery {
 	return (&GameClient{config: ga.config}).QueryStatDescriptions(ga)
 }
 
+// QueryMatches queries the "matches" edge of the Game entity.
+func (ga *Game) QueryMatches() *MatchQuery {
+	return (&GameClient{config: ga.config}).QueryMatches(ga)
+}
+
 // Update returns a builder for updating this Game.
 // Note that you need to call Game.Unwrap() before calling this method if this Game
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -259,6 +276,30 @@ func (ga *Game) appendNamedStatDescriptions(name string, edges ...*StatDescripti
 		ga.Edges.namedStatDescriptions[name] = []*StatDescription{}
 	} else {
 		ga.Edges.namedStatDescriptions[name] = append(ga.Edges.namedStatDescriptions[name], edges...)
+	}
+}
+
+// NamedMatches returns the Matches named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (ga *Game) NamedMatches(name string) ([]*Match, error) {
+	if ga.Edges.namedMatches == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := ga.Edges.namedMatches[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (ga *Game) appendNamedMatches(name string, edges ...*Match) {
+	if ga.Edges.namedMatches == nil {
+		ga.Edges.namedMatches = make(map[string][]*Match)
+	}
+	if len(edges) == 0 {
+		ga.Edges.namedMatches[name] = []*Match{}
+	} else {
+		ga.Edges.namedMatches[name] = append(ga.Edges.namedMatches[name], edges...)
 	}
 }
 

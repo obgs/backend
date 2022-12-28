@@ -11,10 +11,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -30,11 +32,15 @@ type PlayerQuery struct {
 	withOwner                    *UserQuery
 	withSupervisors              *UserQuery
 	withSupervisionRequests      *PlayerSupervisionRequestQuery
+	withMatches                  *MatchQuery
+	withStats                    *StatisticQuery
 	withFKs                      bool
 	modifiers                    []func(*sql.Selector)
 	loadTotal                    []func(context.Context, []*Player) error
 	withNamedSupervisors         map[string]*UserQuery
 	withNamedSupervisionRequests map[string]*PlayerSupervisionRequestQuery
+	withNamedMatches             map[string]*MatchQuery
+	withNamedStats               map[string]*StatisticQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -130,6 +136,50 @@ func (pq *PlayerQuery) QuerySupervisionRequests() *PlayerSupervisionRequestQuery
 			sqlgraph.From(player.Table, player.FieldID, selector),
 			sqlgraph.To(playersupervisionrequest.Table, playersupervisionrequest.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, player.SupervisionRequestsTable, player.SupervisionRequestsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMatches chains the current query on the "matches" edge.
+func (pq *PlayerQuery) QueryMatches() *MatchQuery {
+	query := &MatchQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, player.MatchesTable, player.MatchesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryStats chains the current query on the "stats" edge.
+func (pq *PlayerQuery) QueryStats() *StatisticQuery {
+	query := &StatisticQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.To(statistic.Table, statistic.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.StatsTable, player.StatsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -321,6 +371,8 @@ func (pq *PlayerQuery) Clone() *PlayerQuery {
 		withOwner:               pq.withOwner.Clone(),
 		withSupervisors:         pq.withSupervisors.Clone(),
 		withSupervisionRequests: pq.withSupervisionRequests.Clone(),
+		withMatches:             pq.withMatches.Clone(),
+		withStats:               pq.withStats.Clone(),
 		// clone intermediate query.
 		sql:    pq.sql.Clone(),
 		path:   pq.path,
@@ -358,6 +410,28 @@ func (pq *PlayerQuery) WithSupervisionRequests(opts ...func(*PlayerSupervisionRe
 		opt(query)
 	}
 	pq.withSupervisionRequests = query
+	return pq
+}
+
+// WithMatches tells the query-builder to eager-load the nodes that are connected to
+// the "matches" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithMatches(opts ...func(*MatchQuery)) *PlayerQuery {
+	query := &MatchQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withMatches = query
+	return pq
+}
+
+// WithStats tells the query-builder to eager-load the nodes that are connected to
+// the "stats" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithStats(opts ...func(*StatisticQuery)) *PlayerQuery {
+	query := &StatisticQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withStats = query
 	return pq
 }
 
@@ -435,10 +509,12 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 		nodes       = []*Player{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [5]bool{
 			pq.withOwner != nil,
 			pq.withSupervisors != nil,
 			pq.withSupervisionRequests != nil,
+			pq.withMatches != nil,
+			pq.withStats != nil,
 		}
 	)
 	if pq.withOwner != nil {
@@ -490,6 +566,20 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 			return nil, err
 		}
 	}
+	if query := pq.withMatches; query != nil {
+		if err := pq.loadMatches(ctx, query, nodes,
+			func(n *Player) { n.Edges.Matches = []*Match{} },
+			func(n *Player, e *Match) { n.Edges.Matches = append(n.Edges.Matches, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withStats; query != nil {
+		if err := pq.loadStats(ctx, query, nodes,
+			func(n *Player) { n.Edges.Stats = []*Statistic{} },
+			func(n *Player, e *Statistic) { n.Edges.Stats = append(n.Edges.Stats, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range pq.withNamedSupervisors {
 		if err := pq.loadSupervisors(ctx, query, nodes,
 			func(n *Player) { n.appendNamedSupervisors(name) },
@@ -501,6 +591,20 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 		if err := pq.loadSupervisionRequests(ctx, query, nodes,
 			func(n *Player) { n.appendNamedSupervisionRequests(name) },
 			func(n *Player, e *PlayerSupervisionRequest) { n.appendNamedSupervisionRequests(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range pq.withNamedMatches {
+		if err := pq.loadMatches(ctx, query, nodes,
+			func(n *Player) { n.appendNamedMatches(name) },
+			func(n *Player, e *Match) { n.appendNamedMatches(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range pq.withNamedStats {
+		if err := pq.loadStats(ctx, query, nodes,
+			func(n *Player) { n.appendNamedStats(name) },
+			func(n *Player, e *Statistic) { n.appendNamedStats(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -625,6 +729,95 @@ func (pq *PlayerQuery) loadSupervisionRequests(ctx context.Context, query *Playe
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "player_supervision_requests" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *PlayerQuery) loadMatches(ctx context.Context, query *MatchQuery, nodes []*Player, init func(*Player), assign func(*Player, *Match)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[guidgql.GUID]*Player)
+	nids := make(map[guidgql.GUID]map[*Player]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(player.MatchesTable)
+		s.Join(joinT).On(s.C(match.FieldID), joinT.C(player.MatchesPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(player.MatchesPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(player.MatchesPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]any, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]any{new(guidgql.GUID)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []any) error {
+			outValue := *values[0].(*guidgql.GUID)
+			inValue := *values[1].(*guidgql.GUID)
+			if nids[inValue] == nil {
+				nids[inValue] = map[*Player]struct{}{byID[outValue]: {}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "matches" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (pq *PlayerQuery) loadStats(ctx context.Context, query *StatisticQuery, nodes []*Player, init func(*Player), assign func(*Player, *Statistic)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID]*Player)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Statistic(func(s *sql.Selector) {
+		s.Where(sql.InValues(player.StatsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.player_stats
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "player_stats" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "player_stats" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -759,6 +952,34 @@ func (pq *PlayerQuery) WithNamedSupervisionRequests(name string, opts ...func(*P
 		pq.withNamedSupervisionRequests = make(map[string]*PlayerSupervisionRequestQuery)
 	}
 	pq.withNamedSupervisionRequests[name] = query
+	return pq
+}
+
+// WithNamedMatches tells the query-builder to eager-load the nodes that are connected to the "matches"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithNamedMatches(name string, opts ...func(*MatchQuery)) *PlayerQuery {
+	query := &MatchQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if pq.withNamedMatches == nil {
+		pq.withNamedMatches = make(map[string]*MatchQuery)
+	}
+	pq.withNamedMatches[name] = query
+	return pq
+}
+
+// WithNamedStats tells the query-builder to eager-load the nodes that are connected to the "stats"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithNamedStats(name string, opts ...func(*StatisticQuery)) *PlayerQuery {
+	query := &StatisticQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if pq.withNamedStats == nil {
+		pq.withNamedStats = make(map[string]*StatisticQuery)
+	}
+	pq.withNamedStats[name] = query
 	return pq
 }
 

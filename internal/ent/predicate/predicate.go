@@ -24,6 +24,9 @@ type GroupMembershipApplication func(*sql.Selector)
 // GroupSettings is the predicate function for groupsettings builders.
 type GroupSettings func(*sql.Selector)
 
+// Match is the predicate function for match builders.
+type Match func(*sql.Selector)
+
 // Player is the predicate function for player builders.
 type Player func(*sql.Selector)
 
@@ -35,6 +38,9 @@ type PlayerSupervisionRequestApproval func(*sql.Selector)
 
 // StatDescription is the predicate function for statdescription builders.
 type StatDescription func(*sql.Selector)
+
+// Statistic is the predicate function for statistic builders.
+type Statistic func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

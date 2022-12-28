@@ -147,6 +147,25 @@ var (
 			},
 		},
 	}
+	// MatchesColumns holds the columns for the "matches" table.
+	MatchesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "game_matches", Type: field.TypeString},
+	}
+	// MatchesTable holds the schema information for the "matches" table.
+	MatchesTable = &schema.Table{
+		Name:       "matches",
+		Columns:    MatchesColumns,
+		PrimaryKey: []*schema.Column{MatchesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "matches_games_matches",
+				Columns:    []*schema.Column{MatchesColumns[1]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// PlayersColumns holds the columns for the "players" table.
 	PlayersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -235,6 +254,40 @@ var (
 		Columns:    StatDescriptionsColumns,
 		PrimaryKey: []*schema.Column{StatDescriptionsColumns[0]},
 	}
+	// StatisticsColumns holds the columns for the "statistics" table.
+	StatisticsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString, Default: ""},
+		{Name: "match_stats", Type: field.TypeString},
+		{Name: "player_stats", Type: field.TypeString},
+		{Name: "stat_description_stats", Type: field.TypeString},
+	}
+	// StatisticsTable holds the schema information for the "statistics" table.
+	StatisticsTable = &schema.Table{
+		Name:       "statistics",
+		Columns:    StatisticsColumns,
+		PrimaryKey: []*schema.Column{StatisticsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "statistics_matches_stats",
+				Columns:    []*schema.Column{StatisticsColumns[2]},
+				RefColumns: []*schema.Column{MatchesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "statistics_players_stats",
+				Columns:    []*schema.Column{StatisticsColumns[3]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "statistics_stat_descriptions_stats",
+				Columns:    []*schema.Column{StatisticsColumns[4]},
+				RefColumns: []*schema.Column{StatDescriptionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -248,6 +301,31 @@ var (
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	}
+	// MatchPlayersColumns holds the columns for the "match_players" table.
+	MatchPlayersColumns = []*schema.Column{
+		{Name: "match_id", Type: field.TypeString},
+		{Name: "player_id", Type: field.TypeString},
+	}
+	// MatchPlayersTable holds the schema information for the "match_players" table.
+	MatchPlayersTable = &schema.Table{
+		Name:       "match_players",
+		Columns:    MatchPlayersColumns,
+		PrimaryKey: []*schema.Column{MatchPlayersColumns[0], MatchPlayersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "match_players_match_id",
+				Columns:    []*schema.Column{MatchPlayersColumns[0]},
+				RefColumns: []*schema.Column{MatchesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "match_players_player_id",
+				Columns:    []*schema.Column{MatchPlayersColumns[1]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
 	}
 	// StatDescriptionGameColumns holds the columns for the "stat_description_game" table.
 	StatDescriptionGameColumns = []*schema.Column{
@@ -307,11 +385,14 @@ var (
 		GroupMembershipsTable,
 		GroupMembershipApplicationsTable,
 		GroupSettingsTable,
+		MatchesTable,
 		PlayersTable,
 		PlayerSupervisionRequestsTable,
 		PlayerSupervisionRequestApprovalsTable,
 		StatDescriptionsTable,
+		StatisticsTable,
 		UsersTable,
+		MatchPlayersTable,
 		StatDescriptionGameTable,
 		UserPlayersTable,
 	}
@@ -326,11 +407,17 @@ func init() {
 	GroupMembershipApplicationsTable.ForeignKeys[0].RefTable = GroupsTable
 	GroupMembershipApplicationsTable.ForeignKeys[1].RefTable = UsersTable
 	GroupSettingsTable.ForeignKeys[0].RefTable = GroupsTable
+	MatchesTable.ForeignKeys[0].RefTable = GamesTable
 	PlayersTable.ForeignKeys[0].RefTable = UsersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[0].RefTable = PlayersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[1].RefTable = UsersTable
 	PlayerSupervisionRequestApprovalsTable.ForeignKeys[0].RefTable = PlayerSupervisionRequestsTable
 	PlayerSupervisionRequestApprovalsTable.ForeignKeys[1].RefTable = UsersTable
+	StatisticsTable.ForeignKeys[0].RefTable = MatchesTable
+	StatisticsTable.ForeignKeys[1].RefTable = PlayersTable
+	StatisticsTable.ForeignKeys[2].RefTable = StatDescriptionsTable
+	MatchPlayersTable.ForeignKeys[0].RefTable = MatchesTable
+	MatchPlayersTable.ForeignKeys[1].RefTable = PlayersTable
 	StatDescriptionGameTable.ForeignKeys[0].RefTable = StatDescriptionsTable
 	StatDescriptionGameTable.ForeignKeys[1].RefTable = GamesTable
 	UserPlayersTable.ForeignKeys[0].RefTable = UsersTable

@@ -100,6 +100,38 @@ func (gma *GroupMembershipApplication) Group(ctx context.Context) (*Group, error
 	return result, err
 }
 
+func (m *Match) Game(ctx context.Context) (*Game, error) {
+	result, err := m.Edges.GameOrErr()
+	if IsNotLoaded(err) {
+		result, err = m.QueryGame().Only(ctx)
+	}
+	return result, err
+}
+
+func (m *Match) Players(ctx context.Context) (result []*Player, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = m.NamedPlayers(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = m.Edges.PlayersOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = m.QueryPlayers().All(ctx)
+	}
+	return result, err
+}
+
+func (m *Match) Stats(ctx context.Context) (result []*Statistic, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = m.NamedStats(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = m.Edges.StatsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = m.QueryStats().All(ctx)
+	}
+	return result, err
+}
+
 func (pl *Player) Owner(ctx context.Context) (*User, error) {
 	result, err := pl.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {
@@ -128,6 +160,18 @@ func (pl *Player) SupervisionRequests(ctx context.Context) (result []*PlayerSupe
 	}
 	if IsNotLoaded(err) {
 		result, err = pl.QuerySupervisionRequests().All(ctx)
+	}
+	return result, err
+}
+
+func (pl *Player) Matches(ctx context.Context) (result []*Match, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = pl.NamedMatches(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = pl.Edges.MatchesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = pl.QueryMatches().All(ctx)
 	}
 	return result, err
 }
@@ -172,6 +216,30 @@ func (psra *PlayerSupervisionRequestApproval) SupervisionRequest(ctx context.Con
 	result, err := psra.Edges.SupervisionRequestOrErr()
 	if IsNotLoaded(err) {
 		result, err = psra.QuerySupervisionRequest().Only(ctx)
+	}
+	return result, err
+}
+
+func (s *Statistic) Match(ctx context.Context) (*Match, error) {
+	result, err := s.Edges.MatchOrErr()
+	if IsNotLoaded(err) {
+		result, err = s.QueryMatch().Only(ctx)
+	}
+	return result, err
+}
+
+func (s *Statistic) StatDescription(ctx context.Context) (*StatDescription, error) {
+	result, err := s.Edges.StatDescriptionOrErr()
+	if IsNotLoaded(err) {
+		result, err = s.QueryStatDescription().Only(ctx)
+	}
+	return result, err
+}
+
+func (s *Statistic) Player(ctx context.Context) (*Player, error) {
+	result, err := s.Edges.PlayerOrErr()
+	if IsNotLoaded(err) {
+		result, err = s.QueryPlayer().Only(ctx)
 	}
 	return result, err
 }

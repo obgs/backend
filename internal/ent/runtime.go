@@ -9,12 +9,14 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -90,6 +92,12 @@ func init() {
 	groupsettingsDescID := groupsettingsFields[0].Descriptor()
 	// groupsettings.DefaultID holds the default value on creation for the id field.
 	groupsettings.DefaultID = groupsettingsDescID.Default.(func() guidgql.GUID)
+	matchFields := schema.Match{}.Fields()
+	_ = matchFields
+	// matchDescID is the schema descriptor for id field.
+	matchDescID := matchFields[0].Descriptor()
+	// match.DefaultID holds the default value on creation for the id field.
+	match.DefaultID = matchDescID.Default.(func() guidgql.GUID)
 	playerFields := schema.Player{}.Fields()
 	_ = playerFields
 	// playerDescName is the schema descriptor for name field.
@@ -126,6 +134,16 @@ func init() {
 	statdescriptionDescID := statdescriptionFields[0].Descriptor()
 	// statdescription.DefaultID holds the default value on creation for the id field.
 	statdescription.DefaultID = statdescriptionDescID.Default.(func() guidgql.GUID)
+	statisticFields := schema.Statistic{}.Fields()
+	_ = statisticFields
+	// statisticDescValue is the schema descriptor for value field.
+	statisticDescValue := statisticFields[1].Descriptor()
+	// statistic.DefaultValue holds the default value on creation for the value field.
+	statistic.DefaultValue = statisticDescValue.Default.(string)
+	// statisticDescID is the schema descriptor for id field.
+	statisticDescID := statisticFields[0].Descriptor()
+	// statistic.DefaultID holds the default value on creation for the id field.
+	statistic.DefaultID = statisticDescID.Default.(func() guidgql.GUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescName is the schema descriptor for name field.

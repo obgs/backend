@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
@@ -160,6 +161,21 @@ func (gu *GameUpdate) AddStatDescriptions(s ...*StatDescription) *GameUpdate {
 	return gu.AddStatDescriptionIDs(ids...)
 }
 
+// AddMatchIDs adds the "matches" edge to the Match entity by IDs.
+func (gu *GameUpdate) AddMatchIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.AddMatchIDs(ids...)
+	return gu
+}
+
+// AddMatches adds the "matches" edges to the Match entity.
+func (gu *GameUpdate) AddMatches(m ...*Match) *GameUpdate {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return gu.AddMatchIDs(ids...)
+}
+
 // Mutation returns the GameMutation object of the builder.
 func (gu *GameUpdate) Mutation() *GameMutation {
 	return gu.mutation
@@ -211,6 +227,27 @@ func (gu *GameUpdate) RemoveStatDescriptions(s ...*StatDescription) *GameUpdate 
 		ids[i] = s[i].ID
 	}
 	return gu.RemoveStatDescriptionIDs(ids...)
+}
+
+// ClearMatches clears all "matches" edges to the Match entity.
+func (gu *GameUpdate) ClearMatches() *GameUpdate {
+	gu.mutation.ClearMatches()
+	return gu
+}
+
+// RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
+func (gu *GameUpdate) RemoveMatchIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.RemoveMatchIDs(ids...)
+	return gu
+}
+
+// RemoveMatches removes "matches" edges to Match entities.
+func (gu *GameUpdate) RemoveMatches(m ...*Match) *GameUpdate {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return gu.RemoveMatchIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -474,6 +511,60 @@ func (gu *GameUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if gu.mutation.MatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.MatchesTable,
+			Columns: []string{game.MatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gu.mutation.RemovedMatchesIDs(); len(nodes) > 0 && !gu.mutation.MatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.MatchesTable,
+			Columns: []string{game.MatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gu.mutation.MatchesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.MatchesTable,
+			Columns: []string{game.MatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, gu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{game.Label}
@@ -622,6 +713,21 @@ func (guo *GameUpdateOne) AddStatDescriptions(s ...*StatDescription) *GameUpdate
 	return guo.AddStatDescriptionIDs(ids...)
 }
 
+// AddMatchIDs adds the "matches" edge to the Match entity by IDs.
+func (guo *GameUpdateOne) AddMatchIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.AddMatchIDs(ids...)
+	return guo
+}
+
+// AddMatches adds the "matches" edges to the Match entity.
+func (guo *GameUpdateOne) AddMatches(m ...*Match) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return guo.AddMatchIDs(ids...)
+}
+
 // Mutation returns the GameMutation object of the builder.
 func (guo *GameUpdateOne) Mutation() *GameMutation {
 	return guo.mutation
@@ -673,6 +779,27 @@ func (guo *GameUpdateOne) RemoveStatDescriptions(s ...*StatDescription) *GameUpd
 		ids[i] = s[i].ID
 	}
 	return guo.RemoveStatDescriptionIDs(ids...)
+}
+
+// ClearMatches clears all "matches" edges to the Match entity.
+func (guo *GameUpdateOne) ClearMatches() *GameUpdateOne {
+	guo.mutation.ClearMatches()
+	return guo
+}
+
+// RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
+func (guo *GameUpdateOne) RemoveMatchIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.RemoveMatchIDs(ids...)
+	return guo
+}
+
+// RemoveMatches removes "matches" edges to Match entities.
+func (guo *GameUpdateOne) RemoveMatches(m ...*Match) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return guo.RemoveMatchIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -958,6 +1085,60 @@ func (guo *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: statdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if guo.mutation.MatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.MatchesTable,
+			Columns: []string{game.MatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := guo.mutation.RemovedMatchesIDs(); len(nodes) > 0 && !guo.mutation.MatchesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.MatchesTable,
+			Columns: []string{game.MatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := guo.mutation.MatchesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   game.MatchesTable,
+			Columns: []string{game.MatchesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: match.FieldID,
 				},
 			},
 		}

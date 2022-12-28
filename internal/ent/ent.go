@@ -16,10 +16,12 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -47,10 +49,12 @@ func columnChecker(table string) func(string) error {
 		groupmembership.Table:                  groupmembership.ValidColumn,
 		groupmembershipapplication.Table:       groupmembershipapplication.ValidColumn,
 		groupsettings.Table:                    groupsettings.ValidColumn,
+		match.Table:                            match.ValidColumn,
 		player.Table:                           player.ValidColumn,
 		playersupervisionrequest.Table:         playersupervisionrequest.ValidColumn,
 		playersupervisionrequestapproval.Table: playersupervisionrequestapproval.ValidColumn,
 		statdescription.Table:                  statdescription.ValidColumn,
+		statistic.Table:                        statistic.ValidColumn,
 		user.Table:                             user.ValidColumn,
 	}
 	check, ok := checks[table]

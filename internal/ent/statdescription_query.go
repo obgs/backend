@@ -15,21 +15,24 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 )
 
 // StatDescriptionQuery is the builder for querying StatDescription entities.
 type StatDescriptionQuery struct {
 	config
-	limit         *int
-	offset        *int
-	unique        *bool
-	order         []OrderFunc
-	fields        []string
-	predicates    []predicate.StatDescription
-	withGame      *GameQuery
-	modifiers     []func(*sql.Selector)
-	loadTotal     []func(context.Context, []*StatDescription) error
-	withNamedGame map[string]*GameQuery
+	limit          *int
+	offset         *int
+	unique         *bool
+	order          []OrderFunc
+	fields         []string
+	predicates     []predicate.StatDescription
+	withGame       *GameQuery
+	withStats      *StatisticQuery
+	modifiers      []func(*sql.Selector)
+	loadTotal      []func(context.Context, []*StatDescription) error
+	withNamedGame  map[string]*GameQuery
+	withNamedStats map[string]*StatisticQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -81,6 +84,28 @@ func (sdq *StatDescriptionQuery) QueryGame() *GameQuery {
 			sqlgraph.From(statdescription.Table, statdescription.FieldID, selector),
 			sqlgraph.To(game.Table, game.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, statdescription.GameTable, statdescription.GamePrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(sdq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryStats chains the current query on the "stats" edge.
+func (sdq *StatDescriptionQuery) QueryStats() *StatisticQuery {
+	query := &StatisticQuery{config: sdq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sdq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sdq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(statdescription.Table, statdescription.FieldID, selector),
+			sqlgraph.To(statistic.Table, statistic.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, statdescription.StatsTable, statdescription.StatsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(sdq.driver.Dialect(), step)
 		return fromU, nil
@@ -270,6 +295,7 @@ func (sdq *StatDescriptionQuery) Clone() *StatDescriptionQuery {
 		order:      append([]OrderFunc{}, sdq.order...),
 		predicates: append([]predicate.StatDescription{}, sdq.predicates...),
 		withGame:   sdq.withGame.Clone(),
+		withStats:  sdq.withStats.Clone(),
 		// clone intermediate query.
 		sql:    sdq.sql.Clone(),
 		path:   sdq.path,
@@ -285,6 +311,17 @@ func (sdq *StatDescriptionQuery) WithGame(opts ...func(*GameQuery)) *StatDescrip
 		opt(query)
 	}
 	sdq.withGame = query
+	return sdq
+}
+
+// WithStats tells the query-builder to eager-load the nodes that are connected to
+// the "stats" edge. The optional arguments are used to configure the query builder of the edge.
+func (sdq *StatDescriptionQuery) WithStats(opts ...func(*StatisticQuery)) *StatDescriptionQuery {
+	query := &StatisticQuery{config: sdq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	sdq.withStats = query
 	return sdq
 }
 
@@ -361,8 +398,9 @@ func (sdq *StatDescriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	var (
 		nodes       = []*StatDescription{}
 		_spec       = sdq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			sdq.withGame != nil,
+			sdq.withStats != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -393,10 +431,24 @@ func (sdq *StatDescriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
+	if query := sdq.withStats; query != nil {
+		if err := sdq.loadStats(ctx, query, nodes,
+			func(n *StatDescription) { n.Edges.Stats = []*Statistic{} },
+			func(n *StatDescription, e *Statistic) { n.Edges.Stats = append(n.Edges.Stats, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range sdq.withNamedGame {
 		if err := sdq.loadGame(ctx, query, nodes,
 			func(n *StatDescription) { n.appendNamedGame(name) },
 			func(n *StatDescription, e *Game) { n.appendNamedGame(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range sdq.withNamedStats {
+		if err := sdq.loadStats(ctx, query, nodes,
+			func(n *StatDescription) { n.appendNamedStats(name) },
+			func(n *StatDescription, e *Statistic) { n.appendNamedStats(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -463,6 +515,37 @@ func (sdq *StatDescriptionQuery) loadGame(ctx context.Context, query *GameQuery,
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (sdq *StatDescriptionQuery) loadStats(ctx context.Context, query *StatisticQuery, nodes []*StatDescription, init func(*StatDescription), assign func(*StatDescription, *Statistic)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID]*StatDescription)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Statistic(func(s *sql.Selector) {
+		s.Where(sql.InValues(statdescription.StatsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.stat_description_stats
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "stat_description_stats" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "stat_description_stats" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }
@@ -581,6 +664,20 @@ func (sdq *StatDescriptionQuery) WithNamedGame(name string, opts ...func(*GameQu
 		sdq.withNamedGame = make(map[string]*GameQuery)
 	}
 	sdq.withNamedGame[name] = query
+	return sdq
+}
+
+// WithNamedStats tells the query-builder to eager-load the nodes that are connected to the "stats"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (sdq *StatDescriptionQuery) WithNamedStats(name string, opts ...func(*StatisticQuery)) *StatDescriptionQuery {
+	query := &StatisticQuery{config: sdq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if sdq.withNamedStats == nil {
+		sdq.withNamedStats = make(map[string]*StatisticQuery)
+	}
+	sdq.withNamedStats[name] = query
 	return sdq
 }
 

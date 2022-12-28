@@ -1,0 +1,6 @@
+-- create "matches" table
+CREATE TABLE "matches" ("id" character varying NOT NULL, "game_matches" character varying NOT NULL, PRIMARY KEY ("id"), CONSTRAINT "matches_games_matches" FOREIGN KEY ("game_matches") REFERENCES "games" ("id") ON DELETE NO ACTION);
+-- create "statistics" table
+CREATE TABLE "statistics" ("id" character varying NOT NULL, "value" character varying NOT NULL DEFAULT '', "match_stats" character varying NOT NULL, "player_stats" character varying NOT NULL, "stat_description_stats" character varying NOT NULL, PRIMARY KEY ("id"), CONSTRAINT "statistics_matches_stats" FOREIGN KEY ("match_stats") REFERENCES "matches" ("id") ON DELETE NO ACTION, CONSTRAINT "statistics_players_stats" FOREIGN KEY ("player_stats") REFERENCES "players" ("id") ON DELETE NO ACTION, CONSTRAINT "statistics_stat_descriptions_stats" FOREIGN KEY ("stat_description_stats") REFERENCES "stat_descriptions" ("id") ON DELETE NO ACTION);
+-- create "match_players" table
+CREATE TABLE "match_players" ("match_id" character varying NOT NULL, "player_id" character varying NOT NULL, PRIMARY KEY ("match_id", "player_id"), CONSTRAINT "match_players_match_id" FOREIGN KEY ("match_id") REFERENCES "matches" ("id") ON DELETE CASCADE, CONSTRAINT "match_players_player_id" FOREIGN KEY ("player_id") REFERENCES "players" ("id") ON DELETE CASCADE);

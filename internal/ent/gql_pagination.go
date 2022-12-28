@@ -19,11 +19,13 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/vmihailenco/msgpack/v5"
@@ -1406,6 +1408,237 @@ func (gs *GroupSettings) ToEdge(order *GroupSettingsOrder) *GroupSettingsEdge {
 	}
 }
 
+// MatchEdge is the edge representation of Match.
+type MatchEdge struct {
+	Node   *Match `json:"node"`
+	Cursor Cursor `json:"cursor"`
+}
+
+// MatchConnection is the connection containing edges to Match.
+type MatchConnection struct {
+	Edges      []*MatchEdge `json:"edges"`
+	PageInfo   PageInfo     `json:"pageInfo"`
+	TotalCount int          `json:"totalCount"`
+}
+
+func (c *MatchConnection) build(nodes []*Match, pager *matchPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *Match
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Match {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Match {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*MatchEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &MatchEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// MatchPaginateOption enables pagination customization.
+type MatchPaginateOption func(*matchPager) error
+
+// WithMatchOrder configures pagination ordering.
+func WithMatchOrder(order *MatchOrder) MatchPaginateOption {
+	if order == nil {
+		order = DefaultMatchOrder
+	}
+	o := *order
+	return func(pager *matchPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultMatchOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithMatchFilter configures pagination filter.
+func WithMatchFilter(filter func(*MatchQuery) (*MatchQuery, error)) MatchPaginateOption {
+	return func(pager *matchPager) error {
+		if filter == nil {
+			return errors.New("MatchQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type matchPager struct {
+	order  *MatchOrder
+	filter func(*MatchQuery) (*MatchQuery, error)
+}
+
+func newMatchPager(opts []MatchPaginateOption) (*matchPager, error) {
+	pager := &matchPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultMatchOrder
+	}
+	return pager, nil
+}
+
+func (p *matchPager) applyFilter(query *MatchQuery) (*MatchQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *matchPager) toCursor(m *Match) Cursor {
+	return p.order.Field.toCursor(m)
+}
+
+func (p *matchPager) applyCursors(query *MatchQuery, after, before *Cursor) *MatchQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultMatchOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *matchPager) applyOrder(query *MatchQuery, reverse bool) *MatchQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultMatchOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultMatchOrder.Field.field))
+	}
+	return query
+}
+
+func (p *matchPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultMatchOrder.Field {
+			b.Comma().Ident(DefaultMatchOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Match.
+func (m *MatchQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...MatchPaginateOption,
+) (*MatchConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newMatchPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if m, err = pager.applyFilter(m); err != nil {
+		return nil, err
+	}
+	conn := &MatchConnection{Edges: []*MatchEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			if conn.TotalCount, err = m.Clone().Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+
+	m = pager.applyCursors(m, after, before)
+	m = pager.applyOrder(m, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := m.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// MatchOrderField defines the ordering field of Match.
+type MatchOrderField struct {
+	field    string
+	toCursor func(*Match) Cursor
+}
+
+// MatchOrder defines the ordering of Match.
+type MatchOrder struct {
+	Direction OrderDirection   `json:"direction"`
+	Field     *MatchOrderField `json:"field"`
+}
+
+// DefaultMatchOrder is the default ordering of Match.
+var DefaultMatchOrder = &MatchOrder{
+	Direction: OrderDirectionAsc,
+	Field: &MatchOrderField{
+		field: match.FieldID,
+		toCursor: func(m *Match) Cursor {
+			return Cursor{ID: m.ID}
+		},
+	},
+}
+
+// ToEdge converts Match into MatchEdge.
+func (m *Match) ToEdge(order *MatchOrder) *MatchEdge {
+	if order == nil {
+		order = DefaultMatchOrder
+	}
+	return &MatchEdge{
+		Node:   m,
+		Cursor: order.Field.toCursor(m),
+	}
+}
+
 // PlayerEdge is the edge representation of Player.
 type PlayerEdge struct {
 	Node   *Player `json:"node"`
@@ -2327,6 +2560,237 @@ func (sd *StatDescription) ToEdge(order *StatDescriptionOrder) *StatDescriptionE
 	return &StatDescriptionEdge{
 		Node:   sd,
 		Cursor: order.Field.toCursor(sd),
+	}
+}
+
+// StatisticEdge is the edge representation of Statistic.
+type StatisticEdge struct {
+	Node   *Statistic `json:"node"`
+	Cursor Cursor     `json:"cursor"`
+}
+
+// StatisticConnection is the connection containing edges to Statistic.
+type StatisticConnection struct {
+	Edges      []*StatisticEdge `json:"edges"`
+	PageInfo   PageInfo         `json:"pageInfo"`
+	TotalCount int              `json:"totalCount"`
+}
+
+func (c *StatisticConnection) build(nodes []*Statistic, pager *statisticPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *Statistic
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Statistic {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Statistic {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*StatisticEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &StatisticEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// StatisticPaginateOption enables pagination customization.
+type StatisticPaginateOption func(*statisticPager) error
+
+// WithStatisticOrder configures pagination ordering.
+func WithStatisticOrder(order *StatisticOrder) StatisticPaginateOption {
+	if order == nil {
+		order = DefaultStatisticOrder
+	}
+	o := *order
+	return func(pager *statisticPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultStatisticOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithStatisticFilter configures pagination filter.
+func WithStatisticFilter(filter func(*StatisticQuery) (*StatisticQuery, error)) StatisticPaginateOption {
+	return func(pager *statisticPager) error {
+		if filter == nil {
+			return errors.New("StatisticQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type statisticPager struct {
+	order  *StatisticOrder
+	filter func(*StatisticQuery) (*StatisticQuery, error)
+}
+
+func newStatisticPager(opts []StatisticPaginateOption) (*statisticPager, error) {
+	pager := &statisticPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultStatisticOrder
+	}
+	return pager, nil
+}
+
+func (p *statisticPager) applyFilter(query *StatisticQuery) (*StatisticQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *statisticPager) toCursor(s *Statistic) Cursor {
+	return p.order.Field.toCursor(s)
+}
+
+func (p *statisticPager) applyCursors(query *StatisticQuery, after, before *Cursor) *StatisticQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultStatisticOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *statisticPager) applyOrder(query *StatisticQuery, reverse bool) *StatisticQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultStatisticOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultStatisticOrder.Field.field))
+	}
+	return query
+}
+
+func (p *statisticPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultStatisticOrder.Field {
+			b.Comma().Ident(DefaultStatisticOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Statistic.
+func (s *StatisticQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...StatisticPaginateOption,
+) (*StatisticConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newStatisticPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if s, err = pager.applyFilter(s); err != nil {
+		return nil, err
+	}
+	conn := &StatisticConnection{Edges: []*StatisticEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			if conn.TotalCount, err = s.Clone().Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+
+	s = pager.applyCursors(s, after, before)
+	s = pager.applyOrder(s, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		s.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := s.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := s.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// StatisticOrderField defines the ordering field of Statistic.
+type StatisticOrderField struct {
+	field    string
+	toCursor func(*Statistic) Cursor
+}
+
+// StatisticOrder defines the ordering of Statistic.
+type StatisticOrder struct {
+	Direction OrderDirection       `json:"direction"`
+	Field     *StatisticOrderField `json:"field"`
+}
+
+// DefaultStatisticOrder is the default ordering of Statistic.
+var DefaultStatisticOrder = &StatisticOrder{
+	Direction: OrderDirectionAsc,
+	Field: &StatisticOrderField{
+		field: statistic.FieldID,
+		toCursor: func(s *Statistic) Cursor {
+			return Cursor{ID: s.ID}
+		},
+	},
+}
+
+// ToEdge converts Statistic into StatisticEdge.
+func (s *Statistic) ToEdge(order *StatisticOrder) *StatisticEdge {
+	if order == nil {
+		order = DefaultStatisticOrder
+	}
+	return &StatisticEdge{
+		Node:   s,
+		Cursor: order.Field.toCursor(s),
 	}
 }
 
