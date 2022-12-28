@@ -21,7 +21,7 @@ func (r *mutationResolver) CreateMatch(ctx context.Context, input model.CreateMa
 		playerIds[i] = *player
 	}
 
-	// TODO: add checks for the current user to have access to players
+	// add checks for the current user to have access to players
 	m, err := client.Match.Create().
 		SetGameID(input.GameID).
 		AddPlayerIDs(playerIds...).
