@@ -7,11 +7,15 @@ import (
 	"fmt"
 
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -19,6 +23,490 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
+
+// EnumStatWhereInput represents a where input for filtering EnumStat queries.
+type EnumStatWhereInput struct {
+	Predicates []predicate.EnumStat  `json:"-"`
+	Not        *EnumStatWhereInput   `json:"not,omitempty"`
+	Or         []*EnumStatWhereInput `json:"or,omitempty"`
+	And        []*EnumStatWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
+
+	// "value" field predicates.
+	Value             *string  `json:"value,omitempty"`
+	ValueNEQ          *string  `json:"valueNEQ,omitempty"`
+	ValueIn           []string `json:"valueIn,omitempty"`
+	ValueNotIn        []string `json:"valueNotIn,omitempty"`
+	ValueGT           *string  `json:"valueGT,omitempty"`
+	ValueGTE          *string  `json:"valueGTE,omitempty"`
+	ValueLT           *string  `json:"valueLT,omitempty"`
+	ValueLTE          *string  `json:"valueLTE,omitempty"`
+	ValueContains     *string  `json:"valueContains,omitempty"`
+	ValueHasPrefix    *string  `json:"valueHasPrefix,omitempty"`
+	ValueHasSuffix    *string  `json:"valueHasSuffix,omitempty"`
+	ValueEqualFold    *string  `json:"valueEqualFold,omitempty"`
+	ValueContainsFold *string  `json:"valueContainsFold,omitempty"`
+
+	// "match" edge predicates.
+	HasMatch     *bool              `json:"hasMatch,omitempty"`
+	HasMatchWith []*MatchWhereInput `json:"hasMatchWith,omitempty"`
+
+	// "enum_stat_description" edge predicates.
+	HasEnumStatDescription     *bool                            `json:"hasEnumStatDescription,omitempty"`
+	HasEnumStatDescriptionWith []*EnumStatDescriptionWhereInput `json:"hasEnumStatDescriptionWith,omitempty"`
+
+	// "player" edge predicates.
+	HasPlayer     *bool               `json:"hasPlayer,omitempty"`
+	HasPlayerWith []*PlayerWhereInput `json:"hasPlayerWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *EnumStatWhereInput) AddPredicates(predicates ...predicate.EnumStat) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the EnumStatWhereInput filter on the EnumStatQuery builder.
+func (i *EnumStatWhereInput) Filter(q *EnumStatQuery) (*EnumStatQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyEnumStatWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyEnumStatWhereInput is returned in case the EnumStatWhereInput is empty.
+var ErrEmptyEnumStatWhereInput = errors.New("ent: empty predicate EnumStatWhereInput")
+
+// P returns a predicate for filtering enumstats.
+// An error is returned if the input is empty or invalid.
+func (i *EnumStatWhereInput) P() (predicate.EnumStat, error) {
+	var predicates []predicate.EnumStat
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, enumstat.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.EnumStat, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, enumstat.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.EnumStat, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, enumstat.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, enumstat.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, enumstat.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, enumstat.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, enumstat.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, enumstat.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, enumstat.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, enumstat.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, enumstat.IDLTE(*i.IDLTE))
+	}
+	if i.Value != nil {
+		predicates = append(predicates, enumstat.ValueEQ(*i.Value))
+	}
+	if i.ValueNEQ != nil {
+		predicates = append(predicates, enumstat.ValueNEQ(*i.ValueNEQ))
+	}
+	if len(i.ValueIn) > 0 {
+		predicates = append(predicates, enumstat.ValueIn(i.ValueIn...))
+	}
+	if len(i.ValueNotIn) > 0 {
+		predicates = append(predicates, enumstat.ValueNotIn(i.ValueNotIn...))
+	}
+	if i.ValueGT != nil {
+		predicates = append(predicates, enumstat.ValueGT(*i.ValueGT))
+	}
+	if i.ValueGTE != nil {
+		predicates = append(predicates, enumstat.ValueGTE(*i.ValueGTE))
+	}
+	if i.ValueLT != nil {
+		predicates = append(predicates, enumstat.ValueLT(*i.ValueLT))
+	}
+	if i.ValueLTE != nil {
+		predicates = append(predicates, enumstat.ValueLTE(*i.ValueLTE))
+	}
+	if i.ValueContains != nil {
+		predicates = append(predicates, enumstat.ValueContains(*i.ValueContains))
+	}
+	if i.ValueHasPrefix != nil {
+		predicates = append(predicates, enumstat.ValueHasPrefix(*i.ValueHasPrefix))
+	}
+	if i.ValueHasSuffix != nil {
+		predicates = append(predicates, enumstat.ValueHasSuffix(*i.ValueHasSuffix))
+	}
+	if i.ValueEqualFold != nil {
+		predicates = append(predicates, enumstat.ValueEqualFold(*i.ValueEqualFold))
+	}
+	if i.ValueContainsFold != nil {
+		predicates = append(predicates, enumstat.ValueContainsFold(*i.ValueContainsFold))
+	}
+
+	if i.HasMatch != nil {
+		p := enumstat.HasMatch()
+		if !*i.HasMatch {
+			p = enumstat.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMatchWith) > 0 {
+		with := make([]predicate.Match, 0, len(i.HasMatchWith))
+		for _, w := range i.HasMatchWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMatchWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, enumstat.HasMatchWith(with...))
+	}
+	if i.HasEnumStatDescription != nil {
+		p := enumstat.HasEnumStatDescription()
+		if !*i.HasEnumStatDescription {
+			p = enumstat.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEnumStatDescriptionWith) > 0 {
+		with := make([]predicate.EnumStatDescription, 0, len(i.HasEnumStatDescriptionWith))
+		for _, w := range i.HasEnumStatDescriptionWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasEnumStatDescriptionWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, enumstat.HasEnumStatDescriptionWith(with...))
+	}
+	if i.HasPlayer != nil {
+		p := enumstat.HasPlayer()
+		if !*i.HasPlayer {
+			p = enumstat.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasPlayerWith) > 0 {
+		with := make([]predicate.Player, 0, len(i.HasPlayerWith))
+		for _, w := range i.HasPlayerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasPlayerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, enumstat.HasPlayerWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyEnumStatWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return enumstat.And(predicates...), nil
+	}
+}
+
+// EnumStatDescriptionWhereInput represents a where input for filtering EnumStatDescription queries.
+type EnumStatDescriptionWhereInput struct {
+	Predicates []predicate.EnumStatDescription  `json:"-"`
+	Not        *EnumStatDescriptionWhereInput   `json:"not,omitempty"`
+	Or         []*EnumStatDescriptionWhereInput `json:"or,omitempty"`
+	And        []*EnumStatDescriptionWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "description" field predicates.
+	Description             *string  `json:"description,omitempty"`
+	DescriptionNEQ          *string  `json:"descriptionNEQ,omitempty"`
+	DescriptionIn           []string `json:"descriptionIn,omitempty"`
+	DescriptionNotIn        []string `json:"descriptionNotIn,omitempty"`
+	DescriptionGT           *string  `json:"descriptionGT,omitempty"`
+	DescriptionGTE          *string  `json:"descriptionGTE,omitempty"`
+	DescriptionLT           *string  `json:"descriptionLT,omitempty"`
+	DescriptionLTE          *string  `json:"descriptionLTE,omitempty"`
+	DescriptionContains     *string  `json:"descriptionContains,omitempty"`
+	DescriptionHasPrefix    *string  `json:"descriptionHasPrefix,omitempty"`
+	DescriptionHasSuffix    *string  `json:"descriptionHasSuffix,omitempty"`
+	DescriptionIsNil        bool     `json:"descriptionIsNil,omitempty"`
+	DescriptionNotNil       bool     `json:"descriptionNotNil,omitempty"`
+	DescriptionEqualFold    *string  `json:"descriptionEqualFold,omitempty"`
+	DescriptionContainsFold *string  `json:"descriptionContainsFold,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *EnumStatDescriptionWhereInput) AddPredicates(predicates ...predicate.EnumStatDescription) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the EnumStatDescriptionWhereInput filter on the EnumStatDescriptionQuery builder.
+func (i *EnumStatDescriptionWhereInput) Filter(q *EnumStatDescriptionQuery) (*EnumStatDescriptionQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyEnumStatDescriptionWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyEnumStatDescriptionWhereInput is returned in case the EnumStatDescriptionWhereInput is empty.
+var ErrEmptyEnumStatDescriptionWhereInput = errors.New("ent: empty predicate EnumStatDescriptionWhereInput")
+
+// P returns a predicate for filtering enumstatdescriptions.
+// An error is returned if the input is empty or invalid.
+func (i *EnumStatDescriptionWhereInput) P() (predicate.EnumStatDescription, error) {
+	var predicates []predicate.EnumStatDescription
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, enumstatdescription.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.EnumStatDescription, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, enumstatdescription.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.EnumStatDescription, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, enumstatdescription.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, enumstatdescription.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, enumstatdescription.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, enumstatdescription.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, enumstatdescription.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, enumstatdescription.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, enumstatdescription.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, enumstatdescription.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, enumstatdescription.IDLTE(*i.IDLTE))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, enumstatdescription.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, enumstatdescription.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, enumstatdescription.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, enumstatdescription.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, enumstatdescription.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, enumstatdescription.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, enumstatdescription.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, enumstatdescription.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, enumstatdescription.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, enumstatdescription.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, enumstatdescription.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, enumstatdescription.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, enumstatdescription.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.Description != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionEQ(*i.Description))
+	}
+	if i.DescriptionNEQ != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionNEQ(*i.DescriptionNEQ))
+	}
+	if len(i.DescriptionIn) > 0 {
+		predicates = append(predicates, enumstatdescription.DescriptionIn(i.DescriptionIn...))
+	}
+	if len(i.DescriptionNotIn) > 0 {
+		predicates = append(predicates, enumstatdescription.DescriptionNotIn(i.DescriptionNotIn...))
+	}
+	if i.DescriptionGT != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionGT(*i.DescriptionGT))
+	}
+	if i.DescriptionGTE != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionGTE(*i.DescriptionGTE))
+	}
+	if i.DescriptionLT != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionLT(*i.DescriptionLT))
+	}
+	if i.DescriptionLTE != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionLTE(*i.DescriptionLTE))
+	}
+	if i.DescriptionContains != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionContains(*i.DescriptionContains))
+	}
+	if i.DescriptionHasPrefix != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionHasPrefix(*i.DescriptionHasPrefix))
+	}
+	if i.DescriptionHasSuffix != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionHasSuffix(*i.DescriptionHasSuffix))
+	}
+	if i.DescriptionIsNil {
+		predicates = append(predicates, enumstatdescription.DescriptionIsNil())
+	}
+	if i.DescriptionNotNil {
+		predicates = append(predicates, enumstatdescription.DescriptionNotNil())
+	}
+	if i.DescriptionEqualFold != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionEqualFold(*i.DescriptionEqualFold))
+	}
+	if i.DescriptionContainsFold != nil {
+		predicates = append(predicates, enumstatdescription.DescriptionContainsFold(*i.DescriptionContainsFold))
+	}
+
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyEnumStatDescriptionWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return enumstatdescription.And(predicates...), nil
+	}
+}
 
 // GameWhereInput represents a where input for filtering Game queries.
 type GameWhereInput struct {
@@ -1021,6 +1509,470 @@ func (i *MatchWhereInput) P() (predicate.Match, error) {
 		return predicates[0], nil
 	default:
 		return match.And(predicates...), nil
+	}
+}
+
+// NumericalStatWhereInput represents a where input for filtering NumericalStat queries.
+type NumericalStatWhereInput struct {
+	Predicates []predicate.NumericalStat  `json:"-"`
+	Not        *NumericalStatWhereInput   `json:"not,omitempty"`
+	Or         []*NumericalStatWhereInput `json:"or,omitempty"`
+	And        []*NumericalStatWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
+
+	// "value" field predicates.
+	Value      *float64  `json:"value,omitempty"`
+	ValueNEQ   *float64  `json:"valueNEQ,omitempty"`
+	ValueIn    []float64 `json:"valueIn,omitempty"`
+	ValueNotIn []float64 `json:"valueNotIn,omitempty"`
+	ValueGT    *float64  `json:"valueGT,omitempty"`
+	ValueGTE   *float64  `json:"valueGTE,omitempty"`
+	ValueLT    *float64  `json:"valueLT,omitempty"`
+	ValueLTE   *float64  `json:"valueLTE,omitempty"`
+
+	// "match" edge predicates.
+	HasMatch     *bool              `json:"hasMatch,omitempty"`
+	HasMatchWith []*MatchWhereInput `json:"hasMatchWith,omitempty"`
+
+	// "numerical_stat_description" edge predicates.
+	HasNumericalStatDescription     *bool                                 `json:"hasNumericalStatDescription,omitempty"`
+	HasNumericalStatDescriptionWith []*NumericalStatDescriptionWhereInput `json:"hasNumericalStatDescriptionWith,omitempty"`
+
+	// "player" edge predicates.
+	HasPlayer     *bool               `json:"hasPlayer,omitempty"`
+	HasPlayerWith []*PlayerWhereInput `json:"hasPlayerWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *NumericalStatWhereInput) AddPredicates(predicates ...predicate.NumericalStat) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the NumericalStatWhereInput filter on the NumericalStatQuery builder.
+func (i *NumericalStatWhereInput) Filter(q *NumericalStatQuery) (*NumericalStatQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyNumericalStatWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyNumericalStatWhereInput is returned in case the NumericalStatWhereInput is empty.
+var ErrEmptyNumericalStatWhereInput = errors.New("ent: empty predicate NumericalStatWhereInput")
+
+// P returns a predicate for filtering numericalstats.
+// An error is returned if the input is empty or invalid.
+func (i *NumericalStatWhereInput) P() (predicate.NumericalStat, error) {
+	var predicates []predicate.NumericalStat
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, numericalstat.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.NumericalStat, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, numericalstat.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.NumericalStat, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, numericalstat.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, numericalstat.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, numericalstat.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, numericalstat.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, numericalstat.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, numericalstat.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, numericalstat.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, numericalstat.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, numericalstat.IDLTE(*i.IDLTE))
+	}
+	if i.Value != nil {
+		predicates = append(predicates, numericalstat.ValueEQ(*i.Value))
+	}
+	if i.ValueNEQ != nil {
+		predicates = append(predicates, numericalstat.ValueNEQ(*i.ValueNEQ))
+	}
+	if len(i.ValueIn) > 0 {
+		predicates = append(predicates, numericalstat.ValueIn(i.ValueIn...))
+	}
+	if len(i.ValueNotIn) > 0 {
+		predicates = append(predicates, numericalstat.ValueNotIn(i.ValueNotIn...))
+	}
+	if i.ValueGT != nil {
+		predicates = append(predicates, numericalstat.ValueGT(*i.ValueGT))
+	}
+	if i.ValueGTE != nil {
+		predicates = append(predicates, numericalstat.ValueGTE(*i.ValueGTE))
+	}
+	if i.ValueLT != nil {
+		predicates = append(predicates, numericalstat.ValueLT(*i.ValueLT))
+	}
+	if i.ValueLTE != nil {
+		predicates = append(predicates, numericalstat.ValueLTE(*i.ValueLTE))
+	}
+
+	if i.HasMatch != nil {
+		p := numericalstat.HasMatch()
+		if !*i.HasMatch {
+			p = numericalstat.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMatchWith) > 0 {
+		with := make([]predicate.Match, 0, len(i.HasMatchWith))
+		for _, w := range i.HasMatchWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMatchWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, numericalstat.HasMatchWith(with...))
+	}
+	if i.HasNumericalStatDescription != nil {
+		p := numericalstat.HasNumericalStatDescription()
+		if !*i.HasNumericalStatDescription {
+			p = numericalstat.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasNumericalStatDescriptionWith) > 0 {
+		with := make([]predicate.NumericalStatDescription, 0, len(i.HasNumericalStatDescriptionWith))
+		for _, w := range i.HasNumericalStatDescriptionWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasNumericalStatDescriptionWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, numericalstat.HasNumericalStatDescriptionWith(with...))
+	}
+	if i.HasPlayer != nil {
+		p := numericalstat.HasPlayer()
+		if !*i.HasPlayer {
+			p = numericalstat.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasPlayerWith) > 0 {
+		with := make([]predicate.Player, 0, len(i.HasPlayerWith))
+		for _, w := range i.HasPlayerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasPlayerWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, numericalstat.HasPlayerWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyNumericalStatWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return numericalstat.And(predicates...), nil
+	}
+}
+
+// NumericalStatDescriptionWhereInput represents a where input for filtering NumericalStatDescription queries.
+type NumericalStatDescriptionWhereInput struct {
+	Predicates []predicate.NumericalStatDescription  `json:"-"`
+	Not        *NumericalStatDescriptionWhereInput   `json:"not,omitempty"`
+	Or         []*NumericalStatDescriptionWhereInput `json:"or,omitempty"`
+	And        []*NumericalStatDescriptionWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "description" field predicates.
+	Description             *string  `json:"description,omitempty"`
+	DescriptionNEQ          *string  `json:"descriptionNEQ,omitempty"`
+	DescriptionIn           []string `json:"descriptionIn,omitempty"`
+	DescriptionNotIn        []string `json:"descriptionNotIn,omitempty"`
+	DescriptionGT           *string  `json:"descriptionGT,omitempty"`
+	DescriptionGTE          *string  `json:"descriptionGTE,omitempty"`
+	DescriptionLT           *string  `json:"descriptionLT,omitempty"`
+	DescriptionLTE          *string  `json:"descriptionLTE,omitempty"`
+	DescriptionContains     *string  `json:"descriptionContains,omitempty"`
+	DescriptionHasPrefix    *string  `json:"descriptionHasPrefix,omitempty"`
+	DescriptionHasSuffix    *string  `json:"descriptionHasSuffix,omitempty"`
+	DescriptionIsNil        bool     `json:"descriptionIsNil,omitempty"`
+	DescriptionNotNil       bool     `json:"descriptionNotNil,omitempty"`
+	DescriptionEqualFold    *string  `json:"descriptionEqualFold,omitempty"`
+	DescriptionContainsFold *string  `json:"descriptionContainsFold,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *NumericalStatDescriptionWhereInput) AddPredicates(predicates ...predicate.NumericalStatDescription) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the NumericalStatDescriptionWhereInput filter on the NumericalStatDescriptionQuery builder.
+func (i *NumericalStatDescriptionWhereInput) Filter(q *NumericalStatDescriptionQuery) (*NumericalStatDescriptionQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyNumericalStatDescriptionWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyNumericalStatDescriptionWhereInput is returned in case the NumericalStatDescriptionWhereInput is empty.
+var ErrEmptyNumericalStatDescriptionWhereInput = errors.New("ent: empty predicate NumericalStatDescriptionWhereInput")
+
+// P returns a predicate for filtering numericalstatdescriptions.
+// An error is returned if the input is empty or invalid.
+func (i *NumericalStatDescriptionWhereInput) P() (predicate.NumericalStatDescription, error) {
+	var predicates []predicate.NumericalStatDescription
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, numericalstatdescription.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.NumericalStatDescription, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, numericalstatdescription.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.NumericalStatDescription, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, numericalstatdescription.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, numericalstatdescription.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, numericalstatdescription.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, numericalstatdescription.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, numericalstatdescription.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, numericalstatdescription.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, numericalstatdescription.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, numericalstatdescription.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, numericalstatdescription.IDLTE(*i.IDLTE))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, numericalstatdescription.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, numericalstatdescription.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, numericalstatdescription.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, numericalstatdescription.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, numericalstatdescription.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, numericalstatdescription.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, numericalstatdescription.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, numericalstatdescription.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, numericalstatdescription.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, numericalstatdescription.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, numericalstatdescription.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, numericalstatdescription.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, numericalstatdescription.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.Description != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionEQ(*i.Description))
+	}
+	if i.DescriptionNEQ != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionNEQ(*i.DescriptionNEQ))
+	}
+	if len(i.DescriptionIn) > 0 {
+		predicates = append(predicates, numericalstatdescription.DescriptionIn(i.DescriptionIn...))
+	}
+	if len(i.DescriptionNotIn) > 0 {
+		predicates = append(predicates, numericalstatdescription.DescriptionNotIn(i.DescriptionNotIn...))
+	}
+	if i.DescriptionGT != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionGT(*i.DescriptionGT))
+	}
+	if i.DescriptionGTE != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionGTE(*i.DescriptionGTE))
+	}
+	if i.DescriptionLT != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionLT(*i.DescriptionLT))
+	}
+	if i.DescriptionLTE != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionLTE(*i.DescriptionLTE))
+	}
+	if i.DescriptionContains != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionContains(*i.DescriptionContains))
+	}
+	if i.DescriptionHasPrefix != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionHasPrefix(*i.DescriptionHasPrefix))
+	}
+	if i.DescriptionHasSuffix != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionHasSuffix(*i.DescriptionHasSuffix))
+	}
+	if i.DescriptionIsNil {
+		predicates = append(predicates, numericalstatdescription.DescriptionIsNil())
+	}
+	if i.DescriptionNotNil {
+		predicates = append(predicates, numericalstatdescription.DescriptionNotNil())
+	}
+	if i.DescriptionEqualFold != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionEqualFold(*i.DescriptionEqualFold))
+	}
+	if i.DescriptionContainsFold != nil {
+		predicates = append(predicates, numericalstatdescription.DescriptionContainsFold(*i.DescriptionContainsFold))
+	}
+
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyNumericalStatDescriptionWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return numericalstatdescription.And(predicates...), nil
 	}
 }
 

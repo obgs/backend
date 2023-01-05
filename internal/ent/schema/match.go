@@ -26,7 +26,10 @@ func (Match) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("game", Game.Type).Ref("matches").Unique().Required(),
 		edge.To("players", Player.Type).Required(),
-		edge.To("stats", Statistic.Type).Annotations(
+		edge.To("numerical_stats", NumericalStat.Type).Annotations(
+			entgql.Skip(entgql.SkipWhereInput),
+		),
+		edge.To("enum_stats", EnumStat.Type).Annotations(
 			entgql.Skip(entgql.SkipWhereInput),
 		),
 	}

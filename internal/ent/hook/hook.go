@@ -9,6 +9,32 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent"
 )
 
+// The EnumStatFunc type is an adapter to allow the use of ordinary
+// function as EnumStat mutator.
+type EnumStatFunc func(context.Context, *ent.EnumStatMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EnumStatFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.EnumStatMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EnumStatMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The EnumStatDescriptionFunc type is an adapter to allow the use of ordinary
+// function as EnumStatDescription mutator.
+type EnumStatDescriptionFunc func(context.Context, *ent.EnumStatDescriptionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EnumStatDescriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.EnumStatDescriptionMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EnumStatDescriptionMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The GameFunc type is an adapter to allow the use of ordinary
 // function as Game mutator.
 type GameFunc func(context.Context, *ent.GameMutation) (ent.Value, error)
@@ -100,6 +126,32 @@ func (f MatchFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return f(ctx, mv)
 }
 
+// The NumericalStatFunc type is an adapter to allow the use of ordinary
+// function as NumericalStat mutator.
+type NumericalStatFunc func(context.Context, *ent.NumericalStatMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f NumericalStatFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.NumericalStatMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NumericalStatMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The NumericalStatDescriptionFunc type is an adapter to allow the use of ordinary
+// function as NumericalStatDescription mutator.
+type NumericalStatDescriptionFunc func(context.Context, *ent.NumericalStatDescriptionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f NumericalStatDescriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.NumericalStatDescriptionMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NumericalStatDescriptionMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The PlayerFunc type is an adapter to allow the use of ordinary
 // function as Player mutator.
 type PlayerFunc func(context.Context, *ent.PlayerMutation) (ent.Value, error)
@@ -135,32 +187,6 @@ func (f PlayerSupervisionRequestApprovalFunc) Mutate(ctx context.Context, m ent.
 	mv, ok := m.(*ent.PlayerSupervisionRequestApprovalMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerSupervisionRequestApprovalMutation", m)
-	}
-	return f(ctx, mv)
-}
-
-// The StatDescriptionFunc type is an adapter to allow the use of ordinary
-// function as StatDescription mutator.
-type StatDescriptionFunc func(context.Context, *ent.StatDescriptionMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f StatDescriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.StatDescriptionMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatDescriptionMutation", m)
-	}
-	return f(ctx, mv)
-}
-
-// The StatisticFunc type is an adapter to allow the use of ordinary
-// function as Statistic mutator.
-type StatisticFunc func(context.Context, *ent.StatisticMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f StatisticFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.StatisticMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatisticMutation", m)
 	}
 	return f(ctx, mv)
 }

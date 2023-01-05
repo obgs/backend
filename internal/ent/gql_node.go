@@ -10,18 +10,20 @@ import (
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/hashicorp/go-multierror"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -52,12 +54,106 @@ type Edge struct {
 	IDs  []guidgql.GUID `json:"ids,omitempty"`  // node ids (where this edge point to).
 }
 
+func (es *EnumStat) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     es.ID,
+		Type:   "EnumStat",
+		Fields: make([]*Field, 1),
+		Edges:  make([]*Edge, 3),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(es.Value); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "value",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Match",
+		Name: "match",
+	}
+	err = es.QueryMatch().
+		Select(match.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "EnumStatDescription",
+		Name: "enum_stat_description",
+	}
+	err = es.QueryEnumStatDescription().
+		Select(enumstatdescription.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "Player",
+		Name: "player",
+	}
+	err = es.QueryPlayer().
+		Select(player.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func (esd *EnumStatDescription) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     esd.ID,
+		Type:   "EnumStatDescription",
+		Fields: make([]*Field, 3),
+		Edges:  make([]*Edge, 1),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(esd.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(esd.Description); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "description",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(esd.PossibleValues); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "[]string",
+		Name:  "possible_values",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "EnumStat",
+		Name: "enum_stats",
+	}
+	err = esd.QueryEnumStats().
+		Select(enumstat.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
 func (ga *Game) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     ga.ID,
 		Type:   "Game",
 		Fields: make([]*Field, 5),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(ga.Name); err != nil {
@@ -111,12 +207,22 @@ func (ga *Game) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "StatDescription",
-		Name: "stat_descriptions",
+		Type: "NumericalStatDescription",
+		Name: "numerical_stat_descriptions",
 	}
-	err = ga.QueryStatDescriptions().
-		Select(statdescription.FieldID).
+	err = ga.QueryNumericalStatDescriptions().
+		Select(numericalstatdescription.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "EnumStatDescription",
+		Name: "enum_stat_descriptions",
+	}
+	err = ga.QueryEnumStatDescriptions().
+		Select(enumstatdescription.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +412,7 @@ func (m *Match) Node(ctx context.Context) (node *Node, err error) {
 		ID:     m.ID,
 		Type:   "Match",
 		Fields: make([]*Field, 0),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	node.Edges[0] = &Edge{
 		Type: "Game",
@@ -329,12 +435,108 @@ func (m *Match) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
-		Type: "Statistic",
-		Name: "stats",
+		Type: "NumericalStat",
+		Name: "numerical_stats",
 	}
-	err = m.QueryStats().
-		Select(statistic.FieldID).
+	err = m.QueryNumericalStats().
+		Select(numericalstat.FieldID).
 		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		Type: "EnumStat",
+		Name: "enum_stats",
+	}
+	err = m.QueryEnumStats().
+		Select(enumstat.FieldID).
+		Scan(ctx, &node.Edges[3].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func (ns *NumericalStat) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     ns.ID,
+		Type:   "NumericalStat",
+		Fields: make([]*Field, 1),
+		Edges:  make([]*Edge, 3),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(ns.Value); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "float64",
+		Name:  "value",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Match",
+		Name: "match",
+	}
+	err = ns.QueryMatch().
+		Select(match.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "NumericalStatDescription",
+		Name: "numerical_stat_description",
+	}
+	err = ns.QueryNumericalStatDescription().
+		Select(numericalstatdescription.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "Player",
+		Name: "player",
+	}
+	err = ns.QueryPlayer().
+		Select(player.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func (nsd *NumericalStatDescription) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     nsd.ID,
+		Type:   "NumericalStatDescription",
+		Fields: make([]*Field, 2),
+		Edges:  make([]*Edge, 1),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(nsd.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(nsd.Description); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "description",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "NumericalStat",
+		Name: "numerical_stats",
+	}
+	err = nsd.QueryNumericalStats().
+		Select(numericalstat.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -482,98 +684,6 @@ func (psra *PlayerSupervisionRequestApproval) Node(ctx context.Context) (node *N
 	err = psra.QuerySupervisionRequest().
 		Select(playersupervisionrequest.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
-	if err != nil {
-		return nil, err
-	}
-	return node, nil
-}
-
-func (sd *StatDescription) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     sd.ID,
-		Type:   "StatDescription",
-		Fields: make([]*Field, 4),
-		Edges:  make([]*Edge, 0),
-	}
-	var buf []byte
-	if buf, err = json.Marshal(sd.Type); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "stat.StatType",
-		Name:  "type",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(sd.Name); err != nil {
-		return nil, err
-	}
-	node.Fields[1] = &Field{
-		Type:  "string",
-		Name:  "name",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(sd.Description); err != nil {
-		return nil, err
-	}
-	node.Fields[2] = &Field{
-		Type:  "string",
-		Name:  "description",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(sd.PossibleValues); err != nil {
-		return nil, err
-	}
-	node.Fields[3] = &Field{
-		Type:  "[]string",
-		Name:  "possible_values",
-		Value: string(buf),
-	}
-	return node, nil
-}
-
-func (s *Statistic) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     s.ID,
-		Type:   "Statistic",
-		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 3),
-	}
-	var buf []byte
-	if buf, err = json.Marshal(s.Value); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "string",
-		Name:  "value",
-		Value: string(buf),
-	}
-	node.Edges[0] = &Edge{
-		Type: "Match",
-		Name: "match",
-	}
-	err = s.QueryMatch().
-		Select(match.FieldID).
-		Scan(ctx, &node.Edges[0].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[1] = &Edge{
-		Type: "StatDescription",
-		Name: "stat_description",
-	}
-	err = s.QueryStatDescription().
-		Select(statdescription.FieldID).
-		Scan(ctx, &node.Edges[1].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[2] = &Edge{
-		Type: "Player",
-		Name: "player",
-	}
-	err = s.QueryPlayer().
-		Select(player.FieldID).
-		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -731,6 +841,38 @@ func (c *Client) Noder(ctx context.Context, id guidgql.GUID, opts ...NodeOption)
 
 func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Noder, error) {
 	switch table {
+	case enumstat.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
+		query := c.EnumStat.Query().
+			Where(enumstat.ID(uid))
+		query, err := query.CollectFields(ctx, "EnumStat")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case enumstatdescription.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
+		query := c.EnumStatDescription.Query().
+			Where(enumstatdescription.ID(uid))
+		query, err := query.CollectFields(ctx, "EnumStatDescription")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case game.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -827,6 +969,38 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 			return nil, err
 		}
 		return n, nil
+	case numericalstat.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
+		query := c.NumericalStat.Query().
+			Where(numericalstat.ID(uid))
+		query, err := query.CollectFields(ctx, "NumericalStat")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case numericalstatdescription.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
+		query := c.NumericalStatDescription.Query().
+			Where(numericalstatdescription.ID(uid))
+		query, err := query.CollectFields(ctx, "NumericalStatDescription")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case player.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -867,38 +1041,6 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		query := c.PlayerSupervisionRequestApproval.Query().
 			Where(playersupervisionrequestapproval.ID(uid))
 		query, err := query.CollectFields(ctx, "PlayerSupervisionRequestApproval")
-		if err != nil {
-			return nil, err
-		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
-	case statdescription.Table:
-		var uid guidgql.GUID
-		if err := uid.UnmarshalGQL(id); err != nil {
-			return nil, err
-		}
-		query := c.StatDescription.Query().
-			Where(statdescription.ID(uid))
-		query, err := query.CollectFields(ctx, "StatDescription")
-		if err != nil {
-			return nil, err
-		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
-	case statistic.Table:
-		var uid guidgql.GUID
-		if err := uid.UnmarshalGQL(id); err != nil {
-			return nil, err
-		}
-		query := c.Statistic.Query().
-			Where(statistic.ID(uid))
-		query, err := query.CollectFields(ctx, "Statistic")
 		if err != nil {
 			return nil, err
 		}
@@ -996,6 +1138,38 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case enumstat.Table:
+		query := c.EnumStat.Query().
+			Where(enumstat.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "EnumStat")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case enumstatdescription.Table:
+		query := c.EnumStatDescription.Query().
+			Where(enumstatdescription.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "EnumStatDescription")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case game.Table:
 		query := c.Game.Query().
 			Where(game.IDIn(ids...))
@@ -1092,6 +1266,38 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 				*noder = node
 			}
 		}
+	case numericalstat.Table:
+		query := c.NumericalStat.Query().
+			Where(numericalstat.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "NumericalStat")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case numericalstatdescription.Table:
+		query := c.NumericalStatDescription.Query().
+			Where(numericalstatdescription.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "NumericalStatDescription")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case player.Table:
 		query := c.Player.Query().
 			Where(player.IDIn(ids...))
@@ -1128,38 +1334,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 		query := c.PlayerSupervisionRequestApproval.Query().
 			Where(playersupervisionrequestapproval.IDIn(ids...))
 		query, err := query.CollectFields(ctx, "PlayerSupervisionRequestApproval")
-		if err != nil {
-			return nil, err
-		}
-		nodes, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case statdescription.Table:
-		query := c.StatDescription.Query().
-			Where(statdescription.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "StatDescription")
-		if err != nil {
-			return nil, err
-		}
-		nodes, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case statistic.Table:
-		query := c.Statistic.Query().
-			Where(statistic.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "Statistic")
 		if err != nil {
 			return nil, err
 		}

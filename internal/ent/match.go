@@ -29,16 +29,19 @@ type MatchEdges struct {
 	Game *Game `json:"game,omitempty"`
 	// Players holds the value of the players edge.
 	Players []*Player `json:"players,omitempty"`
-	// Stats holds the value of the stats edge.
-	Stats []*Statistic `json:"stats,omitempty"`
+	// NumericalStats holds the value of the numerical_stats edge.
+	NumericalStats []*NumericalStat `json:"numerical_stats,omitempty"`
+	// EnumStats holds the value of the enum_stats edge.
+	EnumStats []*EnumStat `json:"enum_stats,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [4]map[string]int
 
-	namedPlayers map[string][]*Player
-	namedStats   map[string][]*Statistic
+	namedPlayers        map[string][]*Player
+	namedNumericalStats map[string][]*NumericalStat
+	namedEnumStats      map[string][]*EnumStat
 }
 
 // GameOrErr returns the Game value or an error if the edge
@@ -63,13 +66,22 @@ func (e MatchEdges) PlayersOrErr() ([]*Player, error) {
 	return nil, &NotLoadedError{edge: "players"}
 }
 
-// StatsOrErr returns the Stats value or an error if the edge
+// NumericalStatsOrErr returns the NumericalStats value or an error if the edge
 // was not loaded in eager-loading.
-func (e MatchEdges) StatsOrErr() ([]*Statistic, error) {
+func (e MatchEdges) NumericalStatsOrErr() ([]*NumericalStat, error) {
 	if e.loadedTypes[2] {
-		return e.Stats, nil
+		return e.NumericalStats, nil
 	}
-	return nil, &NotLoadedError{edge: "stats"}
+	return nil, &NotLoadedError{edge: "numerical_stats"}
+}
+
+// EnumStatsOrErr returns the EnumStats value or an error if the edge
+// was not loaded in eager-loading.
+func (e MatchEdges) EnumStatsOrErr() ([]*EnumStat, error) {
+	if e.loadedTypes[3] {
+		return e.EnumStats, nil
+	}
+	return nil, &NotLoadedError{edge: "enum_stats"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -124,9 +136,14 @@ func (m *Match) QueryPlayers() *PlayerQuery {
 	return (&MatchClient{config: m.config}).QueryPlayers(m)
 }
 
-// QueryStats queries the "stats" edge of the Match entity.
-func (m *Match) QueryStats() *StatisticQuery {
-	return (&MatchClient{config: m.config}).QueryStats(m)
+// QueryNumericalStats queries the "numerical_stats" edge of the Match entity.
+func (m *Match) QueryNumericalStats() *NumericalStatQuery {
+	return (&MatchClient{config: m.config}).QueryNumericalStats(m)
+}
+
+// QueryEnumStats queries the "enum_stats" edge of the Match entity.
+func (m *Match) QueryEnumStats() *EnumStatQuery {
+	return (&MatchClient{config: m.config}).QueryEnumStats(m)
 }
 
 // Update returns a builder for updating this Match.
@@ -180,27 +197,51 @@ func (m *Match) appendNamedPlayers(name string, edges ...*Player) {
 	}
 }
 
-// NamedStats returns the Stats named value or an error if the edge was not
+// NamedNumericalStats returns the NumericalStats named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (m *Match) NamedStats(name string) ([]*Statistic, error) {
-	if m.Edges.namedStats == nil {
+func (m *Match) NamedNumericalStats(name string) ([]*NumericalStat, error) {
+	if m.Edges.namedNumericalStats == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := m.Edges.namedStats[name]
+	nodes, ok := m.Edges.namedNumericalStats[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (m *Match) appendNamedStats(name string, edges ...*Statistic) {
-	if m.Edges.namedStats == nil {
-		m.Edges.namedStats = make(map[string][]*Statistic)
+func (m *Match) appendNamedNumericalStats(name string, edges ...*NumericalStat) {
+	if m.Edges.namedNumericalStats == nil {
+		m.Edges.namedNumericalStats = make(map[string][]*NumericalStat)
 	}
 	if len(edges) == 0 {
-		m.Edges.namedStats[name] = []*Statistic{}
+		m.Edges.namedNumericalStats[name] = []*NumericalStat{}
 	} else {
-		m.Edges.namedStats[name] = append(m.Edges.namedStats[name], edges...)
+		m.Edges.namedNumericalStats[name] = append(m.Edges.namedNumericalStats[name], edges...)
+	}
+}
+
+// NamedEnumStats returns the EnumStats named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (m *Match) NamedEnumStats(name string) ([]*EnumStat, error) {
+	if m.Edges.namedEnumStats == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := m.Edges.namedEnumStats[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (m *Match) appendNamedEnumStats(name string, edges ...*EnumStat) {
+	if m.Edges.namedEnumStats == nil {
+		m.Edges.namedEnumStats = make(map[string][]*EnumStat)
+	}
+	if len(edges) == 0 {
+		m.Edges.namedEnumStats[name] = []*EnumStat{}
+	} else {
+		m.Edges.namedEnumStats[name] = append(m.Edges.namedEnumStats[name], edges...)
 	}
 }
 

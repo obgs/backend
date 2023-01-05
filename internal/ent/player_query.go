@@ -11,12 +11,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstat"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstat"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -33,14 +34,16 @@ type PlayerQuery struct {
 	withSupervisors              *UserQuery
 	withSupervisionRequests      *PlayerSupervisionRequestQuery
 	withMatches                  *MatchQuery
-	withStats                    *StatisticQuery
+	withNumericalStats           *NumericalStatQuery
+	withEnumStats                *EnumStatQuery
 	withFKs                      bool
 	modifiers                    []func(*sql.Selector)
 	loadTotal                    []func(context.Context, []*Player) error
 	withNamedSupervisors         map[string]*UserQuery
 	withNamedSupervisionRequests map[string]*PlayerSupervisionRequestQuery
 	withNamedMatches             map[string]*MatchQuery
-	withNamedStats               map[string]*StatisticQuery
+	withNamedNumericalStats      map[string]*NumericalStatQuery
+	withNamedEnumStats           map[string]*EnumStatQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -165,9 +168,9 @@ func (pq *PlayerQuery) QueryMatches() *MatchQuery {
 	return query
 }
 
-// QueryStats chains the current query on the "stats" edge.
-func (pq *PlayerQuery) QueryStats() *StatisticQuery {
-	query := &StatisticQuery{config: pq.config}
+// QueryNumericalStats chains the current query on the "numerical_stats" edge.
+func (pq *PlayerQuery) QueryNumericalStats() *NumericalStatQuery {
+	query := &NumericalStatQuery{config: pq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -178,8 +181,30 @@ func (pq *PlayerQuery) QueryStats() *StatisticQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(player.Table, player.FieldID, selector),
-			sqlgraph.To(statistic.Table, statistic.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, player.StatsTable, player.StatsColumn),
+			sqlgraph.To(numericalstat.Table, numericalstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.NumericalStatsTable, player.NumericalStatsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEnumStats chains the current query on the "enum_stats" edge.
+func (pq *PlayerQuery) QueryEnumStats() *EnumStatQuery {
+	query := &EnumStatQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, selector),
+			sqlgraph.To(enumstat.Table, enumstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.EnumStatsTable, player.EnumStatsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -372,7 +397,8 @@ func (pq *PlayerQuery) Clone() *PlayerQuery {
 		withSupervisors:         pq.withSupervisors.Clone(),
 		withSupervisionRequests: pq.withSupervisionRequests.Clone(),
 		withMatches:             pq.withMatches.Clone(),
-		withStats:               pq.withStats.Clone(),
+		withNumericalStats:      pq.withNumericalStats.Clone(),
+		withEnumStats:           pq.withEnumStats.Clone(),
 		// clone intermediate query.
 		sql:    pq.sql.Clone(),
 		path:   pq.path,
@@ -424,14 +450,25 @@ func (pq *PlayerQuery) WithMatches(opts ...func(*MatchQuery)) *PlayerQuery {
 	return pq
 }
 
-// WithStats tells the query-builder to eager-load the nodes that are connected to
-// the "stats" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *PlayerQuery) WithStats(opts ...func(*StatisticQuery)) *PlayerQuery {
-	query := &StatisticQuery{config: pq.config}
+// WithNumericalStats tells the query-builder to eager-load the nodes that are connected to
+// the "numerical_stats" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithNumericalStats(opts ...func(*NumericalStatQuery)) *PlayerQuery {
+	query := &NumericalStatQuery{config: pq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withStats = query
+	pq.withNumericalStats = query
+	return pq
+}
+
+// WithEnumStats tells the query-builder to eager-load the nodes that are connected to
+// the "enum_stats" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithEnumStats(opts ...func(*EnumStatQuery)) *PlayerQuery {
+	query := &EnumStatQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withEnumStats = query
 	return pq
 }
 
@@ -509,12 +546,13 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 		nodes       = []*Player{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			pq.withOwner != nil,
 			pq.withSupervisors != nil,
 			pq.withSupervisionRequests != nil,
 			pq.withMatches != nil,
-			pq.withStats != nil,
+			pq.withNumericalStats != nil,
+			pq.withEnumStats != nil,
 		}
 	)
 	if pq.withOwner != nil {
@@ -573,10 +611,17 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 			return nil, err
 		}
 	}
-	if query := pq.withStats; query != nil {
-		if err := pq.loadStats(ctx, query, nodes,
-			func(n *Player) { n.Edges.Stats = []*Statistic{} },
-			func(n *Player, e *Statistic) { n.Edges.Stats = append(n.Edges.Stats, e) }); err != nil {
+	if query := pq.withNumericalStats; query != nil {
+		if err := pq.loadNumericalStats(ctx, query, nodes,
+			func(n *Player) { n.Edges.NumericalStats = []*NumericalStat{} },
+			func(n *Player, e *NumericalStat) { n.Edges.NumericalStats = append(n.Edges.NumericalStats, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withEnumStats; query != nil {
+		if err := pq.loadEnumStats(ctx, query, nodes,
+			func(n *Player) { n.Edges.EnumStats = []*EnumStat{} },
+			func(n *Player, e *EnumStat) { n.Edges.EnumStats = append(n.Edges.EnumStats, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -601,10 +646,17 @@ func (pq *PlayerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Playe
 			return nil, err
 		}
 	}
-	for name, query := range pq.withNamedStats {
-		if err := pq.loadStats(ctx, query, nodes,
-			func(n *Player) { n.appendNamedStats(name) },
-			func(n *Player, e *Statistic) { n.appendNamedStats(name, e) }); err != nil {
+	for name, query := range pq.withNamedNumericalStats {
+		if err := pq.loadNumericalStats(ctx, query, nodes,
+			func(n *Player) { n.appendNamedNumericalStats(name) },
+			func(n *Player, e *NumericalStat) { n.appendNamedNumericalStats(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range pq.withNamedEnumStats {
+		if err := pq.loadEnumStats(ctx, query, nodes,
+			func(n *Player) { n.appendNamedEnumStats(name) },
+			func(n *Player, e *EnumStat) { n.appendNamedEnumStats(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -792,7 +844,7 @@ func (pq *PlayerQuery) loadMatches(ctx context.Context, query *MatchQuery, nodes
 	}
 	return nil
 }
-func (pq *PlayerQuery) loadStats(ctx context.Context, query *StatisticQuery, nodes []*Player, init func(*Player), assign func(*Player, *Statistic)) error {
+func (pq *PlayerQuery) loadNumericalStats(ctx context.Context, query *NumericalStatQuery, nodes []*Player, init func(*Player), assign func(*Player, *NumericalStat)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[guidgql.GUID]*Player)
 	for i := range nodes {
@@ -803,21 +855,52 @@ func (pq *PlayerQuery) loadStats(ctx context.Context, query *StatisticQuery, nod
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.Statistic(func(s *sql.Selector) {
-		s.Where(sql.InValues(player.StatsColumn, fks...))
+	query.Where(predicate.NumericalStat(func(s *sql.Selector) {
+		s.Where(sql.InValues(player.NumericalStatsColumn, fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.player_stats
+		fk := n.player_numerical_stats
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "player_stats" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "player_numerical_stats" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "player_stats" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "player_numerical_stats" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *PlayerQuery) loadEnumStats(ctx context.Context, query *EnumStatQuery, nodes []*Player, init func(*Player), assign func(*Player, *EnumStat)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID]*Player)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.EnumStat(func(s *sql.Selector) {
+		s.Where(sql.InValues(player.EnumStatsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.player_enum_stats
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "player_enum_stats" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "player_enum_stats" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -969,17 +1052,31 @@ func (pq *PlayerQuery) WithNamedMatches(name string, opts ...func(*MatchQuery)) 
 	return pq
 }
 
-// WithNamedStats tells the query-builder to eager-load the nodes that are connected to the "stats"
+// WithNamedNumericalStats tells the query-builder to eager-load the nodes that are connected to the "numerical_stats"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (pq *PlayerQuery) WithNamedStats(name string, opts ...func(*StatisticQuery)) *PlayerQuery {
-	query := &StatisticQuery{config: pq.config}
+func (pq *PlayerQuery) WithNamedNumericalStats(name string, opts ...func(*NumericalStatQuery)) *PlayerQuery {
+	query := &NumericalStatQuery{config: pq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	if pq.withNamedStats == nil {
-		pq.withNamedStats = make(map[string]*StatisticQuery)
+	if pq.withNamedNumericalStats == nil {
+		pq.withNamedNumericalStats = make(map[string]*NumericalStatQuery)
 	}
-	pq.withNamedStats[name] = query
+	pq.withNamedNumericalStats[name] = query
+	return pq
+}
+
+// WithNamedEnumStats tells the query-builder to eager-load the nodes that are connected to the "enum_stats"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (pq *PlayerQuery) WithNamedEnumStats(name string, opts ...func(*EnumStatQuery)) *PlayerQuery {
+	query := &EnumStatQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if pq.withNamedEnumStats == nil {
+		pq.withNamedEnumStats = make(map[string]*EnumStatQuery)
+	}
+	pq.withNamedEnumStats[name] = query
 	return pq
 }
 

@@ -10,6 +10,8 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
@@ -17,11 +19,11 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -43,6 +45,8 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
+		enumstat.Table:                         enumstat.ValidColumn,
+		enumstatdescription.Table:              enumstatdescription.ValidColumn,
 		game.Table:                             game.ValidColumn,
 		gamefavorite.Table:                     gamefavorite.ValidColumn,
 		group.Table:                            group.ValidColumn,
@@ -50,11 +54,11 @@ func columnChecker(table string) func(string) error {
 		groupmembershipapplication.Table:       groupmembershipapplication.ValidColumn,
 		groupsettings.Table:                    groupsettings.ValidColumn,
 		match.Table:                            match.ValidColumn,
+		numericalstat.Table:                    numericalstat.ValidColumn,
+		numericalstatdescription.Table:         numericalstatdescription.ValidColumn,
 		player.Table:                           player.ValidColumn,
 		playersupervisionrequest.Table:         playersupervisionrequest.ValidColumn,
 		playersupervisionrequestapproval.Table: playersupervisionrequestapproval.ValidColumn,
-		statdescription.Table:                  statdescription.ValidColumn,
-		statistic.Table:                        statistic.ValidColumn,
 		user.Table:                             user.ValidColumn,
 	}
 	check, ok := checks[table]

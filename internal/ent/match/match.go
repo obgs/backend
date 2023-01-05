@@ -15,8 +15,10 @@ const (
 	EdgeGame = "game"
 	// EdgePlayers holds the string denoting the players edge name in mutations.
 	EdgePlayers = "players"
-	// EdgeStats holds the string denoting the stats edge name in mutations.
-	EdgeStats = "stats"
+	// EdgeNumericalStats holds the string denoting the numerical_stats edge name in mutations.
+	EdgeNumericalStats = "numerical_stats"
+	// EdgeEnumStats holds the string denoting the enum_stats edge name in mutations.
+	EdgeEnumStats = "enum_stats"
 	// Table holds the table name of the match in the database.
 	Table = "matches"
 	// GameTable is the table that holds the game relation/edge.
@@ -31,13 +33,20 @@ const (
 	// PlayersInverseTable is the table name for the Player entity.
 	// It exists in this package in order to avoid circular dependency with the "player" package.
 	PlayersInverseTable = "players"
-	// StatsTable is the table that holds the stats relation/edge.
-	StatsTable = "statistics"
-	// StatsInverseTable is the table name for the Statistic entity.
-	// It exists in this package in order to avoid circular dependency with the "statistic" package.
-	StatsInverseTable = "statistics"
-	// StatsColumn is the table column denoting the stats relation/edge.
-	StatsColumn = "match_stats"
+	// NumericalStatsTable is the table that holds the numerical_stats relation/edge.
+	NumericalStatsTable = "numerical_stats"
+	// NumericalStatsInverseTable is the table name for the NumericalStat entity.
+	// It exists in this package in order to avoid circular dependency with the "numericalstat" package.
+	NumericalStatsInverseTable = "numerical_stats"
+	// NumericalStatsColumn is the table column denoting the numerical_stats relation/edge.
+	NumericalStatsColumn = "match_numerical_stats"
+	// EnumStatsTable is the table that holds the enum_stats relation/edge.
+	EnumStatsTable = "enum_stats"
+	// EnumStatsInverseTable is the table name for the EnumStat entity.
+	// It exists in this package in order to avoid circular dependency with the "enumstat" package.
+	EnumStatsInverseTable = "enum_stats"
+	// EnumStatsColumn is the table column denoting the enum_stats relation/edge.
+	EnumStatsColumn = "match_enum_stats"
 )
 
 // Columns holds all SQL columns for match fields.

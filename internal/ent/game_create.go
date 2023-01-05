@@ -11,11 +11,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -129,19 +130,34 @@ func (gc *GameCreate) AddFavorites(g ...*GameFavorite) *GameCreate {
 	return gc.AddFavoriteIDs(ids...)
 }
 
-// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by IDs.
-func (gc *GameCreate) AddStatDescriptionIDs(ids ...guidgql.GUID) *GameCreate {
-	gc.mutation.AddStatDescriptionIDs(ids...)
+// AddNumericalStatDescriptionIDs adds the "numerical_stat_descriptions" edge to the NumericalStatDescription entity by IDs.
+func (gc *GameCreate) AddNumericalStatDescriptionIDs(ids ...guidgql.GUID) *GameCreate {
+	gc.mutation.AddNumericalStatDescriptionIDs(ids...)
 	return gc
 }
 
-// AddStatDescriptions adds the "stat_descriptions" edges to the StatDescription entity.
-func (gc *GameCreate) AddStatDescriptions(s ...*StatDescription) *GameCreate {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddNumericalStatDescriptions adds the "numerical_stat_descriptions" edges to the NumericalStatDescription entity.
+func (gc *GameCreate) AddNumericalStatDescriptions(n ...*NumericalStatDescription) *GameCreate {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return gc.AddStatDescriptionIDs(ids...)
+	return gc.AddNumericalStatDescriptionIDs(ids...)
+}
+
+// AddEnumStatDescriptionIDs adds the "enum_stat_descriptions" edge to the EnumStatDescription entity by IDs.
+func (gc *GameCreate) AddEnumStatDescriptionIDs(ids ...guidgql.GUID) *GameCreate {
+	gc.mutation.AddEnumStatDescriptionIDs(ids...)
+	return gc
+}
+
+// AddEnumStatDescriptions adds the "enum_stat_descriptions" edges to the EnumStatDescription entity.
+func (gc *GameCreate) AddEnumStatDescriptions(e ...*EnumStatDescription) *GameCreate {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return gc.AddEnumStatDescriptionIDs(ids...)
 }
 
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
@@ -273,8 +289,11 @@ func (gc *GameCreate) check() error {
 	if _, ok := gc.mutation.AuthorID(); !ok {
 		return &ValidationError{Name: "author", err: errors.New(`ent: missing required edge "Game.author"`)}
 	}
-	if len(gc.mutation.StatDescriptionsIDs()) == 0 {
-		return &ValidationError{Name: "stat_descriptions", err: errors.New(`ent: missing required edge "Game.stat_descriptions"`)}
+	if len(gc.mutation.NumericalStatDescriptionsIDs()) == 0 {
+		return &ValidationError{Name: "numerical_stat_descriptions", err: errors.New(`ent: missing required edge "Game.numerical_stat_descriptions"`)}
+	}
+	if len(gc.mutation.EnumStatDescriptionsIDs()) == 0 {
+		return &ValidationError{Name: "enum_stat_descriptions", err: errors.New(`ent: missing required edge "Game.enum_stat_descriptions"`)}
 	}
 	return nil
 }
@@ -372,17 +391,36 @@ func (gc *GameCreate) createSpec() (*Game, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := gc.mutation.StatDescriptionsIDs(); len(nodes) > 0 {
+	if nodes := gc.mutation.NumericalStatDescriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.NumericalStatDescriptionsTable,
+			Columns: game.NumericalStatDescriptionsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statdescription.FieldID,
+					Column: numericalstatdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := gc.mutation.EnumStatDescriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.EnumStatDescriptionsTable,
+			Columns: game.EnumStatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstatdescription.FieldID,
 				},
 			},
 		}

@@ -8,6 +8,42 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (es *EnumStat) Match(ctx context.Context) (*Match, error) {
+	result, err := es.Edges.MatchOrErr()
+	if IsNotLoaded(err) {
+		result, err = es.QueryMatch().Only(ctx)
+	}
+	return result, err
+}
+
+func (es *EnumStat) EnumStatDescription(ctx context.Context) (*EnumStatDescription, error) {
+	result, err := es.Edges.EnumStatDescriptionOrErr()
+	if IsNotLoaded(err) {
+		result, err = es.QueryEnumStatDescription().Only(ctx)
+	}
+	return result, err
+}
+
+func (es *EnumStat) Player(ctx context.Context) (*Player, error) {
+	result, err := es.Edges.PlayerOrErr()
+	if IsNotLoaded(err) {
+		result, err = es.QueryPlayer().Only(ctx)
+	}
+	return result, err
+}
+
+func (esd *EnumStatDescription) EnumStats(ctx context.Context) (result []*EnumStat, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = esd.NamedEnumStats(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = esd.Edges.EnumStatsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = esd.QueryEnumStats().All(ctx)
+	}
+	return result, err
+}
+
 func (ga *Game) Author(ctx context.Context) (*User, error) {
 	result, err := ga.Edges.AuthorOrErr()
 	if IsNotLoaded(err) {
@@ -16,14 +52,26 @@ func (ga *Game) Author(ctx context.Context) (*User, error) {
 	return result, err
 }
 
-func (ga *Game) StatDescriptions(ctx context.Context) (result []*StatDescription, err error) {
+func (ga *Game) NumericalStatDescriptions(ctx context.Context) (result []*NumericalStatDescription, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = ga.NamedStatDescriptions(graphql.GetFieldContext(ctx).Field.Alias)
+		result, err = ga.NamedNumericalStatDescriptions(graphql.GetFieldContext(ctx).Field.Alias)
 	} else {
-		result, err = ga.Edges.StatDescriptionsOrErr()
+		result, err = ga.Edges.NumericalStatDescriptionsOrErr()
 	}
 	if IsNotLoaded(err) {
-		result, err = ga.QueryStatDescriptions().All(ctx)
+		result, err = ga.QueryNumericalStatDescriptions().All(ctx)
+	}
+	return result, err
+}
+
+func (ga *Game) EnumStatDescriptions(ctx context.Context) (result []*EnumStatDescription, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = ga.NamedEnumStatDescriptions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = ga.Edges.EnumStatDescriptionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = ga.QueryEnumStatDescriptions().All(ctx)
 	}
 	return result, err
 }
@@ -120,14 +168,62 @@ func (m *Match) Players(ctx context.Context) (result []*Player, err error) {
 	return result, err
 }
 
-func (m *Match) Stats(ctx context.Context) (result []*Statistic, err error) {
+func (m *Match) NumericalStats(ctx context.Context) (result []*NumericalStat, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = m.NamedStats(graphql.GetFieldContext(ctx).Field.Alias)
+		result, err = m.NamedNumericalStats(graphql.GetFieldContext(ctx).Field.Alias)
 	} else {
-		result, err = m.Edges.StatsOrErr()
+		result, err = m.Edges.NumericalStatsOrErr()
 	}
 	if IsNotLoaded(err) {
-		result, err = m.QueryStats().All(ctx)
+		result, err = m.QueryNumericalStats().All(ctx)
+	}
+	return result, err
+}
+
+func (m *Match) EnumStats(ctx context.Context) (result []*EnumStat, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = m.NamedEnumStats(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = m.Edges.EnumStatsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = m.QueryEnumStats().All(ctx)
+	}
+	return result, err
+}
+
+func (ns *NumericalStat) Match(ctx context.Context) (*Match, error) {
+	result, err := ns.Edges.MatchOrErr()
+	if IsNotLoaded(err) {
+		result, err = ns.QueryMatch().Only(ctx)
+	}
+	return result, err
+}
+
+func (ns *NumericalStat) NumericalStatDescription(ctx context.Context) (*NumericalStatDescription, error) {
+	result, err := ns.Edges.NumericalStatDescriptionOrErr()
+	if IsNotLoaded(err) {
+		result, err = ns.QueryNumericalStatDescription().Only(ctx)
+	}
+	return result, err
+}
+
+func (ns *NumericalStat) Player(ctx context.Context) (*Player, error) {
+	result, err := ns.Edges.PlayerOrErr()
+	if IsNotLoaded(err) {
+		result, err = ns.QueryPlayer().Only(ctx)
+	}
+	return result, err
+}
+
+func (nsd *NumericalStatDescription) NumericalStats(ctx context.Context) (result []*NumericalStat, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = nsd.NamedNumericalStats(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = nsd.Edges.NumericalStatsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = nsd.QueryNumericalStats().All(ctx)
 	}
 	return result, err
 }
@@ -216,30 +312,6 @@ func (psra *PlayerSupervisionRequestApproval) SupervisionRequest(ctx context.Con
 	result, err := psra.Edges.SupervisionRequestOrErr()
 	if IsNotLoaded(err) {
 		result, err = psra.QuerySupervisionRequest().Only(ctx)
-	}
-	return result, err
-}
-
-func (s *Statistic) Match(ctx context.Context) (*Match, error) {
-	result, err := s.Edges.MatchOrErr()
-	if IsNotLoaded(err) {
-		result, err = s.QueryMatch().Only(ctx)
-	}
-	return result, err
-}
-
-func (s *Statistic) StatDescription(ctx context.Context) (*StatDescription, error) {
-	result, err := s.Edges.StatDescriptionOrErr()
-	if IsNotLoaded(err) {
-		result, err = s.QueryStatDescription().Only(ctx)
-	}
-	return result, err
-}
-
-func (s *Statistic) Player(ctx context.Context) (*Player, error) {
-	result, err := s.Edges.PlayerOrErr()
-	if IsNotLoaded(err) {
-		result, err = s.QueryPlayer().Only(ctx)
 	}
 	return result, err
 }

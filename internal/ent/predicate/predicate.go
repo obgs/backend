@@ -6,6 +6,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// EnumStat is the predicate function for enumstat builders.
+type EnumStat func(*sql.Selector)
+
+// EnumStatDescription is the predicate function for enumstatdescription builders.
+type EnumStatDescription func(*sql.Selector)
+
 // Game is the predicate function for game builders.
 type Game func(*sql.Selector)
 
@@ -27,6 +33,12 @@ type GroupSettings func(*sql.Selector)
 // Match is the predicate function for match builders.
 type Match func(*sql.Selector)
 
+// NumericalStat is the predicate function for numericalstat builders.
+type NumericalStat func(*sql.Selector)
+
+// NumericalStatDescription is the predicate function for numericalstatdescription builders.
+type NumericalStatDescription func(*sql.Selector)
+
 // Player is the predicate function for player builders.
 type Player func(*sql.Selector)
 
@@ -35,12 +47,6 @@ type PlayerSupervisionRequest func(*sql.Selector)
 
 // PlayerSupervisionRequestApproval is the predicate function for playersupervisionrequestapproval builders.
 type PlayerSupervisionRequestApproval func(*sql.Selector)
-
-// StatDescription is the predicate function for statdescription builders.
-type StatDescription func(*sql.Selector)
-
-// Statistic is the predicate function for statistic builders.
-type Statistic func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

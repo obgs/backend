@@ -136,25 +136,53 @@ func HasPlayersWith(preds ...predicate.Player) predicate.Match {
 	})
 }
 
-// HasStats applies the HasEdge predicate on the "stats" edge.
-func HasStats() predicate.Match {
+// HasNumericalStats applies the HasEdge predicate on the "numerical_stats" edge.
+func HasNumericalStats() predicate.Match {
 	return predicate.Match(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, StatsTable, StatsColumn),
+			sqlgraph.To(NumericalStatsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, NumericalStatsTable, NumericalStatsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasStatsWith applies the HasEdge predicate on the "stats" edge with a given conditions (other predicates).
-func HasStatsWith(preds ...predicate.Statistic) predicate.Match {
+// HasNumericalStatsWith applies the HasEdge predicate on the "numerical_stats" edge with a given conditions (other predicates).
+func HasNumericalStatsWith(preds ...predicate.NumericalStat) predicate.Match {
 	return predicate.Match(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, StatsTable, StatsColumn),
+			sqlgraph.To(NumericalStatsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, NumericalStatsTable, NumericalStatsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEnumStats applies the HasEdge predicate on the "enum_stats" edge.
+func HasEnumStats() predicate.Match {
+	return predicate.Match(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(EnumStatsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EnumStatsTable, EnumStatsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEnumStatsWith applies the HasEdge predicate on the "enum_stats" edge with a given conditions (other predicates).
+func HasEnumStatsWith(preds ...predicate.EnumStat) predicate.Match {
+	return predicate.Match(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(EnumStatsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EnumStatsTable, EnumStatsColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

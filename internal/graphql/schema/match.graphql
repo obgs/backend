@@ -1,4 +1,13 @@
-input StatInput {
+input NumericalStatInput {
+  """
+  The StatDescription ID of the stat to be created
+  """
+  statId: ID!
+  value: Float!
+  playerId: ID!
+}
+
+input EnumStatInput {
   """
   The StatDescription ID of the stat to be created
   """
@@ -10,7 +19,8 @@ input StatInput {
 input CreateMatchInput {
   gameId: ID!
   playerIds: [ID!]!
-  stats: [StatInput!]!
+  numericalStats: [NumericalStatInput!]!
+  enumStats: [EnumStatInput!]!
 }
 
 extend type Mutation {

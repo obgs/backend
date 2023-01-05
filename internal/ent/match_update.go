@@ -10,12 +10,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstat"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstat"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 )
 
 // MatchUpdate is the builder for updating Match entities.
@@ -57,19 +58,34 @@ func (mu *MatchUpdate) AddPlayers(p ...*Player) *MatchUpdate {
 	return mu.AddPlayerIDs(ids...)
 }
 
-// AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
-func (mu *MatchUpdate) AddStatIDs(ids ...guidgql.GUID) *MatchUpdate {
-	mu.mutation.AddStatIDs(ids...)
+// AddNumericalStatIDs adds the "numerical_stats" edge to the NumericalStat entity by IDs.
+func (mu *MatchUpdate) AddNumericalStatIDs(ids ...guidgql.GUID) *MatchUpdate {
+	mu.mutation.AddNumericalStatIDs(ids...)
 	return mu
 }
 
-// AddStats adds the "stats" edges to the Statistic entity.
-func (mu *MatchUpdate) AddStats(s ...*Statistic) *MatchUpdate {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddNumericalStats adds the "numerical_stats" edges to the NumericalStat entity.
+func (mu *MatchUpdate) AddNumericalStats(n ...*NumericalStat) *MatchUpdate {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return mu.AddStatIDs(ids...)
+	return mu.AddNumericalStatIDs(ids...)
+}
+
+// AddEnumStatIDs adds the "enum_stats" edge to the EnumStat entity by IDs.
+func (mu *MatchUpdate) AddEnumStatIDs(ids ...guidgql.GUID) *MatchUpdate {
+	mu.mutation.AddEnumStatIDs(ids...)
+	return mu
+}
+
+// AddEnumStats adds the "enum_stats" edges to the EnumStat entity.
+func (mu *MatchUpdate) AddEnumStats(e ...*EnumStat) *MatchUpdate {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return mu.AddEnumStatIDs(ids...)
 }
 
 // Mutation returns the MatchMutation object of the builder.
@@ -104,25 +120,46 @@ func (mu *MatchUpdate) RemovePlayers(p ...*Player) *MatchUpdate {
 	return mu.RemovePlayerIDs(ids...)
 }
 
-// ClearStats clears all "stats" edges to the Statistic entity.
-func (mu *MatchUpdate) ClearStats() *MatchUpdate {
-	mu.mutation.ClearStats()
+// ClearNumericalStats clears all "numerical_stats" edges to the NumericalStat entity.
+func (mu *MatchUpdate) ClearNumericalStats() *MatchUpdate {
+	mu.mutation.ClearNumericalStats()
 	return mu
 }
 
-// RemoveStatIDs removes the "stats" edge to Statistic entities by IDs.
-func (mu *MatchUpdate) RemoveStatIDs(ids ...guidgql.GUID) *MatchUpdate {
-	mu.mutation.RemoveStatIDs(ids...)
+// RemoveNumericalStatIDs removes the "numerical_stats" edge to NumericalStat entities by IDs.
+func (mu *MatchUpdate) RemoveNumericalStatIDs(ids ...guidgql.GUID) *MatchUpdate {
+	mu.mutation.RemoveNumericalStatIDs(ids...)
 	return mu
 }
 
-// RemoveStats removes "stats" edges to Statistic entities.
-func (mu *MatchUpdate) RemoveStats(s ...*Statistic) *MatchUpdate {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// RemoveNumericalStats removes "numerical_stats" edges to NumericalStat entities.
+func (mu *MatchUpdate) RemoveNumericalStats(n ...*NumericalStat) *MatchUpdate {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return mu.RemoveStatIDs(ids...)
+	return mu.RemoveNumericalStatIDs(ids...)
+}
+
+// ClearEnumStats clears all "enum_stats" edges to the EnumStat entity.
+func (mu *MatchUpdate) ClearEnumStats() *MatchUpdate {
+	mu.mutation.ClearEnumStats()
+	return mu
+}
+
+// RemoveEnumStatIDs removes the "enum_stats" edge to EnumStat entities by IDs.
+func (mu *MatchUpdate) RemoveEnumStatIDs(ids ...guidgql.GUID) *MatchUpdate {
+	mu.mutation.RemoveEnumStatIDs(ids...)
+	return mu
+}
+
+// RemoveEnumStats removes "enum_stats" edges to EnumStat entities.
+func (mu *MatchUpdate) RemoveEnumStats(e ...*EnumStat) *MatchUpdate {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return mu.RemoveEnumStatIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -300,33 +337,33 @@ func (mu *MatchUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if mu.mutation.StatsCleared() {
+	if mu.mutation.NumericalStatsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   match.StatsTable,
-			Columns: []string{match.StatsColumn},
+			Table:   match.NumericalStatsTable,
+			Columns: []string{match.NumericalStatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statistic.FieldID,
+					Column: numericalstat.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := mu.mutation.RemovedStatsIDs(); len(nodes) > 0 && !mu.mutation.StatsCleared() {
+	if nodes := mu.mutation.RemovedNumericalStatsIDs(); len(nodes) > 0 && !mu.mutation.NumericalStatsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   match.StatsTable,
-			Columns: []string{match.StatsColumn},
+			Table:   match.NumericalStatsTable,
+			Columns: []string{match.NumericalStatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statistic.FieldID,
+					Column: numericalstat.FieldID,
 				},
 			},
 		}
@@ -335,17 +372,71 @@ func (mu *MatchUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := mu.mutation.StatsIDs(); len(nodes) > 0 {
+	if nodes := mu.mutation.NumericalStatsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   match.StatsTable,
-			Columns: []string{match.StatsColumn},
+			Table:   match.NumericalStatsTable,
+			Columns: []string{match.NumericalStatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statistic.FieldID,
+					Column: numericalstat.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if mu.mutation.EnumStatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   match.EnumStatsTable,
+			Columns: []string{match.EnumStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstat.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.RemovedEnumStatsIDs(); len(nodes) > 0 && !mu.mutation.EnumStatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   match.EnumStatsTable,
+			Columns: []string{match.EnumStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstat.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.EnumStatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   match.EnumStatsTable,
+			Columns: []string{match.EnumStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstat.FieldID,
 				},
 			},
 		}
@@ -399,19 +490,34 @@ func (muo *MatchUpdateOne) AddPlayers(p ...*Player) *MatchUpdateOne {
 	return muo.AddPlayerIDs(ids...)
 }
 
-// AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
-func (muo *MatchUpdateOne) AddStatIDs(ids ...guidgql.GUID) *MatchUpdateOne {
-	muo.mutation.AddStatIDs(ids...)
+// AddNumericalStatIDs adds the "numerical_stats" edge to the NumericalStat entity by IDs.
+func (muo *MatchUpdateOne) AddNumericalStatIDs(ids ...guidgql.GUID) *MatchUpdateOne {
+	muo.mutation.AddNumericalStatIDs(ids...)
 	return muo
 }
 
-// AddStats adds the "stats" edges to the Statistic entity.
-func (muo *MatchUpdateOne) AddStats(s ...*Statistic) *MatchUpdateOne {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddNumericalStats adds the "numerical_stats" edges to the NumericalStat entity.
+func (muo *MatchUpdateOne) AddNumericalStats(n ...*NumericalStat) *MatchUpdateOne {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return muo.AddStatIDs(ids...)
+	return muo.AddNumericalStatIDs(ids...)
+}
+
+// AddEnumStatIDs adds the "enum_stats" edge to the EnumStat entity by IDs.
+func (muo *MatchUpdateOne) AddEnumStatIDs(ids ...guidgql.GUID) *MatchUpdateOne {
+	muo.mutation.AddEnumStatIDs(ids...)
+	return muo
+}
+
+// AddEnumStats adds the "enum_stats" edges to the EnumStat entity.
+func (muo *MatchUpdateOne) AddEnumStats(e ...*EnumStat) *MatchUpdateOne {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return muo.AddEnumStatIDs(ids...)
 }
 
 // Mutation returns the MatchMutation object of the builder.
@@ -446,25 +552,46 @@ func (muo *MatchUpdateOne) RemovePlayers(p ...*Player) *MatchUpdateOne {
 	return muo.RemovePlayerIDs(ids...)
 }
 
-// ClearStats clears all "stats" edges to the Statistic entity.
-func (muo *MatchUpdateOne) ClearStats() *MatchUpdateOne {
-	muo.mutation.ClearStats()
+// ClearNumericalStats clears all "numerical_stats" edges to the NumericalStat entity.
+func (muo *MatchUpdateOne) ClearNumericalStats() *MatchUpdateOne {
+	muo.mutation.ClearNumericalStats()
 	return muo
 }
 
-// RemoveStatIDs removes the "stats" edge to Statistic entities by IDs.
-func (muo *MatchUpdateOne) RemoveStatIDs(ids ...guidgql.GUID) *MatchUpdateOne {
-	muo.mutation.RemoveStatIDs(ids...)
+// RemoveNumericalStatIDs removes the "numerical_stats" edge to NumericalStat entities by IDs.
+func (muo *MatchUpdateOne) RemoveNumericalStatIDs(ids ...guidgql.GUID) *MatchUpdateOne {
+	muo.mutation.RemoveNumericalStatIDs(ids...)
 	return muo
 }
 
-// RemoveStats removes "stats" edges to Statistic entities.
-func (muo *MatchUpdateOne) RemoveStats(s ...*Statistic) *MatchUpdateOne {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// RemoveNumericalStats removes "numerical_stats" edges to NumericalStat entities.
+func (muo *MatchUpdateOne) RemoveNumericalStats(n ...*NumericalStat) *MatchUpdateOne {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return muo.RemoveStatIDs(ids...)
+	return muo.RemoveNumericalStatIDs(ids...)
+}
+
+// ClearEnumStats clears all "enum_stats" edges to the EnumStat entity.
+func (muo *MatchUpdateOne) ClearEnumStats() *MatchUpdateOne {
+	muo.mutation.ClearEnumStats()
+	return muo
+}
+
+// RemoveEnumStatIDs removes the "enum_stats" edge to EnumStat entities by IDs.
+func (muo *MatchUpdateOne) RemoveEnumStatIDs(ids ...guidgql.GUID) *MatchUpdateOne {
+	muo.mutation.RemoveEnumStatIDs(ids...)
+	return muo
+}
+
+// RemoveEnumStats removes "enum_stats" edges to EnumStat entities.
+func (muo *MatchUpdateOne) RemoveEnumStats(e ...*EnumStat) *MatchUpdateOne {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return muo.RemoveEnumStatIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -672,33 +799,33 @@ func (muo *MatchUpdateOne) sqlSave(ctx context.Context) (_node *Match, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if muo.mutation.StatsCleared() {
+	if muo.mutation.NumericalStatsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   match.StatsTable,
-			Columns: []string{match.StatsColumn},
+			Table:   match.NumericalStatsTable,
+			Columns: []string{match.NumericalStatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statistic.FieldID,
+					Column: numericalstat.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := muo.mutation.RemovedStatsIDs(); len(nodes) > 0 && !muo.mutation.StatsCleared() {
+	if nodes := muo.mutation.RemovedNumericalStatsIDs(); len(nodes) > 0 && !muo.mutation.NumericalStatsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   match.StatsTable,
-			Columns: []string{match.StatsColumn},
+			Table:   match.NumericalStatsTable,
+			Columns: []string{match.NumericalStatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statistic.FieldID,
+					Column: numericalstat.FieldID,
 				},
 			},
 		}
@@ -707,17 +834,71 @@ func (muo *MatchUpdateOne) sqlSave(ctx context.Context) (_node *Match, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := muo.mutation.StatsIDs(); len(nodes) > 0 {
+	if nodes := muo.mutation.NumericalStatsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   match.StatsTable,
-			Columns: []string{match.StatsColumn},
+			Table:   match.NumericalStatsTable,
+			Columns: []string{match.NumericalStatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statistic.FieldID,
+					Column: numericalstat.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if muo.mutation.EnumStatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   match.EnumStatsTable,
+			Columns: []string{match.EnumStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstat.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.RemovedEnumStatsIDs(); len(nodes) > 0 && !muo.mutation.EnumStatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   match.EnumStatsTable,
+			Columns: []string{match.EnumStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstat.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.EnumStatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   match.EnumStatsTable,
+			Columns: []string{match.EnumStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstat.FieldID,
 				},
 			},
 		}

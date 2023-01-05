@@ -39,19 +39,22 @@ type GameEdges struct {
 	Author *User `json:"author,omitempty"`
 	// Favorites holds the value of the favorites edge.
 	Favorites []*GameFavorite `json:"favorites,omitempty"`
-	// StatDescriptions holds the value of the stat_descriptions edge.
-	StatDescriptions []*StatDescription `json:"stat_descriptions,omitempty"`
+	// NumericalStatDescriptions holds the value of the numerical_stat_descriptions edge.
+	NumericalStatDescriptions []*NumericalStatDescription `json:"numerical_stat_descriptions,omitempty"`
+	// EnumStatDescriptions holds the value of the enum_stat_descriptions edge.
+	EnumStatDescriptions []*EnumStatDescription `json:"enum_stat_descriptions,omitempty"`
 	// Matches holds the value of the matches edge.
 	Matches []*Match `json:"matches,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]map[string]int
+	totalCount [3]map[string]int
 
-	namedFavorites        map[string][]*GameFavorite
-	namedStatDescriptions map[string][]*StatDescription
-	namedMatches          map[string][]*Match
+	namedFavorites                 map[string][]*GameFavorite
+	namedNumericalStatDescriptions map[string][]*NumericalStatDescription
+	namedEnumStatDescriptions      map[string][]*EnumStatDescription
+	namedMatches                   map[string][]*Match
 }
 
 // AuthorOrErr returns the Author value or an error if the edge
@@ -76,19 +79,28 @@ func (e GameEdges) FavoritesOrErr() ([]*GameFavorite, error) {
 	return nil, &NotLoadedError{edge: "favorites"}
 }
 
-// StatDescriptionsOrErr returns the StatDescriptions value or an error if the edge
+// NumericalStatDescriptionsOrErr returns the NumericalStatDescriptions value or an error if the edge
 // was not loaded in eager-loading.
-func (e GameEdges) StatDescriptionsOrErr() ([]*StatDescription, error) {
+func (e GameEdges) NumericalStatDescriptionsOrErr() ([]*NumericalStatDescription, error) {
 	if e.loadedTypes[2] {
-		return e.StatDescriptions, nil
+		return e.NumericalStatDescriptions, nil
 	}
-	return nil, &NotLoadedError{edge: "stat_descriptions"}
+	return nil, &NotLoadedError{edge: "numerical_stat_descriptions"}
+}
+
+// EnumStatDescriptionsOrErr returns the EnumStatDescriptions value or an error if the edge
+// was not loaded in eager-loading.
+func (e GameEdges) EnumStatDescriptionsOrErr() ([]*EnumStatDescription, error) {
+	if e.loadedTypes[3] {
+		return e.EnumStatDescriptions, nil
+	}
+	return nil, &NotLoadedError{edge: "enum_stat_descriptions"}
 }
 
 // MatchesOrErr returns the Matches value or an error if the edge
 // was not loaded in eager-loading.
 func (e GameEdges) MatchesOrErr() ([]*Match, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.Matches, nil
 	}
 	return nil, &NotLoadedError{edge: "matches"}
@@ -180,9 +192,14 @@ func (ga *Game) QueryFavorites() *GameFavoriteQuery {
 	return (&GameClient{config: ga.config}).QueryFavorites(ga)
 }
 
-// QueryStatDescriptions queries the "stat_descriptions" edge of the Game entity.
-func (ga *Game) QueryStatDescriptions() *StatDescriptionQuery {
-	return (&GameClient{config: ga.config}).QueryStatDescriptions(ga)
+// QueryNumericalStatDescriptions queries the "numerical_stat_descriptions" edge of the Game entity.
+func (ga *Game) QueryNumericalStatDescriptions() *NumericalStatDescriptionQuery {
+	return (&GameClient{config: ga.config}).QueryNumericalStatDescriptions(ga)
+}
+
+// QueryEnumStatDescriptions queries the "enum_stat_descriptions" edge of the Game entity.
+func (ga *Game) QueryEnumStatDescriptions() *EnumStatDescriptionQuery {
+	return (&GameClient{config: ga.config}).QueryEnumStatDescriptions(ga)
 }
 
 // QueryMatches queries the "matches" edge of the Game entity.
@@ -255,27 +272,51 @@ func (ga *Game) appendNamedFavorites(name string, edges ...*GameFavorite) {
 	}
 }
 
-// NamedStatDescriptions returns the StatDescriptions named value or an error if the edge was not
+// NamedNumericalStatDescriptions returns the NumericalStatDescriptions named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (ga *Game) NamedStatDescriptions(name string) ([]*StatDescription, error) {
-	if ga.Edges.namedStatDescriptions == nil {
+func (ga *Game) NamedNumericalStatDescriptions(name string) ([]*NumericalStatDescription, error) {
+	if ga.Edges.namedNumericalStatDescriptions == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := ga.Edges.namedStatDescriptions[name]
+	nodes, ok := ga.Edges.namedNumericalStatDescriptions[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (ga *Game) appendNamedStatDescriptions(name string, edges ...*StatDescription) {
-	if ga.Edges.namedStatDescriptions == nil {
-		ga.Edges.namedStatDescriptions = make(map[string][]*StatDescription)
+func (ga *Game) appendNamedNumericalStatDescriptions(name string, edges ...*NumericalStatDescription) {
+	if ga.Edges.namedNumericalStatDescriptions == nil {
+		ga.Edges.namedNumericalStatDescriptions = make(map[string][]*NumericalStatDescription)
 	}
 	if len(edges) == 0 {
-		ga.Edges.namedStatDescriptions[name] = []*StatDescription{}
+		ga.Edges.namedNumericalStatDescriptions[name] = []*NumericalStatDescription{}
 	} else {
-		ga.Edges.namedStatDescriptions[name] = append(ga.Edges.namedStatDescriptions[name], edges...)
+		ga.Edges.namedNumericalStatDescriptions[name] = append(ga.Edges.namedNumericalStatDescriptions[name], edges...)
+	}
+}
+
+// NamedEnumStatDescriptions returns the EnumStatDescriptions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (ga *Game) NamedEnumStatDescriptions(name string) ([]*EnumStatDescription, error) {
+	if ga.Edges.namedEnumStatDescriptions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := ga.Edges.namedEnumStatDescriptions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (ga *Game) appendNamedEnumStatDescriptions(name string, edges ...*EnumStatDescription) {
+	if ga.Edges.namedEnumStatDescriptions == nil {
+		ga.Edges.namedEnumStatDescriptions = make(map[string][]*EnumStatDescription)
+	}
+	if len(edges) == 0 {
+		ga.Edges.namedEnumStatDescriptions[name] = []*EnumStatDescription{}
+	} else {
+		ga.Edges.namedEnumStatDescriptions[name] = append(ga.Edges.namedEnumStatDescriptions[name], edges...)
 	}
 }
 

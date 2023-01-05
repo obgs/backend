@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
@@ -10,13 +12,13 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -24,6 +26,22 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	enumstatFields := schema.EnumStat{}.Fields()
+	_ = enumstatFields
+	// enumstatDescID is the schema descriptor for id field.
+	enumstatDescID := enumstatFields[0].Descriptor()
+	// enumstat.DefaultID holds the default value on creation for the id field.
+	enumstat.DefaultID = enumstatDescID.Default.(func() guidgql.GUID)
+	enumstatdescriptionFields := schema.EnumStatDescription{}.Fields()
+	_ = enumstatdescriptionFields
+	// enumstatdescriptionDescName is the schema descriptor for name field.
+	enumstatdescriptionDescName := enumstatdescriptionFields[1].Descriptor()
+	// enumstatdescription.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	enumstatdescription.NameValidator = enumstatdescriptionDescName.Validators[0].(func(string) error)
+	// enumstatdescriptionDescID is the schema descriptor for id field.
+	enumstatdescriptionDescID := enumstatdescriptionFields[0].Descriptor()
+	// enumstatdescription.DefaultID holds the default value on creation for the id field.
+	enumstatdescription.DefaultID = enumstatdescriptionDescID.Default.(func() guidgql.GUID)
 	gameFields := schema.Game{}.Fields()
 	_ = gameFields
 	// gameDescName is the schema descriptor for name field.
@@ -98,6 +116,22 @@ func init() {
 	matchDescID := matchFields[0].Descriptor()
 	// match.DefaultID holds the default value on creation for the id field.
 	match.DefaultID = matchDescID.Default.(func() guidgql.GUID)
+	numericalstatFields := schema.NumericalStat{}.Fields()
+	_ = numericalstatFields
+	// numericalstatDescID is the schema descriptor for id field.
+	numericalstatDescID := numericalstatFields[0].Descriptor()
+	// numericalstat.DefaultID holds the default value on creation for the id field.
+	numericalstat.DefaultID = numericalstatDescID.Default.(func() guidgql.GUID)
+	numericalstatdescriptionFields := schema.NumericalStatDescription{}.Fields()
+	_ = numericalstatdescriptionFields
+	// numericalstatdescriptionDescName is the schema descriptor for name field.
+	numericalstatdescriptionDescName := numericalstatdescriptionFields[1].Descriptor()
+	// numericalstatdescription.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	numericalstatdescription.NameValidator = numericalstatdescriptionDescName.Validators[0].(func(string) error)
+	// numericalstatdescriptionDescID is the schema descriptor for id field.
+	numericalstatdescriptionDescID := numericalstatdescriptionFields[0].Descriptor()
+	// numericalstatdescription.DefaultID holds the default value on creation for the id field.
+	numericalstatdescription.DefaultID = numericalstatdescriptionDescID.Default.(func() guidgql.GUID)
 	playerFields := schema.Player{}.Fields()
 	_ = playerFields
 	// playerDescName is the schema descriptor for name field.
@@ -120,30 +154,6 @@ func init() {
 	playersupervisionrequestapprovalDescID := playersupervisionrequestapprovalFields[0].Descriptor()
 	// playersupervisionrequestapproval.DefaultID holds the default value on creation for the id field.
 	playersupervisionrequestapproval.DefaultID = playersupervisionrequestapprovalDescID.Default.(func() guidgql.GUID)
-	statdescriptionFields := schema.StatDescription{}.Fields()
-	_ = statdescriptionFields
-	// statdescriptionDescName is the schema descriptor for name field.
-	statdescriptionDescName := statdescriptionFields[2].Descriptor()
-	// statdescription.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	statdescription.NameValidator = statdescriptionDescName.Validators[0].(func(string) error)
-	// statdescriptionDescDescription is the schema descriptor for description field.
-	statdescriptionDescDescription := statdescriptionFields[3].Descriptor()
-	// statdescription.DefaultDescription holds the default value on creation for the description field.
-	statdescription.DefaultDescription = statdescriptionDescDescription.Default.(string)
-	// statdescriptionDescID is the schema descriptor for id field.
-	statdescriptionDescID := statdescriptionFields[0].Descriptor()
-	// statdescription.DefaultID holds the default value on creation for the id field.
-	statdescription.DefaultID = statdescriptionDescID.Default.(func() guidgql.GUID)
-	statisticFields := schema.Statistic{}.Fields()
-	_ = statisticFields
-	// statisticDescValue is the schema descriptor for value field.
-	statisticDescValue := statisticFields[1].Descriptor()
-	// statistic.DefaultValue holds the default value on creation for the value field.
-	statistic.DefaultValue = statisticDescValue.Default.(string)
-	// statisticDescID is the schema descriptor for id field.
-	statisticDescID := statisticFields[0].Descriptor()
-	// statistic.DefaultID holds the default value on creation for the id field.
-	statistic.DefaultID = statisticDescID.Default.(func() guidgql.GUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescName is the schema descriptor for name field.

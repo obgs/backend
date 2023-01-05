@@ -12,6 +12,10 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// EnumStat is the client for interacting with the EnumStat builders.
+	EnumStat *EnumStatClient
+	// EnumStatDescription is the client for interacting with the EnumStatDescription builders.
+	EnumStatDescription *EnumStatDescriptionClient
 	// Game is the client for interacting with the Game builders.
 	Game *GameClient
 	// GameFavorite is the client for interacting with the GameFavorite builders.
@@ -26,16 +30,16 @@ type Tx struct {
 	GroupSettings *GroupSettingsClient
 	// Match is the client for interacting with the Match builders.
 	Match *MatchClient
+	// NumericalStat is the client for interacting with the NumericalStat builders.
+	NumericalStat *NumericalStatClient
+	// NumericalStatDescription is the client for interacting with the NumericalStatDescription builders.
+	NumericalStatDescription *NumericalStatDescriptionClient
 	// Player is the client for interacting with the Player builders.
 	Player *PlayerClient
 	// PlayerSupervisionRequest is the client for interacting with the PlayerSupervisionRequest builders.
 	PlayerSupervisionRequest *PlayerSupervisionRequestClient
 	// PlayerSupervisionRequestApproval is the client for interacting with the PlayerSupervisionRequestApproval builders.
 	PlayerSupervisionRequestApproval *PlayerSupervisionRequestApprovalClient
-	// StatDescription is the client for interacting with the StatDescription builders.
-	StatDescription *StatDescriptionClient
-	// Statistic is the client for interacting with the Statistic builders.
-	Statistic *StatisticClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -169,6 +173,8 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.EnumStat = NewEnumStatClient(tx.config)
+	tx.EnumStatDescription = NewEnumStatDescriptionClient(tx.config)
 	tx.Game = NewGameClient(tx.config)
 	tx.GameFavorite = NewGameFavoriteClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
@@ -176,11 +182,11 @@ func (tx *Tx) init() {
 	tx.GroupMembershipApplication = NewGroupMembershipApplicationClient(tx.config)
 	tx.GroupSettings = NewGroupSettingsClient(tx.config)
 	tx.Match = NewMatchClient(tx.config)
+	tx.NumericalStat = NewNumericalStatClient(tx.config)
+	tx.NumericalStatDescription = NewNumericalStatDescriptionClient(tx.config)
 	tx.Player = NewPlayerClient(tx.config)
 	tx.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(tx.config)
 	tx.PlayerSupervisionRequestApproval = NewPlayerSupervisionRequestApprovalClient(tx.config)
-	tx.StatDescription = NewStatDescriptionClient(tx.config)
-	tx.Statistic = NewStatisticClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 
@@ -191,7 +197,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Game.QueryXXX(), the query will be executed
+// applies a query, for example: EnumStat.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

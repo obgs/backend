@@ -5,14 +5,12 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
@@ -53,50 +51,47 @@ func (r *gameResolver) IsFavorite(ctx context.Context, obj *ent.Game) (bool, err
 
 // CreateGame is the resolver for the createGame field.
 func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGameInput) (*ent.Game, error) {
+	client := ent.FromContext(ctx)
+
 	u, err := auth.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	createDescriptons := make([]*ent.StatDescriptionCreate, 0, len(input.StatDescriptions))
-	for _, desc := range input.StatDescriptions {
-		create := r.client.StatDescription.Create().
-			SetType(desc.Type).
+	numericalDescriptionsCreateQueuries := make([]*ent.NumericalStatDescriptionCreate, 0, len(input.NumericalStatDescriptions))
+	for _, desc := range input.NumericalStatDescriptions {
+		numericalDescriptionsCreateQueuries = append(numericalDescriptionsCreateQueuries, r.client.NumericalStatDescription.Create().
 			SetName(desc.Name).
-			SetDescription(*desc.Description)
-		switch desc.Type {
-		case stat.Numeric:
-			if desc.EnumStatInput != nil {
-				return nil, fmt.Errorf("enumStatInput is not allowed for numeric stat")
-			}
-		case stat.Enum:
-			if desc.EnumStatInput == nil || desc.EnumStatInput.PossibleValues == nil {
-				return nil, fmt.Errorf("possible values are required for enum stat")
-			}
-			if len(desc.EnumStatInput.PossibleValues) < MIN_ENUM_VALUES {
-				return nil, fmt.Errorf("at least %d possible values are required for enum stat", MIN_ENUM_VALUES)
-			}
-			create.SetPossibleValues(desc.EnumStatInput.PossibleValues)
-		}
-		createDescriptons = append(
-			createDescriptons,
-			create,
+			SetDescription(*desc.Description),
 		)
 	}
-
-	descriptions, err := r.client.StatDescription.CreateBulk(createDescriptons...).Save(ctx)
+	numericalDescriptions, err := client.NumericalStatDescription.CreateBulk(numericalDescriptionsCreateQueuries...).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.client.Game.Create().
+	enumDescriptionsCreateQueuries := make([]*ent.EnumStatDescriptionCreate, 0, len(input.EnumStatDescriptions))
+	for _, desc := range input.EnumStatDescriptions {
+		enumDescriptionsCreateQueuries = append(enumDescriptionsCreateQueuries, client.EnumStatDescription.Create().
+			SetName(desc.Name).
+			SetDescription(*desc.Description).
+			SetPossibleValues(desc.PossibleValues),
+		)
+	}
+	enumDescriptions, err := client.EnumStatDescription.CreateBulk(enumDescriptionsCreateQueuries...).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.Game.Create().
 		SetName(input.Name).
 		SetDescription(*input.Description).
 		SetBoardgamegeekURL(*input.BoardgamegeekURL).
 		SetAuthor(u).
 		SetMinPlayers(input.MinPlayers).
 		SetMaxPlayers(input.MaxPlayers).
-		AddStatDescriptions(descriptions...).
+		AddNumericalStatDescriptions(numericalDescriptions...).
+		AddEnumStatDescriptions(enumDescriptions...).
 		Save(ctx)
 }
 

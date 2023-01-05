@@ -8,6 +8,53 @@ import (
 )
 
 var (
+	// EnumStatsColumns holds the columns for the "enum_stats" table.
+	EnumStatsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString},
+		{Name: "enum_stat_description_enum_stats", Type: field.TypeString},
+		{Name: "match_enum_stats", Type: field.TypeString},
+		{Name: "player_enum_stats", Type: field.TypeString},
+	}
+	// EnumStatsTable holds the schema information for the "enum_stats" table.
+	EnumStatsTable = &schema.Table{
+		Name:       "enum_stats",
+		Columns:    EnumStatsColumns,
+		PrimaryKey: []*schema.Column{EnumStatsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "enum_stats_enum_stat_descriptions_enum_stats",
+				Columns:    []*schema.Column{EnumStatsColumns[2]},
+				RefColumns: []*schema.Column{EnumStatDescriptionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "enum_stats_matches_enum_stats",
+				Columns:    []*schema.Column{EnumStatsColumns[3]},
+				RefColumns: []*schema.Column{MatchesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "enum_stats_players_enum_stats",
+				Columns:    []*schema.Column{EnumStatsColumns[4]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// EnumStatDescriptionsColumns holds the columns for the "enum_stat_descriptions" table.
+	EnumStatDescriptionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "possible_values", Type: field.TypeJSON},
+	}
+	// EnumStatDescriptionsTable holds the schema information for the "enum_stat_descriptions" table.
+	EnumStatDescriptionsTable = &schema.Table{
+		Name:       "enum_stat_descriptions",
+		Columns:    EnumStatDescriptionsColumns,
+		PrimaryKey: []*schema.Column{EnumStatDescriptionsColumns[0]},
+	}
 	// GamesColumns holds the columns for the "games" table.
 	GamesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -166,6 +213,52 @@ var (
 			},
 		},
 	}
+	// NumericalStatsColumns holds the columns for the "numerical_stats" table.
+	NumericalStatsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "value", Type: field.TypeFloat64},
+		{Name: "match_numerical_stats", Type: field.TypeString},
+		{Name: "numerical_stat_description_numerical_stats", Type: field.TypeString},
+		{Name: "player_numerical_stats", Type: field.TypeString},
+	}
+	// NumericalStatsTable holds the schema information for the "numerical_stats" table.
+	NumericalStatsTable = &schema.Table{
+		Name:       "numerical_stats",
+		Columns:    NumericalStatsColumns,
+		PrimaryKey: []*schema.Column{NumericalStatsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "numerical_stats_matches_numerical_stats",
+				Columns:    []*schema.Column{NumericalStatsColumns[2]},
+				RefColumns: []*schema.Column{MatchesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "numerical_stats_numerical_stat_descriptions_numerical_stats",
+				Columns:    []*schema.Column{NumericalStatsColumns[3]},
+				RefColumns: []*schema.Column{NumericalStatDescriptionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "numerical_stats_players_numerical_stats",
+				Columns:    []*schema.Column{NumericalStatsColumns[4]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// NumericalStatDescriptionsColumns holds the columns for the "numerical_stat_descriptions" table.
+	NumericalStatDescriptionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+	}
+	// NumericalStatDescriptionsTable holds the schema information for the "numerical_stat_descriptions" table.
+	NumericalStatDescriptionsTable = &schema.Table{
+		Name:       "numerical_stat_descriptions",
+		Columns:    NumericalStatDescriptionsColumns,
+		PrimaryKey: []*schema.Column{NumericalStatDescriptionsColumns[0]},
+	}
 	// PlayersColumns holds the columns for the "players" table.
 	PlayersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -240,54 +333,6 @@ var (
 			},
 		},
 	}
-	// StatDescriptionsColumns holds the columns for the "stat_descriptions" table.
-	StatDescriptionsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"numeric", "enum"}},
-		{Name: "name", Type: field.TypeString},
-		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
-		{Name: "possible_values", Type: field.TypeJSON, Nullable: true},
-	}
-	// StatDescriptionsTable holds the schema information for the "stat_descriptions" table.
-	StatDescriptionsTable = &schema.Table{
-		Name:       "stat_descriptions",
-		Columns:    StatDescriptionsColumns,
-		PrimaryKey: []*schema.Column{StatDescriptionsColumns[0]},
-	}
-	// StatisticsColumns holds the columns for the "statistics" table.
-	StatisticsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString},
-		{Name: "value", Type: field.TypeString, Default: ""},
-		{Name: "match_stats", Type: field.TypeString},
-		{Name: "player_stats", Type: field.TypeString},
-		{Name: "stat_description_stats", Type: field.TypeString},
-	}
-	// StatisticsTable holds the schema information for the "statistics" table.
-	StatisticsTable = &schema.Table{
-		Name:       "statistics",
-		Columns:    StatisticsColumns,
-		PrimaryKey: []*schema.Column{StatisticsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "statistics_matches_stats",
-				Columns:    []*schema.Column{StatisticsColumns[2]},
-				RefColumns: []*schema.Column{MatchesColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "statistics_players_stats",
-				Columns:    []*schema.Column{StatisticsColumns[3]},
-				RefColumns: []*schema.Column{PlayersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "statistics_stat_descriptions_stats",
-				Columns:    []*schema.Column{StatisticsColumns[4]},
-				RefColumns: []*schema.Column{StatDescriptionsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -301,6 +346,31 @@ var (
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	}
+	// EnumStatDescriptionGameColumns holds the columns for the "enum_stat_description_game" table.
+	EnumStatDescriptionGameColumns = []*schema.Column{
+		{Name: "enum_stat_description_id", Type: field.TypeString},
+		{Name: "game_id", Type: field.TypeString},
+	}
+	// EnumStatDescriptionGameTable holds the schema information for the "enum_stat_description_game" table.
+	EnumStatDescriptionGameTable = &schema.Table{
+		Name:       "enum_stat_description_game",
+		Columns:    EnumStatDescriptionGameColumns,
+		PrimaryKey: []*schema.Column{EnumStatDescriptionGameColumns[0], EnumStatDescriptionGameColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "enum_stat_description_game_enum_stat_description_id",
+				Columns:    []*schema.Column{EnumStatDescriptionGameColumns[0]},
+				RefColumns: []*schema.Column{EnumStatDescriptionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "enum_stat_description_game_game_id",
+				Columns:    []*schema.Column{EnumStatDescriptionGameColumns[1]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
 	}
 	// MatchPlayersColumns holds the columns for the "match_players" table.
 	MatchPlayersColumns = []*schema.Column{
@@ -327,26 +397,26 @@ var (
 			},
 		},
 	}
-	// StatDescriptionGameColumns holds the columns for the "stat_description_game" table.
-	StatDescriptionGameColumns = []*schema.Column{
-		{Name: "stat_description_id", Type: field.TypeString},
+	// NumericalStatDescriptionGameColumns holds the columns for the "numerical_stat_description_game" table.
+	NumericalStatDescriptionGameColumns = []*schema.Column{
+		{Name: "numerical_stat_description_id", Type: field.TypeString},
 		{Name: "game_id", Type: field.TypeString},
 	}
-	// StatDescriptionGameTable holds the schema information for the "stat_description_game" table.
-	StatDescriptionGameTable = &schema.Table{
-		Name:       "stat_description_game",
-		Columns:    StatDescriptionGameColumns,
-		PrimaryKey: []*schema.Column{StatDescriptionGameColumns[0], StatDescriptionGameColumns[1]},
+	// NumericalStatDescriptionGameTable holds the schema information for the "numerical_stat_description_game" table.
+	NumericalStatDescriptionGameTable = &schema.Table{
+		Name:       "numerical_stat_description_game",
+		Columns:    NumericalStatDescriptionGameColumns,
+		PrimaryKey: []*schema.Column{NumericalStatDescriptionGameColumns[0], NumericalStatDescriptionGameColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "stat_description_game_stat_description_id",
-				Columns:    []*schema.Column{StatDescriptionGameColumns[0]},
-				RefColumns: []*schema.Column{StatDescriptionsColumns[0]},
+				Symbol:     "numerical_stat_description_game_numerical_stat_description_id",
+				Columns:    []*schema.Column{NumericalStatDescriptionGameColumns[0]},
+				RefColumns: []*schema.Column{NumericalStatDescriptionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "stat_description_game_game_id",
-				Columns:    []*schema.Column{StatDescriptionGameColumns[1]},
+				Symbol:     "numerical_stat_description_game_game_id",
+				Columns:    []*schema.Column{NumericalStatDescriptionGameColumns[1]},
 				RefColumns: []*schema.Column{GamesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -379,6 +449,8 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		EnumStatsTable,
+		EnumStatDescriptionsTable,
 		GamesTable,
 		GameFavoritesTable,
 		GroupsTable,
@@ -386,19 +458,23 @@ var (
 		GroupMembershipApplicationsTable,
 		GroupSettingsTable,
 		MatchesTable,
+		NumericalStatsTable,
+		NumericalStatDescriptionsTable,
 		PlayersTable,
 		PlayerSupervisionRequestsTable,
 		PlayerSupervisionRequestApprovalsTable,
-		StatDescriptionsTable,
-		StatisticsTable,
 		UsersTable,
+		EnumStatDescriptionGameTable,
 		MatchPlayersTable,
-		StatDescriptionGameTable,
+		NumericalStatDescriptionGameTable,
 		UserPlayersTable,
 	}
 )
 
 func init() {
+	EnumStatsTable.ForeignKeys[0].RefTable = EnumStatDescriptionsTable
+	EnumStatsTable.ForeignKeys[1].RefTable = MatchesTable
+	EnumStatsTable.ForeignKeys[2].RefTable = PlayersTable
 	GamesTable.ForeignKeys[0].RefTable = UsersTable
 	GameFavoritesTable.ForeignKeys[0].RefTable = GamesTable
 	GameFavoritesTable.ForeignKeys[1].RefTable = UsersTable
@@ -408,18 +484,20 @@ func init() {
 	GroupMembershipApplicationsTable.ForeignKeys[1].RefTable = UsersTable
 	GroupSettingsTable.ForeignKeys[0].RefTable = GroupsTable
 	MatchesTable.ForeignKeys[0].RefTable = GamesTable
+	NumericalStatsTable.ForeignKeys[0].RefTable = MatchesTable
+	NumericalStatsTable.ForeignKeys[1].RefTable = NumericalStatDescriptionsTable
+	NumericalStatsTable.ForeignKeys[2].RefTable = PlayersTable
 	PlayersTable.ForeignKeys[0].RefTable = UsersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[0].RefTable = PlayersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[1].RefTable = UsersTable
 	PlayerSupervisionRequestApprovalsTable.ForeignKeys[0].RefTable = PlayerSupervisionRequestsTable
 	PlayerSupervisionRequestApprovalsTable.ForeignKeys[1].RefTable = UsersTable
-	StatisticsTable.ForeignKeys[0].RefTable = MatchesTable
-	StatisticsTable.ForeignKeys[1].RefTable = PlayersTable
-	StatisticsTable.ForeignKeys[2].RefTable = StatDescriptionsTable
+	EnumStatDescriptionGameTable.ForeignKeys[0].RefTable = EnumStatDescriptionsTable
+	EnumStatDescriptionGameTable.ForeignKeys[1].RefTable = GamesTable
 	MatchPlayersTable.ForeignKeys[0].RefTable = MatchesTable
 	MatchPlayersTable.ForeignKeys[1].RefTable = PlayersTable
-	StatDescriptionGameTable.ForeignKeys[0].RefTable = StatDescriptionsTable
-	StatDescriptionGameTable.ForeignKeys[1].RefTable = GamesTable
+	NumericalStatDescriptionGameTable.ForeignKeys[0].RefTable = NumericalStatDescriptionsTable
+	NumericalStatDescriptionGameTable.ForeignKeys[1].RefTable = GamesTable
 	UserPlayersTable.ForeignKeys[0].RefTable = UsersTable
 	UserPlayersTable.ForeignKeys[1].RefTable = PlayersTable
 }

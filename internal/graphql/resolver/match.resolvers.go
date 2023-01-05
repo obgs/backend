@@ -5,7 +5,6 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -30,29 +29,35 @@ func (r *mutationResolver) CreateMatch(ctx context.Context, input model.CreateMa
 		return nil, err
 	}
 
-	stats := make([]*ent.StatisticCreate, len(input.Stats))
-
-	for i, stat := range input.Stats {
-		// check that the player is in the player list
-		playerIsPresent := false
-		for _, player := range input.PlayerIds {
-			if player.ID == stat.PlayerID.ID {
-				playerIsPresent = true
-				break
-			}
-		}
-		if !playerIsPresent {
-			return nil, fmt.Errorf("player %s is not in the player list", stat.PlayerID.ID)
+	numericalStats := make([]*ent.NumericalStatCreate, len(input.NumericalStats))
+	for i, stat := range input.NumericalStats {
+		err = checkThatPlayerIsPresent(stat.PlayerID, input.PlayerIds)
+		if err != nil {
+			return nil, err
 		}
 
-		stats[i] = client.Statistic.Create().
+		numericalStats[i] = client.NumericalStat.Create().
 			SetPlayerID(stat.PlayerID).
 			SetValue(stat.Value).
-			SetStatDescriptionID(stat.StatID).
+			SetNumericalStatDescriptionID(stat.StatID).
 			SetMatch(m)
 	}
 
-	_, err = client.Statistic.CreateBulk(stats...).Save(ctx)
+	enumStats := make([]*ent.EnumStatCreate, len(input.EnumStats))
+	for i, stat := range input.EnumStats {
+		err = checkThatPlayerIsPresent(stat.PlayerID, input.PlayerIds)
+		if err != nil {
+			return nil, err
+		}
+
+		enumStats[i] = client.EnumStat.Create().
+			SetPlayerID(stat.PlayerID).
+			SetEnumStatDescriptionID(stat.StatID).
+			SetValue(stat.Value).
+			SetMatch(m)
+	}
+
+	_, err = client.NumericalStat.CreateBulk(numericalStats...).Save(ctx)
 	if err != nil {
 		return nil, err
 	}

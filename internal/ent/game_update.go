@@ -10,12 +10,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -146,19 +147,34 @@ func (gu *GameUpdate) AddFavorites(g ...*GameFavorite) *GameUpdate {
 	return gu.AddFavoriteIDs(ids...)
 }
 
-// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by IDs.
-func (gu *GameUpdate) AddStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
-	gu.mutation.AddStatDescriptionIDs(ids...)
+// AddNumericalStatDescriptionIDs adds the "numerical_stat_descriptions" edge to the NumericalStatDescription entity by IDs.
+func (gu *GameUpdate) AddNumericalStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.AddNumericalStatDescriptionIDs(ids...)
 	return gu
 }
 
-// AddStatDescriptions adds the "stat_descriptions" edges to the StatDescription entity.
-func (gu *GameUpdate) AddStatDescriptions(s ...*StatDescription) *GameUpdate {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddNumericalStatDescriptions adds the "numerical_stat_descriptions" edges to the NumericalStatDescription entity.
+func (gu *GameUpdate) AddNumericalStatDescriptions(n ...*NumericalStatDescription) *GameUpdate {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return gu.AddStatDescriptionIDs(ids...)
+	return gu.AddNumericalStatDescriptionIDs(ids...)
+}
+
+// AddEnumStatDescriptionIDs adds the "enum_stat_descriptions" edge to the EnumStatDescription entity by IDs.
+func (gu *GameUpdate) AddEnumStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.AddEnumStatDescriptionIDs(ids...)
+	return gu
+}
+
+// AddEnumStatDescriptions adds the "enum_stat_descriptions" edges to the EnumStatDescription entity.
+func (gu *GameUpdate) AddEnumStatDescriptions(e ...*EnumStatDescription) *GameUpdate {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return gu.AddEnumStatDescriptionIDs(ids...)
 }
 
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
@@ -208,25 +224,46 @@ func (gu *GameUpdate) RemoveFavorites(g ...*GameFavorite) *GameUpdate {
 	return gu.RemoveFavoriteIDs(ids...)
 }
 
-// ClearStatDescriptions clears all "stat_descriptions" edges to the StatDescription entity.
-func (gu *GameUpdate) ClearStatDescriptions() *GameUpdate {
-	gu.mutation.ClearStatDescriptions()
+// ClearNumericalStatDescriptions clears all "numerical_stat_descriptions" edges to the NumericalStatDescription entity.
+func (gu *GameUpdate) ClearNumericalStatDescriptions() *GameUpdate {
+	gu.mutation.ClearNumericalStatDescriptions()
 	return gu
 }
 
-// RemoveStatDescriptionIDs removes the "stat_descriptions" edge to StatDescription entities by IDs.
-func (gu *GameUpdate) RemoveStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
-	gu.mutation.RemoveStatDescriptionIDs(ids...)
+// RemoveNumericalStatDescriptionIDs removes the "numerical_stat_descriptions" edge to NumericalStatDescription entities by IDs.
+func (gu *GameUpdate) RemoveNumericalStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.RemoveNumericalStatDescriptionIDs(ids...)
 	return gu
 }
 
-// RemoveStatDescriptions removes "stat_descriptions" edges to StatDescription entities.
-func (gu *GameUpdate) RemoveStatDescriptions(s ...*StatDescription) *GameUpdate {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// RemoveNumericalStatDescriptions removes "numerical_stat_descriptions" edges to NumericalStatDescription entities.
+func (gu *GameUpdate) RemoveNumericalStatDescriptions(n ...*NumericalStatDescription) *GameUpdate {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return gu.RemoveStatDescriptionIDs(ids...)
+	return gu.RemoveNumericalStatDescriptionIDs(ids...)
+}
+
+// ClearEnumStatDescriptions clears all "enum_stat_descriptions" edges to the EnumStatDescription entity.
+func (gu *GameUpdate) ClearEnumStatDescriptions() *GameUpdate {
+	gu.mutation.ClearEnumStatDescriptions()
+	return gu
+}
+
+// RemoveEnumStatDescriptionIDs removes the "enum_stat_descriptions" edge to EnumStatDescription entities by IDs.
+func (gu *GameUpdate) RemoveEnumStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.RemoveEnumStatDescriptionIDs(ids...)
+	return gu
+}
+
+// RemoveEnumStatDescriptions removes "enum_stat_descriptions" edges to EnumStatDescription entities.
+func (gu *GameUpdate) RemoveEnumStatDescriptions(e ...*EnumStatDescription) *GameUpdate {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return gu.RemoveEnumStatDescriptionIDs(ids...)
 }
 
 // ClearMatches clears all "matches" edges to the Match entity.
@@ -457,33 +494,33 @@ func (gu *GameUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if gu.mutation.StatDescriptionsCleared() {
+	if gu.mutation.NumericalStatDescriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.NumericalStatDescriptionsTable,
+			Columns: game.NumericalStatDescriptionsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statdescription.FieldID,
+					Column: numericalstatdescription.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.RemovedStatDescriptionsIDs(); len(nodes) > 0 && !gu.mutation.StatDescriptionsCleared() {
+	if nodes := gu.mutation.RemovedNumericalStatDescriptionsIDs(); len(nodes) > 0 && !gu.mutation.NumericalStatDescriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.NumericalStatDescriptionsTable,
+			Columns: game.NumericalStatDescriptionsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statdescription.FieldID,
+					Column: numericalstatdescription.FieldID,
 				},
 			},
 		}
@@ -492,17 +529,71 @@ func (gu *GameUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.StatDescriptionsIDs(); len(nodes) > 0 {
+	if nodes := gu.mutation.NumericalStatDescriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.NumericalStatDescriptionsTable,
+			Columns: game.NumericalStatDescriptionsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statdescription.FieldID,
+					Column: numericalstatdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if gu.mutation.EnumStatDescriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.EnumStatDescriptionsTable,
+			Columns: game.EnumStatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstatdescription.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gu.mutation.RemovedEnumStatDescriptionsIDs(); len(nodes) > 0 && !gu.mutation.EnumStatDescriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.EnumStatDescriptionsTable,
+			Columns: game.EnumStatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstatdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gu.mutation.EnumStatDescriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.EnumStatDescriptionsTable,
+			Columns: game.EnumStatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstatdescription.FieldID,
 				},
 			},
 		}
@@ -698,19 +789,34 @@ func (guo *GameUpdateOne) AddFavorites(g ...*GameFavorite) *GameUpdateOne {
 	return guo.AddFavoriteIDs(ids...)
 }
 
-// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by IDs.
-func (guo *GameUpdateOne) AddStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
-	guo.mutation.AddStatDescriptionIDs(ids...)
+// AddNumericalStatDescriptionIDs adds the "numerical_stat_descriptions" edge to the NumericalStatDescription entity by IDs.
+func (guo *GameUpdateOne) AddNumericalStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.AddNumericalStatDescriptionIDs(ids...)
 	return guo
 }
 
-// AddStatDescriptions adds the "stat_descriptions" edges to the StatDescription entity.
-func (guo *GameUpdateOne) AddStatDescriptions(s ...*StatDescription) *GameUpdateOne {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddNumericalStatDescriptions adds the "numerical_stat_descriptions" edges to the NumericalStatDescription entity.
+func (guo *GameUpdateOne) AddNumericalStatDescriptions(n ...*NumericalStatDescription) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return guo.AddStatDescriptionIDs(ids...)
+	return guo.AddNumericalStatDescriptionIDs(ids...)
+}
+
+// AddEnumStatDescriptionIDs adds the "enum_stat_descriptions" edge to the EnumStatDescription entity by IDs.
+func (guo *GameUpdateOne) AddEnumStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.AddEnumStatDescriptionIDs(ids...)
+	return guo
+}
+
+// AddEnumStatDescriptions adds the "enum_stat_descriptions" edges to the EnumStatDescription entity.
+func (guo *GameUpdateOne) AddEnumStatDescriptions(e ...*EnumStatDescription) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return guo.AddEnumStatDescriptionIDs(ids...)
 }
 
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
@@ -760,25 +866,46 @@ func (guo *GameUpdateOne) RemoveFavorites(g ...*GameFavorite) *GameUpdateOne {
 	return guo.RemoveFavoriteIDs(ids...)
 }
 
-// ClearStatDescriptions clears all "stat_descriptions" edges to the StatDescription entity.
-func (guo *GameUpdateOne) ClearStatDescriptions() *GameUpdateOne {
-	guo.mutation.ClearStatDescriptions()
+// ClearNumericalStatDescriptions clears all "numerical_stat_descriptions" edges to the NumericalStatDescription entity.
+func (guo *GameUpdateOne) ClearNumericalStatDescriptions() *GameUpdateOne {
+	guo.mutation.ClearNumericalStatDescriptions()
 	return guo
 }
 
-// RemoveStatDescriptionIDs removes the "stat_descriptions" edge to StatDescription entities by IDs.
-func (guo *GameUpdateOne) RemoveStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
-	guo.mutation.RemoveStatDescriptionIDs(ids...)
+// RemoveNumericalStatDescriptionIDs removes the "numerical_stat_descriptions" edge to NumericalStatDescription entities by IDs.
+func (guo *GameUpdateOne) RemoveNumericalStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.RemoveNumericalStatDescriptionIDs(ids...)
 	return guo
 }
 
-// RemoveStatDescriptions removes "stat_descriptions" edges to StatDescription entities.
-func (guo *GameUpdateOne) RemoveStatDescriptions(s ...*StatDescription) *GameUpdateOne {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// RemoveNumericalStatDescriptions removes "numerical_stat_descriptions" edges to NumericalStatDescription entities.
+func (guo *GameUpdateOne) RemoveNumericalStatDescriptions(n ...*NumericalStatDescription) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return guo.RemoveStatDescriptionIDs(ids...)
+	return guo.RemoveNumericalStatDescriptionIDs(ids...)
+}
+
+// ClearEnumStatDescriptions clears all "enum_stat_descriptions" edges to the EnumStatDescription entity.
+func (guo *GameUpdateOne) ClearEnumStatDescriptions() *GameUpdateOne {
+	guo.mutation.ClearEnumStatDescriptions()
+	return guo
+}
+
+// RemoveEnumStatDescriptionIDs removes the "enum_stat_descriptions" edge to EnumStatDescription entities by IDs.
+func (guo *GameUpdateOne) RemoveEnumStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.RemoveEnumStatDescriptionIDs(ids...)
+	return guo
+}
+
+// RemoveEnumStatDescriptions removes "enum_stat_descriptions" edges to EnumStatDescription entities.
+func (guo *GameUpdateOne) RemoveEnumStatDescriptions(e ...*EnumStatDescription) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return guo.RemoveEnumStatDescriptionIDs(ids...)
 }
 
 // ClearMatches clears all "matches" edges to the Match entity.
@@ -1039,33 +1166,33 @@ func (guo *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if guo.mutation.StatDescriptionsCleared() {
+	if guo.mutation.NumericalStatDescriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.NumericalStatDescriptionsTable,
+			Columns: game.NumericalStatDescriptionsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statdescription.FieldID,
+					Column: numericalstatdescription.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.RemovedStatDescriptionsIDs(); len(nodes) > 0 && !guo.mutation.StatDescriptionsCleared() {
+	if nodes := guo.mutation.RemovedNumericalStatDescriptionsIDs(); len(nodes) > 0 && !guo.mutation.NumericalStatDescriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.NumericalStatDescriptionsTable,
+			Columns: game.NumericalStatDescriptionsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statdescription.FieldID,
+					Column: numericalstatdescription.FieldID,
 				},
 			},
 		}
@@ -1074,17 +1201,71 @@ func (guo *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.StatDescriptionsIDs(); len(nodes) > 0 {
+	if nodes := guo.mutation.NumericalStatDescriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.NumericalStatDescriptionsTable,
+			Columns: game.NumericalStatDescriptionsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statdescription.FieldID,
+					Column: numericalstatdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if guo.mutation.EnumStatDescriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.EnumStatDescriptionsTable,
+			Columns: game.EnumStatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstatdescription.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := guo.mutation.RemovedEnumStatDescriptionsIDs(); len(nodes) > 0 && !guo.mutation.EnumStatDescriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.EnumStatDescriptionsTable,
+			Columns: game.EnumStatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstatdescription.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := guo.mutation.EnumStatDescriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   game.EnumStatDescriptionsTable,
+			Columns: game.EnumStatDescriptionsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstatdescription.FieldID,
 				},
 			},
 		}

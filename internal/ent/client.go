@@ -11,6 +11,8 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
@@ -18,11 +20,11 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstat"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstatdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -35,6 +37,10 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// EnumStat is the client for interacting with the EnumStat builders.
+	EnumStat *EnumStatClient
+	// EnumStatDescription is the client for interacting with the EnumStatDescription builders.
+	EnumStatDescription *EnumStatDescriptionClient
 	// Game is the client for interacting with the Game builders.
 	Game *GameClient
 	// GameFavorite is the client for interacting with the GameFavorite builders.
@@ -49,16 +55,16 @@ type Client struct {
 	GroupSettings *GroupSettingsClient
 	// Match is the client for interacting with the Match builders.
 	Match *MatchClient
+	// NumericalStat is the client for interacting with the NumericalStat builders.
+	NumericalStat *NumericalStatClient
+	// NumericalStatDescription is the client for interacting with the NumericalStatDescription builders.
+	NumericalStatDescription *NumericalStatDescriptionClient
 	// Player is the client for interacting with the Player builders.
 	Player *PlayerClient
 	// PlayerSupervisionRequest is the client for interacting with the PlayerSupervisionRequest builders.
 	PlayerSupervisionRequest *PlayerSupervisionRequestClient
 	// PlayerSupervisionRequestApproval is the client for interacting with the PlayerSupervisionRequestApproval builders.
 	PlayerSupervisionRequestApproval *PlayerSupervisionRequestApprovalClient
-	// StatDescription is the client for interacting with the StatDescription builders.
-	StatDescription *StatDescriptionClient
-	// Statistic is the client for interacting with the Statistic builders.
-	Statistic *StatisticClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -74,6 +80,8 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.EnumStat = NewEnumStatClient(c.config)
+	c.EnumStatDescription = NewEnumStatDescriptionClient(c.config)
 	c.Game = NewGameClient(c.config)
 	c.GameFavorite = NewGameFavoriteClient(c.config)
 	c.Group = NewGroupClient(c.config)
@@ -81,11 +89,11 @@ func (c *Client) init() {
 	c.GroupMembershipApplication = NewGroupMembershipApplicationClient(c.config)
 	c.GroupSettings = NewGroupSettingsClient(c.config)
 	c.Match = NewMatchClient(c.config)
+	c.NumericalStat = NewNumericalStatClient(c.config)
+	c.NumericalStatDescription = NewNumericalStatDescriptionClient(c.config)
 	c.Player = NewPlayerClient(c.config)
 	c.PlayerSupervisionRequest = NewPlayerSupervisionRequestClient(c.config)
 	c.PlayerSupervisionRequestApproval = NewPlayerSupervisionRequestApprovalClient(c.config)
-	c.StatDescription = NewStatDescriptionClient(c.config)
-	c.Statistic = NewStatisticClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -120,6 +128,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                              ctx,
 		config:                           cfg,
+		EnumStat:                         NewEnumStatClient(cfg),
+		EnumStatDescription:              NewEnumStatDescriptionClient(cfg),
 		Game:                             NewGameClient(cfg),
 		GameFavorite:                     NewGameFavoriteClient(cfg),
 		Group:                            NewGroupClient(cfg),
@@ -127,11 +137,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
 		GroupSettings:                    NewGroupSettingsClient(cfg),
 		Match:                            NewMatchClient(cfg),
+		NumericalStat:                    NewNumericalStatClient(cfg),
+		NumericalStatDescription:         NewNumericalStatDescriptionClient(cfg),
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
 		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
-		StatDescription:                  NewStatDescriptionClient(cfg),
-		Statistic:                        NewStatisticClient(cfg),
 		User:                             NewUserClient(cfg),
 	}, nil
 }
@@ -152,6 +162,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                              ctx,
 		config:                           cfg,
+		EnumStat:                         NewEnumStatClient(cfg),
+		EnumStatDescription:              NewEnumStatDescriptionClient(cfg),
 		Game:                             NewGameClient(cfg),
 		GameFavorite:                     NewGameFavoriteClient(cfg),
 		Group:                            NewGroupClient(cfg),
@@ -159,11 +171,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
 		GroupSettings:                    NewGroupSettingsClient(cfg),
 		Match:                            NewMatchClient(cfg),
+		NumericalStat:                    NewNumericalStatClient(cfg),
+		NumericalStatDescription:         NewNumericalStatDescriptionClient(cfg),
 		Player:                           NewPlayerClient(cfg),
 		PlayerSupervisionRequest:         NewPlayerSupervisionRequestClient(cfg),
 		PlayerSupervisionRequestApproval: NewPlayerSupervisionRequestApprovalClient(cfg),
-		StatDescription:                  NewStatDescriptionClient(cfg),
-		Statistic:                        NewStatisticClient(cfg),
 		User:                             NewUserClient(cfg),
 	}, nil
 }
@@ -171,7 +183,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Game.
+//		EnumStat.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -193,6 +205,8 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.EnumStat.Use(hooks...)
+	c.EnumStatDescription.Use(hooks...)
 	c.Game.Use(hooks...)
 	c.GameFavorite.Use(hooks...)
 	c.Group.Use(hooks...)
@@ -200,12 +214,272 @@ func (c *Client) Use(hooks ...Hook) {
 	c.GroupMembershipApplication.Use(hooks...)
 	c.GroupSettings.Use(hooks...)
 	c.Match.Use(hooks...)
+	c.NumericalStat.Use(hooks...)
+	c.NumericalStatDescription.Use(hooks...)
 	c.Player.Use(hooks...)
 	c.PlayerSupervisionRequest.Use(hooks...)
 	c.PlayerSupervisionRequestApproval.Use(hooks...)
-	c.StatDescription.Use(hooks...)
-	c.Statistic.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// EnumStatClient is a client for the EnumStat schema.
+type EnumStatClient struct {
+	config
+}
+
+// NewEnumStatClient returns a client for the EnumStat from the given config.
+func NewEnumStatClient(c config) *EnumStatClient {
+	return &EnumStatClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `enumstat.Hooks(f(g(h())))`.
+func (c *EnumStatClient) Use(hooks ...Hook) {
+	c.hooks.EnumStat = append(c.hooks.EnumStat, hooks...)
+}
+
+// Create returns a builder for creating a EnumStat entity.
+func (c *EnumStatClient) Create() *EnumStatCreate {
+	mutation := newEnumStatMutation(c.config, OpCreate)
+	return &EnumStatCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of EnumStat entities.
+func (c *EnumStatClient) CreateBulk(builders ...*EnumStatCreate) *EnumStatCreateBulk {
+	return &EnumStatCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for EnumStat.
+func (c *EnumStatClient) Update() *EnumStatUpdate {
+	mutation := newEnumStatMutation(c.config, OpUpdate)
+	return &EnumStatUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EnumStatClient) UpdateOne(es *EnumStat) *EnumStatUpdateOne {
+	mutation := newEnumStatMutation(c.config, OpUpdateOne, withEnumStat(es))
+	return &EnumStatUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EnumStatClient) UpdateOneID(id guidgql.GUID) *EnumStatUpdateOne {
+	mutation := newEnumStatMutation(c.config, OpUpdateOne, withEnumStatID(id))
+	return &EnumStatUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for EnumStat.
+func (c *EnumStatClient) Delete() *EnumStatDelete {
+	mutation := newEnumStatMutation(c.config, OpDelete)
+	return &EnumStatDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EnumStatClient) DeleteOne(es *EnumStat) *EnumStatDeleteOne {
+	return c.DeleteOneID(es.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EnumStatClient) DeleteOneID(id guidgql.GUID) *EnumStatDeleteOne {
+	builder := c.Delete().Where(enumstat.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EnumStatDeleteOne{builder}
+}
+
+// Query returns a query builder for EnumStat.
+func (c *EnumStatClient) Query() *EnumStatQuery {
+	return &EnumStatQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a EnumStat entity by its id.
+func (c *EnumStatClient) Get(ctx context.Context, id guidgql.GUID) (*EnumStat, error) {
+	return c.Query().Where(enumstat.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EnumStatClient) GetX(ctx context.Context, id guidgql.GUID) *EnumStat {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryMatch queries the match edge of a EnumStat.
+func (c *EnumStatClient) QueryMatch(es *EnumStat) *MatchQuery {
+	query := &MatchQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := es.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(enumstat.Table, enumstat.FieldID, id),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, enumstat.MatchTable, enumstat.MatchColumn),
+		)
+		fromV = sqlgraph.Neighbors(es.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEnumStatDescription queries the enum_stat_description edge of a EnumStat.
+func (c *EnumStatClient) QueryEnumStatDescription(es *EnumStat) *EnumStatDescriptionQuery {
+	query := &EnumStatDescriptionQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := es.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(enumstat.Table, enumstat.FieldID, id),
+			sqlgraph.To(enumstatdescription.Table, enumstatdescription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, enumstat.EnumStatDescriptionTable, enumstat.EnumStatDescriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(es.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPlayer queries the player edge of a EnumStat.
+func (c *EnumStatClient) QueryPlayer(es *EnumStat) *PlayerQuery {
+	query := &PlayerQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := es.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(enumstat.Table, enumstat.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, enumstat.PlayerTable, enumstat.PlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(es.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EnumStatClient) Hooks() []Hook {
+	return c.hooks.EnumStat
+}
+
+// EnumStatDescriptionClient is a client for the EnumStatDescription schema.
+type EnumStatDescriptionClient struct {
+	config
+}
+
+// NewEnumStatDescriptionClient returns a client for the EnumStatDescription from the given config.
+func NewEnumStatDescriptionClient(c config) *EnumStatDescriptionClient {
+	return &EnumStatDescriptionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `enumstatdescription.Hooks(f(g(h())))`.
+func (c *EnumStatDescriptionClient) Use(hooks ...Hook) {
+	c.hooks.EnumStatDescription = append(c.hooks.EnumStatDescription, hooks...)
+}
+
+// Create returns a builder for creating a EnumStatDescription entity.
+func (c *EnumStatDescriptionClient) Create() *EnumStatDescriptionCreate {
+	mutation := newEnumStatDescriptionMutation(c.config, OpCreate)
+	return &EnumStatDescriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of EnumStatDescription entities.
+func (c *EnumStatDescriptionClient) CreateBulk(builders ...*EnumStatDescriptionCreate) *EnumStatDescriptionCreateBulk {
+	return &EnumStatDescriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for EnumStatDescription.
+func (c *EnumStatDescriptionClient) Update() *EnumStatDescriptionUpdate {
+	mutation := newEnumStatDescriptionMutation(c.config, OpUpdate)
+	return &EnumStatDescriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EnumStatDescriptionClient) UpdateOne(esd *EnumStatDescription) *EnumStatDescriptionUpdateOne {
+	mutation := newEnumStatDescriptionMutation(c.config, OpUpdateOne, withEnumStatDescription(esd))
+	return &EnumStatDescriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EnumStatDescriptionClient) UpdateOneID(id guidgql.GUID) *EnumStatDescriptionUpdateOne {
+	mutation := newEnumStatDescriptionMutation(c.config, OpUpdateOne, withEnumStatDescriptionID(id))
+	return &EnumStatDescriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for EnumStatDescription.
+func (c *EnumStatDescriptionClient) Delete() *EnumStatDescriptionDelete {
+	mutation := newEnumStatDescriptionMutation(c.config, OpDelete)
+	return &EnumStatDescriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EnumStatDescriptionClient) DeleteOne(esd *EnumStatDescription) *EnumStatDescriptionDeleteOne {
+	return c.DeleteOneID(esd.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EnumStatDescriptionClient) DeleteOneID(id guidgql.GUID) *EnumStatDescriptionDeleteOne {
+	builder := c.Delete().Where(enumstatdescription.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EnumStatDescriptionDeleteOne{builder}
+}
+
+// Query returns a query builder for EnumStatDescription.
+func (c *EnumStatDescriptionClient) Query() *EnumStatDescriptionQuery {
+	return &EnumStatDescriptionQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a EnumStatDescription entity by its id.
+func (c *EnumStatDescriptionClient) Get(ctx context.Context, id guidgql.GUID) (*EnumStatDescription, error) {
+	return c.Query().Where(enumstatdescription.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EnumStatDescriptionClient) GetX(ctx context.Context, id guidgql.GUID) *EnumStatDescription {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a EnumStatDescription.
+func (c *EnumStatDescriptionClient) QueryGame(esd *EnumStatDescription) *GameQuery {
+	query := &GameQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := esd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(enumstatdescription.Table, enumstatdescription.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, enumstatdescription.GameTable, enumstatdescription.GamePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(esd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEnumStats queries the enum_stats edge of a EnumStatDescription.
+func (c *EnumStatDescriptionClient) QueryEnumStats(esd *EnumStatDescription) *EnumStatQuery {
+	query := &EnumStatQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := esd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(enumstatdescription.Table, enumstatdescription.FieldID, id),
+			sqlgraph.To(enumstat.Table, enumstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, enumstatdescription.EnumStatsTable, enumstatdescription.EnumStatsColumn),
+		)
+		fromV = sqlgraph.Neighbors(esd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EnumStatDescriptionClient) Hooks() []Hook {
+	return c.hooks.EnumStatDescription
 }
 
 // GameClient is a client for the Game schema.
@@ -325,15 +599,31 @@ func (c *GameClient) QueryFavorites(ga *Game) *GameFavoriteQuery {
 	return query
 }
 
-// QueryStatDescriptions queries the stat_descriptions edge of a Game.
-func (c *GameClient) QueryStatDescriptions(ga *Game) *StatDescriptionQuery {
-	query := &StatDescriptionQuery{config: c.config}
+// QueryNumericalStatDescriptions queries the numerical_stat_descriptions edge of a Game.
+func (c *GameClient) QueryNumericalStatDescriptions(ga *Game) *NumericalStatDescriptionQuery {
+	query := &NumericalStatDescriptionQuery{config: c.config}
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := ga.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(game.Table, game.FieldID, id),
-			sqlgraph.To(statdescription.Table, statdescription.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, game.StatDescriptionsTable, game.StatDescriptionsPrimaryKey...),
+			sqlgraph.To(numericalstatdescription.Table, numericalstatdescription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, game.NumericalStatDescriptionsTable, game.NumericalStatDescriptionsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEnumStatDescriptions queries the enum_stat_descriptions edge of a Game.
+func (c *GameClient) QueryEnumStatDescriptions(ga *Game) *EnumStatDescriptionQuery {
+	query := &EnumStatDescriptionQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ga.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(game.Table, game.FieldID, id),
+			sqlgraph.To(enumstatdescription.Table, enumstatdescription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, game.EnumStatDescriptionsTable, game.EnumStatDescriptionsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
 		return fromV, nil
@@ -1089,15 +1379,31 @@ func (c *MatchClient) QueryPlayers(m *Match) *PlayerQuery {
 	return query
 }
 
-// QueryStats queries the stats edge of a Match.
-func (c *MatchClient) QueryStats(m *Match) *StatisticQuery {
-	query := &StatisticQuery{config: c.config}
+// QueryNumericalStats queries the numerical_stats edge of a Match.
+func (c *MatchClient) QueryNumericalStats(m *Match) *NumericalStatQuery {
+	query := &NumericalStatQuery{config: c.config}
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(match.Table, match.FieldID, id),
-			sqlgraph.To(statistic.Table, statistic.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, match.StatsTable, match.StatsColumn),
+			sqlgraph.To(numericalstat.Table, numericalstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, match.NumericalStatsTable, match.NumericalStatsColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEnumStats queries the enum_stats edge of a Match.
+func (c *MatchClient) QueryEnumStats(m *Match) *EnumStatQuery {
+	query := &EnumStatQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(match.Table, match.FieldID, id),
+			sqlgraph.To(enumstat.Table, enumstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, match.EnumStatsTable, match.EnumStatsColumn),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil
@@ -1108,6 +1414,266 @@ func (c *MatchClient) QueryStats(m *Match) *StatisticQuery {
 // Hooks returns the client hooks.
 func (c *MatchClient) Hooks() []Hook {
 	return c.hooks.Match
+}
+
+// NumericalStatClient is a client for the NumericalStat schema.
+type NumericalStatClient struct {
+	config
+}
+
+// NewNumericalStatClient returns a client for the NumericalStat from the given config.
+func NewNumericalStatClient(c config) *NumericalStatClient {
+	return &NumericalStatClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `numericalstat.Hooks(f(g(h())))`.
+func (c *NumericalStatClient) Use(hooks ...Hook) {
+	c.hooks.NumericalStat = append(c.hooks.NumericalStat, hooks...)
+}
+
+// Create returns a builder for creating a NumericalStat entity.
+func (c *NumericalStatClient) Create() *NumericalStatCreate {
+	mutation := newNumericalStatMutation(c.config, OpCreate)
+	return &NumericalStatCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of NumericalStat entities.
+func (c *NumericalStatClient) CreateBulk(builders ...*NumericalStatCreate) *NumericalStatCreateBulk {
+	return &NumericalStatCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for NumericalStat.
+func (c *NumericalStatClient) Update() *NumericalStatUpdate {
+	mutation := newNumericalStatMutation(c.config, OpUpdate)
+	return &NumericalStatUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *NumericalStatClient) UpdateOne(ns *NumericalStat) *NumericalStatUpdateOne {
+	mutation := newNumericalStatMutation(c.config, OpUpdateOne, withNumericalStat(ns))
+	return &NumericalStatUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *NumericalStatClient) UpdateOneID(id guidgql.GUID) *NumericalStatUpdateOne {
+	mutation := newNumericalStatMutation(c.config, OpUpdateOne, withNumericalStatID(id))
+	return &NumericalStatUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for NumericalStat.
+func (c *NumericalStatClient) Delete() *NumericalStatDelete {
+	mutation := newNumericalStatMutation(c.config, OpDelete)
+	return &NumericalStatDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *NumericalStatClient) DeleteOne(ns *NumericalStat) *NumericalStatDeleteOne {
+	return c.DeleteOneID(ns.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *NumericalStatClient) DeleteOneID(id guidgql.GUID) *NumericalStatDeleteOne {
+	builder := c.Delete().Where(numericalstat.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &NumericalStatDeleteOne{builder}
+}
+
+// Query returns a query builder for NumericalStat.
+func (c *NumericalStatClient) Query() *NumericalStatQuery {
+	return &NumericalStatQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a NumericalStat entity by its id.
+func (c *NumericalStatClient) Get(ctx context.Context, id guidgql.GUID) (*NumericalStat, error) {
+	return c.Query().Where(numericalstat.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *NumericalStatClient) GetX(ctx context.Context, id guidgql.GUID) *NumericalStat {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryMatch queries the match edge of a NumericalStat.
+func (c *NumericalStatClient) QueryMatch(ns *NumericalStat) *MatchQuery {
+	query := &MatchQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ns.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(numericalstat.Table, numericalstat.FieldID, id),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, numericalstat.MatchTable, numericalstat.MatchColumn),
+		)
+		fromV = sqlgraph.Neighbors(ns.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNumericalStatDescription queries the numerical_stat_description edge of a NumericalStat.
+func (c *NumericalStatClient) QueryNumericalStatDescription(ns *NumericalStat) *NumericalStatDescriptionQuery {
+	query := &NumericalStatDescriptionQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ns.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(numericalstat.Table, numericalstat.FieldID, id),
+			sqlgraph.To(numericalstatdescription.Table, numericalstatdescription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, numericalstat.NumericalStatDescriptionTable, numericalstat.NumericalStatDescriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(ns.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPlayer queries the player edge of a NumericalStat.
+func (c *NumericalStatClient) QueryPlayer(ns *NumericalStat) *PlayerQuery {
+	query := &PlayerQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ns.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(numericalstat.Table, numericalstat.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, numericalstat.PlayerTable, numericalstat.PlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(ns.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *NumericalStatClient) Hooks() []Hook {
+	return c.hooks.NumericalStat
+}
+
+// NumericalStatDescriptionClient is a client for the NumericalStatDescription schema.
+type NumericalStatDescriptionClient struct {
+	config
+}
+
+// NewNumericalStatDescriptionClient returns a client for the NumericalStatDescription from the given config.
+func NewNumericalStatDescriptionClient(c config) *NumericalStatDescriptionClient {
+	return &NumericalStatDescriptionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `numericalstatdescription.Hooks(f(g(h())))`.
+func (c *NumericalStatDescriptionClient) Use(hooks ...Hook) {
+	c.hooks.NumericalStatDescription = append(c.hooks.NumericalStatDescription, hooks...)
+}
+
+// Create returns a builder for creating a NumericalStatDescription entity.
+func (c *NumericalStatDescriptionClient) Create() *NumericalStatDescriptionCreate {
+	mutation := newNumericalStatDescriptionMutation(c.config, OpCreate)
+	return &NumericalStatDescriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of NumericalStatDescription entities.
+func (c *NumericalStatDescriptionClient) CreateBulk(builders ...*NumericalStatDescriptionCreate) *NumericalStatDescriptionCreateBulk {
+	return &NumericalStatDescriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for NumericalStatDescription.
+func (c *NumericalStatDescriptionClient) Update() *NumericalStatDescriptionUpdate {
+	mutation := newNumericalStatDescriptionMutation(c.config, OpUpdate)
+	return &NumericalStatDescriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *NumericalStatDescriptionClient) UpdateOne(nsd *NumericalStatDescription) *NumericalStatDescriptionUpdateOne {
+	mutation := newNumericalStatDescriptionMutation(c.config, OpUpdateOne, withNumericalStatDescription(nsd))
+	return &NumericalStatDescriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *NumericalStatDescriptionClient) UpdateOneID(id guidgql.GUID) *NumericalStatDescriptionUpdateOne {
+	mutation := newNumericalStatDescriptionMutation(c.config, OpUpdateOne, withNumericalStatDescriptionID(id))
+	return &NumericalStatDescriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for NumericalStatDescription.
+func (c *NumericalStatDescriptionClient) Delete() *NumericalStatDescriptionDelete {
+	mutation := newNumericalStatDescriptionMutation(c.config, OpDelete)
+	return &NumericalStatDescriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *NumericalStatDescriptionClient) DeleteOne(nsd *NumericalStatDescription) *NumericalStatDescriptionDeleteOne {
+	return c.DeleteOneID(nsd.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *NumericalStatDescriptionClient) DeleteOneID(id guidgql.GUID) *NumericalStatDescriptionDeleteOne {
+	builder := c.Delete().Where(numericalstatdescription.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &NumericalStatDescriptionDeleteOne{builder}
+}
+
+// Query returns a query builder for NumericalStatDescription.
+func (c *NumericalStatDescriptionClient) Query() *NumericalStatDescriptionQuery {
+	return &NumericalStatDescriptionQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a NumericalStatDescription entity by its id.
+func (c *NumericalStatDescriptionClient) Get(ctx context.Context, id guidgql.GUID) (*NumericalStatDescription, error) {
+	return c.Query().Where(numericalstatdescription.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *NumericalStatDescriptionClient) GetX(ctx context.Context, id guidgql.GUID) *NumericalStatDescription {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a NumericalStatDescription.
+func (c *NumericalStatDescriptionClient) QueryGame(nsd *NumericalStatDescription) *GameQuery {
+	query := &GameQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := nsd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(numericalstatdescription.Table, numericalstatdescription.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, numericalstatdescription.GameTable, numericalstatdescription.GamePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(nsd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNumericalStats queries the numerical_stats edge of a NumericalStatDescription.
+func (c *NumericalStatDescriptionClient) QueryNumericalStats(nsd *NumericalStatDescription) *NumericalStatQuery {
+	query := &NumericalStatQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := nsd.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(numericalstatdescription.Table, numericalstatdescription.FieldID, id),
+			sqlgraph.To(numericalstat.Table, numericalstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, numericalstatdescription.NumericalStatsTable, numericalstatdescription.NumericalStatsColumn),
+		)
+		fromV = sqlgraph.Neighbors(nsd.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *NumericalStatDescriptionClient) Hooks() []Hook {
+	return c.hooks.NumericalStatDescription
 }
 
 // PlayerClient is a client for the Player schema.
@@ -1259,15 +1825,31 @@ func (c *PlayerClient) QueryMatches(pl *Player) *MatchQuery {
 	return query
 }
 
-// QueryStats queries the stats edge of a Player.
-func (c *PlayerClient) QueryStats(pl *Player) *StatisticQuery {
-	query := &StatisticQuery{config: c.config}
+// QueryNumericalStats queries the numerical_stats edge of a Player.
+func (c *PlayerClient) QueryNumericalStats(pl *Player) *NumericalStatQuery {
+	query := &NumericalStatQuery{config: c.config}
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(player.Table, player.FieldID, id),
-			sqlgraph.To(statistic.Table, statistic.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, player.StatsTable, player.StatsColumn),
+			sqlgraph.To(numericalstat.Table, numericalstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.NumericalStatsTable, player.NumericalStatsColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEnumStats queries the enum_stats edge of a Player.
+func (c *PlayerClient) QueryEnumStats(pl *Player) *EnumStatQuery {
+	query := &EnumStatQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(enumstat.Table, enumstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.EnumStatsTable, player.EnumStatsColumn),
 		)
 		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
 		return fromV, nil
@@ -1538,266 +2120,6 @@ func (c *PlayerSupervisionRequestApprovalClient) QuerySupervisionRequest(psra *P
 // Hooks returns the client hooks.
 func (c *PlayerSupervisionRequestApprovalClient) Hooks() []Hook {
 	return c.hooks.PlayerSupervisionRequestApproval
-}
-
-// StatDescriptionClient is a client for the StatDescription schema.
-type StatDescriptionClient struct {
-	config
-}
-
-// NewStatDescriptionClient returns a client for the StatDescription from the given config.
-func NewStatDescriptionClient(c config) *StatDescriptionClient {
-	return &StatDescriptionClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `statdescription.Hooks(f(g(h())))`.
-func (c *StatDescriptionClient) Use(hooks ...Hook) {
-	c.hooks.StatDescription = append(c.hooks.StatDescription, hooks...)
-}
-
-// Create returns a builder for creating a StatDescription entity.
-func (c *StatDescriptionClient) Create() *StatDescriptionCreate {
-	mutation := newStatDescriptionMutation(c.config, OpCreate)
-	return &StatDescriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of StatDescription entities.
-func (c *StatDescriptionClient) CreateBulk(builders ...*StatDescriptionCreate) *StatDescriptionCreateBulk {
-	return &StatDescriptionCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for StatDescription.
-func (c *StatDescriptionClient) Update() *StatDescriptionUpdate {
-	mutation := newStatDescriptionMutation(c.config, OpUpdate)
-	return &StatDescriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *StatDescriptionClient) UpdateOne(sd *StatDescription) *StatDescriptionUpdateOne {
-	mutation := newStatDescriptionMutation(c.config, OpUpdateOne, withStatDescription(sd))
-	return &StatDescriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *StatDescriptionClient) UpdateOneID(id guidgql.GUID) *StatDescriptionUpdateOne {
-	mutation := newStatDescriptionMutation(c.config, OpUpdateOne, withStatDescriptionID(id))
-	return &StatDescriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for StatDescription.
-func (c *StatDescriptionClient) Delete() *StatDescriptionDelete {
-	mutation := newStatDescriptionMutation(c.config, OpDelete)
-	return &StatDescriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *StatDescriptionClient) DeleteOne(sd *StatDescription) *StatDescriptionDeleteOne {
-	return c.DeleteOneID(sd.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *StatDescriptionClient) DeleteOneID(id guidgql.GUID) *StatDescriptionDeleteOne {
-	builder := c.Delete().Where(statdescription.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &StatDescriptionDeleteOne{builder}
-}
-
-// Query returns a query builder for StatDescription.
-func (c *StatDescriptionClient) Query() *StatDescriptionQuery {
-	return &StatDescriptionQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a StatDescription entity by its id.
-func (c *StatDescriptionClient) Get(ctx context.Context, id guidgql.GUID) (*StatDescription, error) {
-	return c.Query().Where(statdescription.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *StatDescriptionClient) GetX(ctx context.Context, id guidgql.GUID) *StatDescription {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryGame queries the game edge of a StatDescription.
-func (c *StatDescriptionClient) QueryGame(sd *StatDescription) *GameQuery {
-	query := &GameQuery{config: c.config}
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := sd.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(statdescription.Table, statdescription.FieldID, id),
-			sqlgraph.To(game.Table, game.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, statdescription.GameTable, statdescription.GamePrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryStats queries the stats edge of a StatDescription.
-func (c *StatDescriptionClient) QueryStats(sd *StatDescription) *StatisticQuery {
-	query := &StatisticQuery{config: c.config}
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := sd.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(statdescription.Table, statdescription.FieldID, id),
-			sqlgraph.To(statistic.Table, statistic.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, statdescription.StatsTable, statdescription.StatsColumn),
-		)
-		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *StatDescriptionClient) Hooks() []Hook {
-	return c.hooks.StatDescription
-}
-
-// StatisticClient is a client for the Statistic schema.
-type StatisticClient struct {
-	config
-}
-
-// NewStatisticClient returns a client for the Statistic from the given config.
-func NewStatisticClient(c config) *StatisticClient {
-	return &StatisticClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `statistic.Hooks(f(g(h())))`.
-func (c *StatisticClient) Use(hooks ...Hook) {
-	c.hooks.Statistic = append(c.hooks.Statistic, hooks...)
-}
-
-// Create returns a builder for creating a Statistic entity.
-func (c *StatisticClient) Create() *StatisticCreate {
-	mutation := newStatisticMutation(c.config, OpCreate)
-	return &StatisticCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Statistic entities.
-func (c *StatisticClient) CreateBulk(builders ...*StatisticCreate) *StatisticCreateBulk {
-	return &StatisticCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Statistic.
-func (c *StatisticClient) Update() *StatisticUpdate {
-	mutation := newStatisticMutation(c.config, OpUpdate)
-	return &StatisticUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *StatisticClient) UpdateOne(s *Statistic) *StatisticUpdateOne {
-	mutation := newStatisticMutation(c.config, OpUpdateOne, withStatistic(s))
-	return &StatisticUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *StatisticClient) UpdateOneID(id guidgql.GUID) *StatisticUpdateOne {
-	mutation := newStatisticMutation(c.config, OpUpdateOne, withStatisticID(id))
-	return &StatisticUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Statistic.
-func (c *StatisticClient) Delete() *StatisticDelete {
-	mutation := newStatisticMutation(c.config, OpDelete)
-	return &StatisticDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *StatisticClient) DeleteOne(s *Statistic) *StatisticDeleteOne {
-	return c.DeleteOneID(s.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *StatisticClient) DeleteOneID(id guidgql.GUID) *StatisticDeleteOne {
-	builder := c.Delete().Where(statistic.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &StatisticDeleteOne{builder}
-}
-
-// Query returns a query builder for Statistic.
-func (c *StatisticClient) Query() *StatisticQuery {
-	return &StatisticQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a Statistic entity by its id.
-func (c *StatisticClient) Get(ctx context.Context, id guidgql.GUID) (*Statistic, error) {
-	return c.Query().Where(statistic.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *StatisticClient) GetX(ctx context.Context, id guidgql.GUID) *Statistic {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryMatch queries the match edge of a Statistic.
-func (c *StatisticClient) QueryMatch(s *Statistic) *MatchQuery {
-	query := &MatchQuery{config: c.config}
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := s.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(statistic.Table, statistic.FieldID, id),
-			sqlgraph.To(match.Table, match.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, statistic.MatchTable, statistic.MatchColumn),
-		)
-		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryStatDescription queries the stat_description edge of a Statistic.
-func (c *StatisticClient) QueryStatDescription(s *Statistic) *StatDescriptionQuery {
-	query := &StatDescriptionQuery{config: c.config}
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := s.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(statistic.Table, statistic.FieldID, id),
-			sqlgraph.To(statdescription.Table, statdescription.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, statistic.StatDescriptionTable, statistic.StatDescriptionColumn),
-		)
-		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryPlayer queries the player edge of a Statistic.
-func (c *StatisticClient) QueryPlayer(s *Statistic) *PlayerQuery {
-	query := &PlayerQuery{config: c.config}
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := s.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(statistic.Table, statistic.FieldID, id),
-			sqlgraph.To(player.Table, player.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, statistic.PlayerTable, statistic.PlayerColumn),
-		)
-		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *StatisticClient) Hooks() []Hook {
-	return c.hooks.Statistic
 }
 
 // UserClient is a client for the User schema.

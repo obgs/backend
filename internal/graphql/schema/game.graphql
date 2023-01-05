@@ -11,18 +11,15 @@ extend type Game {
   isFavorite: Boolean!
 }
 
-input EnumStatInput {
-  possibleValues: [String!]!
-}
-
-input StatDescriptionInput {
-  type: StatDescriptionStatType!
+input NumericalStatDescriptionInput {
   name: String!
   description: String
-  """
-  Possible values for this stat. Provide this only for enum type, otherwise an error will be thrown
-  """
-  enumStatInput: EnumStatInput
+}
+
+input EnumStatDescriptionInput {
+  name: String!
+  description: String
+  possibleValues: [String!]!
 }
 
 input CreateGameInput {
@@ -31,7 +28,8 @@ input CreateGameInput {
   maxPlayers: Int!
   description: String
   boardgamegeekURL: String
-  statDescriptions: [StatDescriptionInput!]!
+  numericalStatDescriptions: [NumericalStatDescriptionInput!]!
+  enumStatDescriptions: [EnumStatDescriptionInput!]!
 }
 
 extend type Mutation {

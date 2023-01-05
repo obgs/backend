@@ -11,11 +11,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstat"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstat"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -119,19 +120,34 @@ func (pc *PlayerCreate) AddMatches(m ...*Match) *PlayerCreate {
 	return pc.AddMatchIDs(ids...)
 }
 
-// AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
-func (pc *PlayerCreate) AddStatIDs(ids ...guidgql.GUID) *PlayerCreate {
-	pc.mutation.AddStatIDs(ids...)
+// AddNumericalStatIDs adds the "numerical_stats" edge to the NumericalStat entity by IDs.
+func (pc *PlayerCreate) AddNumericalStatIDs(ids ...guidgql.GUID) *PlayerCreate {
+	pc.mutation.AddNumericalStatIDs(ids...)
 	return pc
 }
 
-// AddStats adds the "stats" edges to the Statistic entity.
-func (pc *PlayerCreate) AddStats(s ...*Statistic) *PlayerCreate {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddNumericalStats adds the "numerical_stats" edges to the NumericalStat entity.
+func (pc *PlayerCreate) AddNumericalStats(n ...*NumericalStat) *PlayerCreate {
+	ids := make([]guidgql.GUID, len(n))
+	for i := range n {
+		ids[i] = n[i].ID
 	}
-	return pc.AddStatIDs(ids...)
+	return pc.AddNumericalStatIDs(ids...)
+}
+
+// AddEnumStatIDs adds the "enum_stats" edge to the EnumStat entity by IDs.
+func (pc *PlayerCreate) AddEnumStatIDs(ids ...guidgql.GUID) *PlayerCreate {
+	pc.mutation.AddEnumStatIDs(ids...)
+	return pc
+}
+
+// AddEnumStats adds the "enum_stats" edges to the EnumStat entity.
+func (pc *PlayerCreate) AddEnumStats(e ...*EnumStat) *PlayerCreate {
+	ids := make([]guidgql.GUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return pc.AddEnumStatIDs(ids...)
 }
 
 // Mutation returns the PlayerMutation object of the builder.
@@ -344,17 +360,36 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.StatsIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.NumericalStatsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   player.StatsTable,
-			Columns: []string{player.StatsColumn},
+			Table:   player.NumericalStatsTable,
+			Columns: []string{player.NumericalStatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
-					Column: statistic.FieldID,
+					Column: numericalstat.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.EnumStatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   player.EnumStatsTable,
+			Columns: []string{player.EnumStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: enumstat.FieldID,
 				},
 			},
 		}

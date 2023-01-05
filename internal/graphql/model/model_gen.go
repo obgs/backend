@@ -7,22 +7,23 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 )
 
 type CreateGameInput struct {
-	Name             string                  `json:"name"`
-	MinPlayers       int                     `json:"minPlayers"`
-	MaxPlayers       int                     `json:"maxPlayers"`
-	Description      *string                 `json:"description"`
-	BoardgamegeekURL *string                 `json:"boardgamegeekURL"`
-	StatDescriptions []*StatDescriptionInput `json:"statDescriptions"`
+	Name                      string                           `json:"name"`
+	MinPlayers                int                              `json:"minPlayers"`
+	MaxPlayers                int                              `json:"maxPlayers"`
+	Description               *string                          `json:"description"`
+	BoardgamegeekURL          *string                          `json:"boardgamegeekURL"`
+	NumericalStatDescriptions []*NumericalStatDescriptionInput `json:"numericalStatDescriptions"`
+	EnumStatDescriptions      []*EnumStatDescriptionInput      `json:"enumStatDescriptions"`
 }
 
 type CreateMatchInput struct {
-	GameID    guidgql.GUID    `json:"gameId"`
-	PlayerIds []*guidgql.GUID `json:"playerIds"`
-	Stats     []*StatInput    `json:"stats"`
+	GameID         guidgql.GUID          `json:"gameId"`
+	PlayerIds      []*guidgql.GUID       `json:"playerIds"`
+	NumericalStats []*NumericalStatInput `json:"numericalStats"`
+	EnumStats      []*EnumStatInput      `json:"enumStats"`
 }
 
 type CreateOrUpdateGroupInput struct {
@@ -37,8 +38,17 @@ type CreatePlayerInput struct {
 	Name string `json:"name"`
 }
 
-type EnumStatInput struct {
+type EnumStatDescriptionInput struct {
+	Name           string   `json:"name"`
+	Description    *string  `json:"description"`
 	PossibleValues []string `json:"possibleValues"`
+}
+
+type EnumStatInput struct {
+	// The StatDescription ID of the stat to be created
+	StatID   guidgql.GUID `json:"statId"`
+	Value    string       `json:"value"`
+	PlayerID guidgql.GUID `json:"playerId"`
 }
 
 type Favorites struct {
@@ -57,6 +67,18 @@ type GroupSettingsInput struct {
 	MinimumRoleToInvite *enums.Role              `json:"minimumRoleToInvite"`
 }
 
+type NumericalStatDescriptionInput struct {
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+}
+
+type NumericalStatInput struct {
+	// The StatDescription ID of the stat to be created
+	StatID   guidgql.GUID `json:"statId"`
+	Value    float64      `json:"value"`
+	PlayerID guidgql.GUID `json:"playerId"`
+}
+
 type RequestPlayerSupervisionInput struct {
 	PlayerID guidgql.GUID `json:"playerId"`
 	Message  *string      `json:"message"`
@@ -65,19 +87,4 @@ type RequestPlayerSupervisionInput struct {
 type ResolvePlayerSupervisionRequestInput struct {
 	RequestID guidgql.GUID `json:"requestId"`
 	Approved  bool         `json:"approved"`
-}
-
-type StatDescriptionInput struct {
-	Type        stat.StatType `json:"type"`
-	Name        string        `json:"name"`
-	Description *string       `json:"description"`
-	// Possible values for this stat. Provide this only for enum type, otherwise an error will be thrown
-	EnumStatInput *EnumStatInput `json:"enumStatInput"`
-}
-
-type StatInput struct {
-	// The StatDescription ID of the stat to be created
-	StatID   guidgql.GUID `json:"statId"`
-	Value    string       `json:"value"`
-	PlayerID guidgql.GUID `json:"playerId"`
 }

@@ -31,7 +31,10 @@ func (Player) Edges() []ent.Edge {
 		edge.From("matches", Match.Type).Ref("players").Annotations(
 			entgql.Skip(entgql.SkipWhereInput),
 		),
-		edge.To("stats", Statistic.Type).Annotations(
+		edge.To("numerical_stats", NumericalStat.Type).Annotations(
+			entgql.Skip(entgql.SkipAll),
+		),
+		edge.To("enum_stats", EnumStat.Type).Annotations(
 			entgql.Skip(entgql.SkipAll),
 		),
 	}

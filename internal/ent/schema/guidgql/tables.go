@@ -13,9 +13,11 @@ const (
 	GroupSettings
 	Game
 	GameFavorites
-	StatDescription
+	NumericalStatDescription
+	EnumStatDescription
 	Match
-	Statistic
+	NumericalStat
+	EnumStat
 )
 
 var TableNames = map[Table]string{
@@ -29,7 +31,9 @@ var TableNames = map[Table]string{
 	GroupSettings:                    "group_settings",
 	Game:                             "games",
 	GameFavorites:                    "game_favorites",
-	StatDescription:                  "stat_descriptions",
+	NumericalStatDescription:         "numerical_stat_descriptions",
+	EnumStatDescription:              "enum_stat_descriptions",
 	Match:                            "matches",
-	Statistic:                        "statistics",
+	NumericalStat:                    "numerical_stats",
+	EnumStat:                         "enum_stats",
 }

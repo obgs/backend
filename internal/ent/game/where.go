@@ -624,25 +624,53 @@ func HasFavoritesWith(preds ...predicate.GameFavorite) predicate.Game {
 	})
 }
 
-// HasStatDescriptions applies the HasEdge predicate on the "stat_descriptions" edge.
-func HasStatDescriptions() predicate.Game {
+// HasNumericalStatDescriptions applies the HasEdge predicate on the "numerical_stat_descriptions" edge.
+func HasNumericalStatDescriptions() predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatDescriptionsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, StatDescriptionsTable, StatDescriptionsPrimaryKey...),
+			sqlgraph.To(NumericalStatDescriptionsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, NumericalStatDescriptionsTable, NumericalStatDescriptionsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasStatDescriptionsWith applies the HasEdge predicate on the "stat_descriptions" edge with a given conditions (other predicates).
-func HasStatDescriptionsWith(preds ...predicate.StatDescription) predicate.Game {
+// HasNumericalStatDescriptionsWith applies the HasEdge predicate on the "numerical_stat_descriptions" edge with a given conditions (other predicates).
+func HasNumericalStatDescriptionsWith(preds ...predicate.NumericalStatDescription) predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatDescriptionsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, StatDescriptionsTable, StatDescriptionsPrimaryKey...),
+			sqlgraph.To(NumericalStatDescriptionsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, NumericalStatDescriptionsTable, NumericalStatDescriptionsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEnumStatDescriptions applies the HasEdge predicate on the "enum_stat_descriptions" edge.
+func HasEnumStatDescriptions() predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(EnumStatDescriptionsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, EnumStatDescriptionsTable, EnumStatDescriptionsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEnumStatDescriptionsWith applies the HasEdge predicate on the "enum_stat_descriptions" edge with a given conditions (other predicates).
+func HasEnumStatDescriptionsWith(preds ...predicate.EnumStatDescription) predicate.Game {
+	return predicate.Game(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(EnumStatDescriptionsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, EnumStatDescriptionsTable, EnumStatDescriptionsPrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

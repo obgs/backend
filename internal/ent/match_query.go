@@ -11,31 +11,34 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/open-boardgame-stats/backend/internal/ent/enumstat"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/numericalstat"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 )
 
 // MatchQuery is the builder for querying Match entities.
 type MatchQuery struct {
 	config
-	limit            *int
-	offset           *int
-	unique           *bool
-	order            []OrderFunc
-	fields           []string
-	predicates       []predicate.Match
-	withGame         *GameQuery
-	withPlayers      *PlayerQuery
-	withStats        *StatisticQuery
-	withFKs          bool
-	modifiers        []func(*sql.Selector)
-	loadTotal        []func(context.Context, []*Match) error
-	withNamedPlayers map[string]*PlayerQuery
-	withNamedStats   map[string]*StatisticQuery
+	limit                   *int
+	offset                  *int
+	unique                  *bool
+	order                   []OrderFunc
+	fields                  []string
+	predicates              []predicate.Match
+	withGame                *GameQuery
+	withPlayers             *PlayerQuery
+	withNumericalStats      *NumericalStatQuery
+	withEnumStats           *EnumStatQuery
+	withFKs                 bool
+	modifiers               []func(*sql.Selector)
+	loadTotal               []func(context.Context, []*Match) error
+	withNamedPlayers        map[string]*PlayerQuery
+	withNamedNumericalStats map[string]*NumericalStatQuery
+	withNamedEnumStats      map[string]*EnumStatQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -116,9 +119,9 @@ func (mq *MatchQuery) QueryPlayers() *PlayerQuery {
 	return query
 }
 
-// QueryStats chains the current query on the "stats" edge.
-func (mq *MatchQuery) QueryStats() *StatisticQuery {
-	query := &StatisticQuery{config: mq.config}
+// QueryNumericalStats chains the current query on the "numerical_stats" edge.
+func (mq *MatchQuery) QueryNumericalStats() *NumericalStatQuery {
+	query := &NumericalStatQuery{config: mq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := mq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -129,8 +132,30 @@ func (mq *MatchQuery) QueryStats() *StatisticQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(match.Table, match.FieldID, selector),
-			sqlgraph.To(statistic.Table, statistic.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, match.StatsTable, match.StatsColumn),
+			sqlgraph.To(numericalstat.Table, numericalstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, match.NumericalStatsTable, match.NumericalStatsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEnumStats chains the current query on the "enum_stats" edge.
+func (mq *MatchQuery) QueryEnumStats() *EnumStatQuery {
+	query := &EnumStatQuery{config: mq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(match.Table, match.FieldID, selector),
+			sqlgraph.To(enumstat.Table, enumstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, match.EnumStatsTable, match.EnumStatsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
 		return fromU, nil
@@ -314,14 +339,15 @@ func (mq *MatchQuery) Clone() *MatchQuery {
 		return nil
 	}
 	return &MatchQuery{
-		config:      mq.config,
-		limit:       mq.limit,
-		offset:      mq.offset,
-		order:       append([]OrderFunc{}, mq.order...),
-		predicates:  append([]predicate.Match{}, mq.predicates...),
-		withGame:    mq.withGame.Clone(),
-		withPlayers: mq.withPlayers.Clone(),
-		withStats:   mq.withStats.Clone(),
+		config:             mq.config,
+		limit:              mq.limit,
+		offset:             mq.offset,
+		order:              append([]OrderFunc{}, mq.order...),
+		predicates:         append([]predicate.Match{}, mq.predicates...),
+		withGame:           mq.withGame.Clone(),
+		withPlayers:        mq.withPlayers.Clone(),
+		withNumericalStats: mq.withNumericalStats.Clone(),
+		withEnumStats:      mq.withEnumStats.Clone(),
 		// clone intermediate query.
 		sql:    mq.sql.Clone(),
 		path:   mq.path,
@@ -351,14 +377,25 @@ func (mq *MatchQuery) WithPlayers(opts ...func(*PlayerQuery)) *MatchQuery {
 	return mq
 }
 
-// WithStats tells the query-builder to eager-load the nodes that are connected to
-// the "stats" edge. The optional arguments are used to configure the query builder of the edge.
-func (mq *MatchQuery) WithStats(opts ...func(*StatisticQuery)) *MatchQuery {
-	query := &StatisticQuery{config: mq.config}
+// WithNumericalStats tells the query-builder to eager-load the nodes that are connected to
+// the "numerical_stats" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MatchQuery) WithNumericalStats(opts ...func(*NumericalStatQuery)) *MatchQuery {
+	query := &NumericalStatQuery{config: mq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	mq.withStats = query
+	mq.withNumericalStats = query
+	return mq
+}
+
+// WithEnumStats tells the query-builder to eager-load the nodes that are connected to
+// the "enum_stats" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MatchQuery) WithEnumStats(opts ...func(*EnumStatQuery)) *MatchQuery {
+	query := &EnumStatQuery{config: mq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withEnumStats = query
 	return mq
 }
 
@@ -414,10 +451,11 @@ func (mq *MatchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Match,
 		nodes       = []*Match{}
 		withFKs     = mq.withFKs
 		_spec       = mq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			mq.withGame != nil,
 			mq.withPlayers != nil,
-			mq.withStats != nil,
+			mq.withNumericalStats != nil,
+			mq.withEnumStats != nil,
 		}
 	)
 	if mq.withGame != nil {
@@ -460,10 +498,17 @@ func (mq *MatchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Match,
 			return nil, err
 		}
 	}
-	if query := mq.withStats; query != nil {
-		if err := mq.loadStats(ctx, query, nodes,
-			func(n *Match) { n.Edges.Stats = []*Statistic{} },
-			func(n *Match, e *Statistic) { n.Edges.Stats = append(n.Edges.Stats, e) }); err != nil {
+	if query := mq.withNumericalStats; query != nil {
+		if err := mq.loadNumericalStats(ctx, query, nodes,
+			func(n *Match) { n.Edges.NumericalStats = []*NumericalStat{} },
+			func(n *Match, e *NumericalStat) { n.Edges.NumericalStats = append(n.Edges.NumericalStats, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := mq.withEnumStats; query != nil {
+		if err := mq.loadEnumStats(ctx, query, nodes,
+			func(n *Match) { n.Edges.EnumStats = []*EnumStat{} },
+			func(n *Match, e *EnumStat) { n.Edges.EnumStats = append(n.Edges.EnumStats, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -474,10 +519,17 @@ func (mq *MatchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Match,
 			return nil, err
 		}
 	}
-	for name, query := range mq.withNamedStats {
-		if err := mq.loadStats(ctx, query, nodes,
-			func(n *Match) { n.appendNamedStats(name) },
-			func(n *Match, e *Statistic) { n.appendNamedStats(name, e) }); err != nil {
+	for name, query := range mq.withNamedNumericalStats {
+		if err := mq.loadNumericalStats(ctx, query, nodes,
+			func(n *Match) { n.appendNamedNumericalStats(name) },
+			func(n *Match, e *NumericalStat) { n.appendNamedNumericalStats(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range mq.withNamedEnumStats {
+		if err := mq.loadEnumStats(ctx, query, nodes,
+			func(n *Match) { n.appendNamedEnumStats(name) },
+			func(n *Match, e *EnumStat) { n.appendNamedEnumStats(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -576,7 +628,7 @@ func (mq *MatchQuery) loadPlayers(ctx context.Context, query *PlayerQuery, nodes
 	}
 	return nil
 }
-func (mq *MatchQuery) loadStats(ctx context.Context, query *StatisticQuery, nodes []*Match, init func(*Match), assign func(*Match, *Statistic)) error {
+func (mq *MatchQuery) loadNumericalStats(ctx context.Context, query *NumericalStatQuery, nodes []*Match, init func(*Match), assign func(*Match, *NumericalStat)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[guidgql.GUID]*Match)
 	for i := range nodes {
@@ -587,21 +639,52 @@ func (mq *MatchQuery) loadStats(ctx context.Context, query *StatisticQuery, node
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.Statistic(func(s *sql.Selector) {
-		s.Where(sql.InValues(match.StatsColumn, fks...))
+	query.Where(predicate.NumericalStat(func(s *sql.Selector) {
+		s.Where(sql.InValues(match.NumericalStatsColumn, fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.match_stats
+		fk := n.match_numerical_stats
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "match_stats" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "match_numerical_stats" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "match_stats" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "match_numerical_stats" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (mq *MatchQuery) loadEnumStats(ctx context.Context, query *EnumStatQuery, nodes []*Match, init func(*Match), assign func(*Match, *EnumStat)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[guidgql.GUID]*Match)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.EnumStat(func(s *sql.Selector) {
+		s.Where(sql.InValues(match.EnumStatsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.match_enum_stats
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "match_enum_stats" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "match_enum_stats" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -725,17 +808,31 @@ func (mq *MatchQuery) WithNamedPlayers(name string, opts ...func(*PlayerQuery)) 
 	return mq
 }
 
-// WithNamedStats tells the query-builder to eager-load the nodes that are connected to the "stats"
+// WithNamedNumericalStats tells the query-builder to eager-load the nodes that are connected to the "numerical_stats"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (mq *MatchQuery) WithNamedStats(name string, opts ...func(*StatisticQuery)) *MatchQuery {
-	query := &StatisticQuery{config: mq.config}
+func (mq *MatchQuery) WithNamedNumericalStats(name string, opts ...func(*NumericalStatQuery)) *MatchQuery {
+	query := &NumericalStatQuery{config: mq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	if mq.withNamedStats == nil {
-		mq.withNamedStats = make(map[string]*StatisticQuery)
+	if mq.withNamedNumericalStats == nil {
+		mq.withNamedNumericalStats = make(map[string]*NumericalStatQuery)
 	}
-	mq.withNamedStats[name] = query
+	mq.withNamedNumericalStats[name] = query
+	return mq
+}
+
+// WithNamedEnumStats tells the query-builder to eager-load the nodes that are connected to the "enum_stats"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (mq *MatchQuery) WithNamedEnumStats(name string, opts ...func(*EnumStatQuery)) *MatchQuery {
+	query := &EnumStatQuery{config: mq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	if mq.withNamedEnumStats == nil {
+		mq.withNamedEnumStats = make(map[string]*EnumStatQuery)
+	}
+	mq.withNamedEnumStats[name] = query
 	return mq
 }
 

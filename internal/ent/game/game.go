@@ -25,8 +25,10 @@ const (
 	EdgeAuthor = "author"
 	// EdgeFavorites holds the string denoting the favorites edge name in mutations.
 	EdgeFavorites = "favorites"
-	// EdgeStatDescriptions holds the string denoting the stat_descriptions edge name in mutations.
-	EdgeStatDescriptions = "stat_descriptions"
+	// EdgeNumericalStatDescriptions holds the string denoting the numerical_stat_descriptions edge name in mutations.
+	EdgeNumericalStatDescriptions = "numerical_stat_descriptions"
+	// EdgeEnumStatDescriptions holds the string denoting the enum_stat_descriptions edge name in mutations.
+	EdgeEnumStatDescriptions = "enum_stat_descriptions"
 	// EdgeMatches holds the string denoting the matches edge name in mutations.
 	EdgeMatches = "matches"
 	// Table holds the table name of the game in the database.
@@ -45,11 +47,16 @@ const (
 	FavoritesInverseTable = "game_favorites"
 	// FavoritesColumn is the table column denoting the favorites relation/edge.
 	FavoritesColumn = "game_favorites"
-	// StatDescriptionsTable is the table that holds the stat_descriptions relation/edge. The primary key declared below.
-	StatDescriptionsTable = "stat_description_game"
-	// StatDescriptionsInverseTable is the table name for the StatDescription entity.
-	// It exists in this package in order to avoid circular dependency with the "statdescription" package.
-	StatDescriptionsInverseTable = "stat_descriptions"
+	// NumericalStatDescriptionsTable is the table that holds the numerical_stat_descriptions relation/edge. The primary key declared below.
+	NumericalStatDescriptionsTable = "numerical_stat_description_game"
+	// NumericalStatDescriptionsInverseTable is the table name for the NumericalStatDescription entity.
+	// It exists in this package in order to avoid circular dependency with the "numericalstatdescription" package.
+	NumericalStatDescriptionsInverseTable = "numerical_stat_descriptions"
+	// EnumStatDescriptionsTable is the table that holds the enum_stat_descriptions relation/edge. The primary key declared below.
+	EnumStatDescriptionsTable = "enum_stat_description_game"
+	// EnumStatDescriptionsInverseTable is the table name for the EnumStatDescription entity.
+	// It exists in this package in order to avoid circular dependency with the "enumstatdescription" package.
+	EnumStatDescriptionsInverseTable = "enum_stat_descriptions"
 	// MatchesTable is the table that holds the matches relation/edge.
 	MatchesTable = "matches"
 	// MatchesInverseTable is the table name for the Match entity.
@@ -76,9 +83,12 @@ var ForeignKeys = []string{
 }
 
 var (
-	// StatDescriptionsPrimaryKey and StatDescriptionsColumn2 are the table columns denoting the
-	// primary key for the stat_descriptions relation (M2M).
-	StatDescriptionsPrimaryKey = []string{"stat_description_id", "game_id"}
+	// NumericalStatDescriptionsPrimaryKey and NumericalStatDescriptionsColumn2 are the table columns denoting the
+	// primary key for the numerical_stat_descriptions relation (M2M).
+	NumericalStatDescriptionsPrimaryKey = []string{"numerical_stat_description_id", "game_id"}
+	// EnumStatDescriptionsPrimaryKey and EnumStatDescriptionsColumn2 are the table columns denoting the
+	// primary key for the enum_stat_descriptions relation (M2M).
+	EnumStatDescriptionsPrimaryKey = []string{"enum_stat_description_id", "game_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
