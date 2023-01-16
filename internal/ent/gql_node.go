@@ -520,12 +520,12 @@ func (sd *StatDescription) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "description",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(sd.PossibleValues); err != nil {
+	if buf, err = json.Marshal(sd.Metadata); err != nil {
 		return nil, err
 	}
 	node.Fields[3] = &Field{
-		Type:  "[]string",
-		Name:  "possible_values",
+		Type:  "string",
+		Name:  "metadata",
 		Value: string(buf),
 	}
 	return node, nil

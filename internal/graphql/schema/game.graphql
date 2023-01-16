@@ -11,20 +11,6 @@ extend type Game {
   isFavorite: Boolean!
 }
 
-input EnumStatInput {
-  possibleValues: [String!]!
-}
-
-input StatDescriptionInput {
-  type: StatDescriptionStatType!
-  name: String!
-  description: String
-  """
-  Possible values for this stat. Provide this only for enum type, otherwise an error will be thrown
-  """
-  enumStatInput: EnumStatInput
-}
-
 input CreateGameInput {
   name: String!
   minPlayers: Int!

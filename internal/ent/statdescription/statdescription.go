@@ -21,8 +21,8 @@ const (
 	FieldName = "name"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
-	// FieldPossibleValues holds the string denoting the possible_values field in the database.
-	FieldPossibleValues = "possible_values"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
 	// EdgeGame holds the string denoting the game edge name in mutations.
 	EdgeGame = "game"
 	// EdgeStats holds the string denoting the stats edge name in mutations.
@@ -49,7 +49,7 @@ var Columns = []string{
 	FieldType,
 	FieldName,
 	FieldDescription,
-	FieldPossibleValues,
+	FieldMetadata,
 }
 
 var (

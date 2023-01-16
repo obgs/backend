@@ -1,0 +1,17 @@
+input EnumMetadataInput {
+  possibleValues: [String!]!
+}
+
+input StatMetadataInput {
+  """
+  Once input unions are in graphql, this will be one
+  """
+  enumMetadata: EnumMetadataInput
+}
+
+input StatDescriptionInput {
+  type: StatDescriptionStatType!
+  name: String!
+  description: String
+  metadata: StatMetadataInput
+}

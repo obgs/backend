@@ -577,7 +577,7 @@ type StatDescription implements Node {
   type: StatDescriptionStatType!
   name: String!
   description: String
-  possibleValues: [String!]
+  metadata: String
 }
 """StatDescriptionStatType is enum for the field type"""
 enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
