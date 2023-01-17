@@ -1,11 +1,17 @@
 version: '3'
 
 tasks:
-  create_migration:
+  atlas_auto:
     - go run --mod=mod internal/ent/migrate/main.go {{.CLI_ARGS}} "postgresql://postgres:postgres@localhost:5432/test?sslmode=disable"
 
-  apply_migration:
+  atlas_apply:
     - atlas migrate apply --dir file://internal/ent/migrate/migrations --url "postgresql://postgres:postgres@localhost:5432/obgs?sslmode=disable"
+
+  atlas_new:
+    - atlas migrate new --dir file://internal/ent/migrate/migrations {{.CLI_ARGS}}
+
+  atlas_hash:
+    - atlas migrate hash --dir file://internal/ent/migrate/migrations
 
   dump_schema:
     - go run main.go dumpSchema > ../webapp/graphql/schema.json
