@@ -53,6 +53,10 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	EnumMetadata struct {
+		PossibleValues func(childComplexity int) int
+	}
+
 	Favorites struct {
 		Total func(childComplexity int) int
 		Users func(childComplexity int) int
@@ -320,6 +324,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "EnumMetadata.possibleValues":
+		if e.complexity.EnumMetadata.PossibleValues == nil {
+			break
+		}
+
+		return e.complexity.EnumMetadata.PossibleValues(childComplexity), true
 
 	case "Favorites.total":
 		if e.complexity.Favorites.Total == nil {
@@ -2242,9 +2253,15 @@ extend type Mutation {
   possibleValues: [String!]!
 }
 
+"""
+This type is exposed for type safety on client side
+"""
+type EnumMetadata {
+  possibleValues: [String!]!
+}
+
 input StatMetadataInput {
   """
-  One of the following should always be provided
   Once input unions are in graphql, this will be one
   """
   enumMetadata: EnumMetadataInput
@@ -2914,6 +2931,50 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _EnumMetadata_possibleValues(ctx context.Context, field graphql.CollectedField, obj *model.EnumMetadata) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EnumMetadata_possibleValues(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PossibleValues, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EnumMetadata_possibleValues(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EnumMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _Favorites_total(ctx context.Context, field graphql.CollectedField, obj *model.Favorites) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Favorites_total(ctx, field)
@@ -14530,6 +14591,34 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var enumMetadataImplementors = []string{"EnumMetadata"}
+
+func (ec *executionContext) _EnumMetadata(ctx context.Context, sel ast.SelectionSet, obj *model.EnumMetadata) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, enumMetadataImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EnumMetadata")
+		case "possibleValues":
+
+			out.Values[i] = ec._EnumMetadata_possibleValues(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var favoritesImplementors = []string{"Favorites"}
 

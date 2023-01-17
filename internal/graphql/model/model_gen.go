@@ -37,6 +37,11 @@ type CreatePlayerInput struct {
 	Name string `json:"name"`
 }
 
+// This type is exposed for type safety on client side
+type EnumMetadata struct {
+	PossibleValues []string `json:"possibleValues"`
+}
+
 type EnumMetadataInput struct {
 	PossibleValues []string `json:"possibleValues"`
 }
@@ -82,7 +87,6 @@ type StatInput struct {
 }
 
 type StatMetadataInput struct {
-	// One of the following should always be provided
 	// Once input unions are in graphql, this will be one
 	EnumMetadata *EnumMetadataInput `json:"enumMetadata"`
 }

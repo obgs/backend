@@ -2,6 +2,13 @@ input EnumMetadataInput {
   possibleValues: [String!]!
 }
 
+"""
+This type is exposed for type safety on client side
+"""
+type EnumMetadata {
+  possibleValues: [String!]!
+}
+
 input StatMetadataInput {
   """
   Once input unions are in graphql, this will be one
