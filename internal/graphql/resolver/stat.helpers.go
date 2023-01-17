@@ -8,7 +8,11 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
 
-func marshalStatMetadata(t stat.StatType, input model.StatMetadataInput) (metadata string, err error) {
+func marshalStatMetadata(t stat.StatType, input *model.StatMetadataInput) (metadata string, err error) {
+	if input == nil {
+		return "", nil
+	}
+
 	switch t {
 	case stat.Numeric:
 		return "", nil

@@ -58,7 +58,7 @@ func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGam
 
 	createDescriptons := make([]*ent.StatDescriptionCreate, 0, len(input.StatDescriptions))
 	for _, desc := range input.StatDescriptions {
-		metadata, err := marshalStatMetadata(desc.Type, *desc.Metadata)
+		metadata, err := marshalStatMetadata(desc.Type, desc.Metadata)
 		if err != nil {
 			return nil, err
 		}
