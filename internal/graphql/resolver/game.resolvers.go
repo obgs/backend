@@ -5,14 +5,12 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
@@ -60,24 +58,17 @@ func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGam
 
 	createDescriptons := make([]*ent.StatDescriptionCreate, 0, len(input.StatDescriptions))
 	for _, desc := range input.StatDescriptions {
+		metadata, err := marshalStatMetadata(desc.Type, desc.Metadata)
+		if err != nil {
+			return nil, err
+		}
+
 		create := r.client.StatDescription.Create().
 			SetType(desc.Type).
 			SetName(desc.Name).
-			SetDescription(*desc.Description)
-		switch desc.Type {
-		case stat.Numeric:
-			if desc.EnumStatInput != nil {
-				return nil, fmt.Errorf("enumStatInput is not allowed for numeric stat")
-			}
-		case stat.Enum:
-			if desc.EnumStatInput == nil || desc.EnumStatInput.PossibleValues == nil {
-				return nil, fmt.Errorf("possible values are required for enum stat")
-			}
-			if len(desc.EnumStatInput.PossibleValues) < MIN_ENUM_VALUES {
-				return nil, fmt.Errorf("at least %d possible values are required for enum stat", MIN_ENUM_VALUES)
-			}
-			create.SetPossibleValues(desc.EnumStatInput.PossibleValues)
-		}
+			SetDescription(*desc.Description).
+			SetMetadata(metadata)
+
 		createDescriptons = append(
 			createDescriptons,
 			create,

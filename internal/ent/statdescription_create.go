@@ -52,9 +52,17 @@ func (sdc *StatDescriptionCreate) SetNillableDescription(s *string) *StatDescrip
 	return sdc
 }
 
-// SetPossibleValues sets the "possible_values" field.
-func (sdc *StatDescriptionCreate) SetPossibleValues(s []string) *StatDescriptionCreate {
-	sdc.mutation.SetPossibleValues(s)
+// SetMetadata sets the "metadata" field.
+func (sdc *StatDescriptionCreate) SetMetadata(s string) *StatDescriptionCreate {
+	sdc.mutation.SetMetadata(s)
+	return sdc
+}
+
+// SetNillableMetadata sets the "metadata" field if the given value is not nil.
+func (sdc *StatDescriptionCreate) SetNillableMetadata(s *string) *StatDescriptionCreate {
+	if s != nil {
+		sdc.SetMetadata(*s)
+	}
 	return sdc
 }
 
@@ -256,9 +264,9 @@ func (sdc *StatDescriptionCreate) createSpec() (*StatDescription, *sqlgraph.Crea
 		_spec.SetField(statdescription.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := sdc.mutation.PossibleValues(); ok {
-		_spec.SetField(statdescription.FieldPossibleValues, field.TypeJSON, value)
-		_node.PossibleValues = value
+	if value, ok := sdc.mutation.Metadata(); ok {
+		_spec.SetField(statdescription.FieldMetadata, field.TypeString, value)
+		_node.Metadata = value
 	}
 	if nodes := sdc.mutation.GameIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -392,21 +400,21 @@ func (u *StatDescriptionUpsert) ClearDescription() *StatDescriptionUpsert {
 	return u
 }
 
-// SetPossibleValues sets the "possible_values" field.
-func (u *StatDescriptionUpsert) SetPossibleValues(v []string) *StatDescriptionUpsert {
-	u.Set(statdescription.FieldPossibleValues, v)
+// SetMetadata sets the "metadata" field.
+func (u *StatDescriptionUpsert) SetMetadata(v string) *StatDescriptionUpsert {
+	u.Set(statdescription.FieldMetadata, v)
 	return u
 }
 
-// UpdatePossibleValues sets the "possible_values" field to the value that was provided on create.
-func (u *StatDescriptionUpsert) UpdatePossibleValues() *StatDescriptionUpsert {
-	u.SetExcluded(statdescription.FieldPossibleValues)
+// UpdateMetadata sets the "metadata" field to the value that was provided on create.
+func (u *StatDescriptionUpsert) UpdateMetadata() *StatDescriptionUpsert {
+	u.SetExcluded(statdescription.FieldMetadata)
 	return u
 }
 
-// ClearPossibleValues clears the value of the "possible_values" field.
-func (u *StatDescriptionUpsert) ClearPossibleValues() *StatDescriptionUpsert {
-	u.SetNull(statdescription.FieldPossibleValues)
+// ClearMetadata clears the value of the "metadata" field.
+func (u *StatDescriptionUpsert) ClearMetadata() *StatDescriptionUpsert {
+	u.SetNull(statdescription.FieldMetadata)
 	return u
 }
 
@@ -507,24 +515,24 @@ func (u *StatDescriptionUpsertOne) ClearDescription() *StatDescriptionUpsertOne 
 	})
 }
 
-// SetPossibleValues sets the "possible_values" field.
-func (u *StatDescriptionUpsertOne) SetPossibleValues(v []string) *StatDescriptionUpsertOne {
+// SetMetadata sets the "metadata" field.
+func (u *StatDescriptionUpsertOne) SetMetadata(v string) *StatDescriptionUpsertOne {
 	return u.Update(func(s *StatDescriptionUpsert) {
-		s.SetPossibleValues(v)
+		s.SetMetadata(v)
 	})
 }
 
-// UpdatePossibleValues sets the "possible_values" field to the value that was provided on create.
-func (u *StatDescriptionUpsertOne) UpdatePossibleValues() *StatDescriptionUpsertOne {
+// UpdateMetadata sets the "metadata" field to the value that was provided on create.
+func (u *StatDescriptionUpsertOne) UpdateMetadata() *StatDescriptionUpsertOne {
 	return u.Update(func(s *StatDescriptionUpsert) {
-		s.UpdatePossibleValues()
+		s.UpdateMetadata()
 	})
 }
 
-// ClearPossibleValues clears the value of the "possible_values" field.
-func (u *StatDescriptionUpsertOne) ClearPossibleValues() *StatDescriptionUpsertOne {
+// ClearMetadata clears the value of the "metadata" field.
+func (u *StatDescriptionUpsertOne) ClearMetadata() *StatDescriptionUpsertOne {
 	return u.Update(func(s *StatDescriptionUpsert) {
-		s.ClearPossibleValues()
+		s.ClearMetadata()
 	})
 }
 
@@ -788,24 +796,24 @@ func (u *StatDescriptionUpsertBulk) ClearDescription() *StatDescriptionUpsertBul
 	})
 }
 
-// SetPossibleValues sets the "possible_values" field.
-func (u *StatDescriptionUpsertBulk) SetPossibleValues(v []string) *StatDescriptionUpsertBulk {
+// SetMetadata sets the "metadata" field.
+func (u *StatDescriptionUpsertBulk) SetMetadata(v string) *StatDescriptionUpsertBulk {
 	return u.Update(func(s *StatDescriptionUpsert) {
-		s.SetPossibleValues(v)
+		s.SetMetadata(v)
 	})
 }
 
-// UpdatePossibleValues sets the "possible_values" field to the value that was provided on create.
-func (u *StatDescriptionUpsertBulk) UpdatePossibleValues() *StatDescriptionUpsertBulk {
+// UpdateMetadata sets the "metadata" field to the value that was provided on create.
+func (u *StatDescriptionUpsertBulk) UpdateMetadata() *StatDescriptionUpsertBulk {
 	return u.Update(func(s *StatDescriptionUpsert) {
-		s.UpdatePossibleValues()
+		s.UpdateMetadata()
 	})
 }
 
-// ClearPossibleValues clears the value of the "possible_values" field.
-func (u *StatDescriptionUpsertBulk) ClearPossibleValues() *StatDescriptionUpsertBulk {
+// ClearMetadata clears the value of the "metadata" field.
+func (u *StatDescriptionUpsertBulk) ClearMetadata() *StatDescriptionUpsertBulk {
 	return u.Update(func(s *StatDescriptionUpsert) {
-		s.ClearPossibleValues()
+		s.ClearMetadata()
 	})
 }
 

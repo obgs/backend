@@ -95,6 +95,13 @@ func Description(v string) predicate.StatDescription {
 	})
 }
 
+// Metadata applies equality check predicate on the "metadata" field. It's identical to MetadataEQ.
+func Metadata(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldMetadata), v))
+	})
+}
+
 // TypeEQ applies the EQ predicate on the "type" field.
 func TypeEQ(v stat.StatType) predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {
@@ -343,17 +350,116 @@ func DescriptionContainsFold(v string) predicate.StatDescription {
 	})
 }
 
-// PossibleValuesIsNil applies the IsNil predicate on the "possible_values" field.
-func PossibleValuesIsNil() predicate.StatDescription {
+// MetadataEQ applies the EQ predicate on the "metadata" field.
+func MetadataEQ(v string) predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.IsNull(s.C(FieldPossibleValues)))
+		s.Where(sql.EQ(s.C(FieldMetadata), v))
 	})
 }
 
-// PossibleValuesNotNil applies the NotNil predicate on the "possible_values" field.
-func PossibleValuesNotNil() predicate.StatDescription {
+// MetadataNEQ applies the NEQ predicate on the "metadata" field.
+func MetadataNEQ(v string) predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NotNull(s.C(FieldPossibleValues)))
+		s.Where(sql.NEQ(s.C(FieldMetadata), v))
+	})
+}
+
+// MetadataIn applies the In predicate on the "metadata" field.
+func MetadataIn(vs ...string) predicate.StatDescription {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.In(s.C(FieldMetadata), v...))
+	})
+}
+
+// MetadataNotIn applies the NotIn predicate on the "metadata" field.
+func MetadataNotIn(vs ...string) predicate.StatDescription {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.NotIn(s.C(FieldMetadata), v...))
+	})
+}
+
+// MetadataGT applies the GT predicate on the "metadata" field.
+func MetadataGT(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldMetadata), v))
+	})
+}
+
+// MetadataGTE applies the GTE predicate on the "metadata" field.
+func MetadataGTE(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldMetadata), v))
+	})
+}
+
+// MetadataLT applies the LT predicate on the "metadata" field.
+func MetadataLT(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldMetadata), v))
+	})
+}
+
+// MetadataLTE applies the LTE predicate on the "metadata" field.
+func MetadataLTE(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldMetadata), v))
+	})
+}
+
+// MetadataContains applies the Contains predicate on the "metadata" field.
+func MetadataContains(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldMetadata), v))
+	})
+}
+
+// MetadataHasPrefix applies the HasPrefix predicate on the "metadata" field.
+func MetadataHasPrefix(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldMetadata), v))
+	})
+}
+
+// MetadataHasSuffix applies the HasSuffix predicate on the "metadata" field.
+func MetadataHasSuffix(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldMetadata), v))
+	})
+}
+
+// MetadataIsNil applies the IsNil predicate on the "metadata" field.
+func MetadataIsNil() predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldMetadata)))
+	})
+}
+
+// MetadataNotNil applies the NotNil predicate on the "metadata" field.
+func MetadataNotNil() predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldMetadata)))
+	})
+}
+
+// MetadataEqualFold applies the EqualFold predicate on the "metadata" field.
+func MetadataEqualFold(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldMetadata), v))
+	})
+}
+
+// MetadataContainsFold applies the ContainsFold predicate on the "metadata" field.
+func MetadataContainsFold(v string) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldMetadata), v))
 	})
 }
 
