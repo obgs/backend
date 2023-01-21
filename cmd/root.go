@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -59,7 +60,8 @@ func initConfig() {
 	viper.SetConfigFile(cfgFile)
 
 	viper.AutomaticEnv() // read in environment variables that match
-	viper.SetConfigType("yaml")
+	configType := filepath.Ext(cfgFile)
+	viper.SetConfigType(configType[1:])
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
