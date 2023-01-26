@@ -14,15 +14,15 @@ concurrency:
 jobs:
 
   docker:
-    name: Docker (${{ matrix.name }})
+    name: ${{ matrix.name }}
     runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
-          - name: app
+          - name: App
             image: ghcr.io/${{ github.repository }}
             context: .
-          - name: migrations
+          - name: Migrations
             image: ghcr.io/${{ github.repository }}-migrations
             context: internal/ent/migrate
       fail-fast: false
