@@ -14,8 +14,18 @@ concurrency:
 jobs:
 
   docker:
-    name: Docker
-    runs-on: ubuntu-20.04
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - name: App
+            image: ghcr.io/${{ github.repository }}
+            context: .
+          - name: Migrations
+            image: ghcr.io/${{ github.repository }}-migrations
+            context: internal/ent/migrate
+      fail-fast: false
     timeout-minutes: 30
     permissions:
       contents: read
@@ -38,8 +48,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: |
-            ghcr.io/${{ github.repository }}
+          images: ${{ matrix.image }}
           tags: |
             type=schedule
             type=ref,event=branch
@@ -61,7 +70,7 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v3
         with:
-          context: .
+          context: ${{ matrix.context }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
