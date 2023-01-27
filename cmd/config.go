@@ -34,6 +34,7 @@ type Config struct {
 	UsingMinio              bool   `mapstructure:"USING_MINIO"`
 	EntDebug                bool   `mapstructure:"ENT_DEBUG"`
 	IntrospectionEnabled    bool   `mapstructure:"INTROSPECTION_ENABLED"`
+	PlaygroundEnabled       bool   `mapstructure:"PLAYGROUND_ENABLED"`
 }
 
 // https://github.com/spf13/viper/issues/761
@@ -55,6 +56,7 @@ func bindEnvs() {
 	viper.BindEnv("USING_MINIO")
 	viper.BindEnv("ENT_DEBUG")
 	viper.BindEnv("INTROSPECTION_ENABLED")
+	viper.BindEnv("PLAYGROUND_ENABLED")
 }
 
 var config Config

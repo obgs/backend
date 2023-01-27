@@ -108,7 +108,9 @@ var serverCmd = &cobra.Command{
 
 		router.Use(authService.Middleware)
 
-		router.Get("/", playground.Handler("OBGS", "/graphql"))
+		if config.PlaygroundEnabled {
+			router.Get("/", playground.Handler("OBGS", "/graphql"))
+		}
 		router.Handle("/graphql", srv)
 		router.Post("/auth/signup", authService.SignUp)
 		router.Post("/auth/signin", authService.SignIn)
