@@ -14,3 +14,4 @@ S3_ENDPOINT: http://localhost:9000
 S3_BUCKET: obgs-dev
 USING_MINIO: true
 ENT_DEBUG: true
+INTROSPECTION_ENABLED: true

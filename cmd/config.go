@@ -3,11 +3,18 @@ package cmd
 import (
 	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
 var cfgFile string
+
+const (
+	keepAlivePingInterval            = 10 * time.Second
+	queryCacheLruSize                = 1000
+	automaticPersistedQueryCacheSize = 100
+)
 
 type Config struct {
 	DBAddress               string `mapstructure:"DB_ADDRESS"`
@@ -26,6 +33,7 @@ type Config struct {
 	S3Bucket                string `mapstructure:"S3_BUCKET"`
 	UsingMinio              bool   `mapstructure:"USING_MINIO"`
 	EntDebug                bool   `mapstructure:"ENT_DEBUG"`
+	IntrospectionEnabled    bool   `mapstructure:"INTROSPECTION_ENABLED"`
 }
 
 // https://github.com/spf13/viper/issues/761
@@ -46,6 +54,7 @@ func bindEnvs() {
 	viper.BindEnv("S3_BUCKET")
 	viper.BindEnv("USING_MINIO")
 	viper.BindEnv("ENT_DEBUG")
+	viper.BindEnv("INTROSPECTION_ENABLED")
 }
 
 var config Config

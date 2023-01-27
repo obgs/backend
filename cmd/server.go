@@ -8,6 +8,9 @@ import (
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -23,6 +26,31 @@ import (
 const CORS_MAX_AGE = 300
 
 var serverPort string
+
+func createServer(client *ent.Client, fileuploadservice *filestorage.FileStorageService) *handler.Server {
+	srv := handler.New(resolver.NewSchema(client, fileuploadservice))
+
+	srv.AddTransport(transport.Websocket{
+		KeepAlivePingInterval: keepAlivePingInterval,
+	})
+	srv.AddTransport(transport.Options{})
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+	srv.AddTransport(transport.MultipartForm{})
+
+	srv.SetQueryCache(lru.New(queryCacheLruSize))
+
+	if config.IntrospectionEnabled {
+		srv.Use(extension.Introspection{})
+	}
+	srv.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New(automaticPersistedQueryCacheSize),
+	})
+
+	srv.Use(entgql.Transactioner{TxOpener: client})
+
+	return srv
+}
 
 // server represents the server command
 var serverCmd = &cobra.Command{
@@ -57,8 +85,7 @@ var serverCmd = &cobra.Command{
 			log.Fatalf("failed to create bucket: %v", err)
 		}
 
-		srv := handler.NewDefaultServer(resolver.NewSchema(client, fileUploadService))
-		srv.Use(entgql.Transactioner{TxOpener: client})
+		srv := createServer(client, fileUploadService)
 
 		oAuthConfig := auth.NewOAuthConfig(
 			config.ServerHost,
