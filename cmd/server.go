@@ -62,8 +62,8 @@ var serverCmd = &cobra.Command{
 			options = append(options, ent.Debug())
 		}
 
-		client, err := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-			config.DBAddress, config.DBPort, config.DBUser, config.DBPass, config.DBName), options...)
+		client, err := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			config.DBAddress, config.DBPort, config.DBUser, config.DBPass, config.DBName, config.DBSSLMode), options...)
 		if err != nil {
 			log.Fatalf("failed to open connection to postgres: %v", err)
 		}
