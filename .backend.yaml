@@ -3,6 +3,7 @@ DB_PORT: 5432
 DB_NAME: obgs
 DB_USER: postgres
 DB_PASS: postgres
+DB_SSL_MODE: disable
 JWT_SECRET: secret
 SERVER_HOST: localhost
 OAUTH_GOOGLE_CLIENT_ID: google_client_id

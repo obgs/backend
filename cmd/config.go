@@ -22,6 +22,7 @@ type Config struct {
 	DBName                  string `mapstructure:"DB_NAME"`
 	DBUser                  string `mapstructure:"DB_USER"`
 	DBPass                  string `mapstructure:"DB_PASS"`
+	DBSSLMode               string `mapstructure:"DB_SSL_MODE"`
 	JWTSecret               string `mapstructure:"JWT_SECRET"`
 	ServerHost              string `mapstructure:"SERVER_HOST"`
 	OAuthGoogleClientID     string `mapstructure:"OAUTH_GOOGLE_CLIENT_ID"`
@@ -44,6 +45,7 @@ func bindEnvs() {
 	viper.BindEnv("DB_NAME")
 	viper.BindEnv("DB_USER")
 	viper.BindEnv("DB_PASS")
+	viper.BindEnv("DB_SSL_MODE")
 	viper.BindEnv("JWT_SECRET")
 	viper.BindEnv("SERVER_HOST")
 	viper.BindEnv("OAUTH_GOOGLE_CLIENT_ID")
