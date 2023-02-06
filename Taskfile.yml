@@ -1,17 +1,30 @@
 version: '3'
 
+env:
+  DIR: file://internal/ent/migrate/migrations
+  # don't know how to have the db name variable here
+  MAIN_URL: postgresql://postgres:postgres@localhost:5432/obgs?sslmode=disable
+  TEST_URL: postgresql://postgres:postgres@localhost:5432/test?sslmode=disable
+
 tasks:
   atlas_auto:
-    - go run --mod=mod internal/ent/migrate/main.go {{.CLI_ARGS}} "postgresql://postgres:postgres@localhost:5432/test?sslmode=disable"
+    - go run --mod=mod internal/ent/migrate/main.go {{.CLI_ARGS}}
 
   atlas_apply:
-    - atlas migrate apply --dir file://internal/ent/migrate/migrations --url "postgresql://postgres:postgres@localhost:5432/obgs?sslmode=disable"
+    - atlas migrate apply --dir {{.DIR}} -u {{.MAIN_URL}}
 
   atlas_new:
-    - atlas migrate new --dir file://internal/ent/migrate/migrations {{.CLI_ARGS}}
+    - atlas migrate new --dir {{.DIR}} {{.CLI_ARGS}}
 
   atlas_hash:
-    - atlas migrate hash --dir file://internal/ent/migrate/migrations
+    - atlas migrate hash --dir {{.DIR}}
 
   dump_schema:
     - go run main.go dumpSchema > ../webapp/graphql/schema.json
+
+  seed:
+    cmds:
+      - psql {{.TEST_URL}} -c "DROP DATABASE obgs"
+      - psql {{.TEST_URL}} -c "CREATE DATABASE obgs"
+      - task atlas_apply
+      - go run main.go seed
