@@ -52,18 +52,22 @@ func createServer(client *ent.Client, fileuploadservice *filestorage.FileStorage
 	return srv
 }
 
+func createEntClient() (client *ent.Client, err error) {
+	options := []ent.Option{}
+	if config.EntDebug {
+		options = append(options, ent.Debug())
+	}
+
+	return ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		config.DBAddress, config.DBPort, config.DBUser, config.DBPass, config.DBName, config.DBSSLMode), options...)
+}
+
 // server represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Starts the gql server",
 	Run: func(cmd *cobra.Command, args []string) {
-		options := []ent.Option{}
-		if config.EntDebug {
-			options = append(options, ent.Debug())
-		}
-
-		client, err := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-			config.DBAddress, config.DBPort, config.DBUser, config.DBPass, config.DBName, config.DBSSLMode), options...)
+		client, err := createEntClient()
 		if err != nil {
 			log.Fatalf("failed to open connection to postgres: %v", err)
 		}
@@ -123,5 +127,6 @@ var serverCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
+	rootCmd.AddCommand(seedCmd)
 	serverCmd.Flags().StringVarP(&serverPort, "port", "p", "8080", "which port to serve the schema on (default: 8080)")
 }
