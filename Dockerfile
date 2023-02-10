@@ -14,6 +14,7 @@ RUN mkdir /build \
 FROM debian:bullseye
 
 COPY --from=builder /build/backend /usr/local/bin/
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 RUN ["backend", "-h"]
 
