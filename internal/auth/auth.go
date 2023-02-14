@@ -93,7 +93,7 @@ func (a *AuthService) generateTokens(w http.ResponseWriter, userId guidgql.GUID,
 
 func (a *AuthService) createUser(ctx context.Context, email, password string) (*ent.User, error) {
 	// hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := EncryptPassword(password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %v", err)
 	}
@@ -218,7 +218,7 @@ func (a *AuthService) randomPassword(n int) string {
 	return hex.EncodeToString(b)
 }
 
-// encrypt the password
-func (a *AuthService) encryptPassword(password string) ([]byte, error) {
+// Encrypt the password
+func EncryptPassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
