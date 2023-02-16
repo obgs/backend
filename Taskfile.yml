@@ -24,6 +24,9 @@ tasks:
 
   seed:
     cmds:
+      - cmd: psql {{.MAIN_URL}} -c "CREATE DATABASE test"
+        ignore_error: true
+        silent: true
       - psql {{.TEST_URL}} -c "DROP DATABASE obgs"
       - psql {{.TEST_URL}} -c "CREATE DATABASE obgs"
       - task atlas_apply
