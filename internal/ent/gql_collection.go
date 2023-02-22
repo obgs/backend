@@ -39,18 +39,6 @@ func (ga *GameQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				return err
 			}
 			ga.withAuthor = query
-		case "statDescriptions":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = &StatDescriptionQuery{config: ga.config}
-			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
-				return err
-			}
-			ga.WithNamedStatDescriptions(alias, func(wq *StatDescriptionQuery) {
-				*wq = *query
-			})
 		}
 	}
 	return nil

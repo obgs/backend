@@ -83,6 +83,19 @@ func (sdu *StatDescriptionUpdate) ClearMetadata() *StatDescriptionUpdate {
 	return sdu
 }
 
+// SetOrderNumber sets the "order_number" field.
+func (sdu *StatDescriptionUpdate) SetOrderNumber(i int) *StatDescriptionUpdate {
+	sdu.mutation.ResetOrderNumber()
+	sdu.mutation.SetOrderNumber(i)
+	return sdu
+}
+
+// AddOrderNumber adds i to the "order_number" field.
+func (sdu *StatDescriptionUpdate) AddOrderNumber(i int) *StatDescriptionUpdate {
+	sdu.mutation.AddOrderNumber(i)
+	return sdu
+}
+
 // AddGameIDs adds the "game" edge to the Game entity by IDs.
 func (sdu *StatDescriptionUpdate) AddGameIDs(ids ...guidgql.GUID) *StatDescriptionUpdate {
 	sdu.mutation.AddGameIDs(ids...)
@@ -271,6 +284,12 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 	if sdu.mutation.MetadataCleared() {
 		_spec.ClearField(statdescription.FieldMetadata, field.TypeString)
 	}
+	if value, ok := sdu.mutation.OrderNumber(); ok {
+		_spec.SetField(statdescription.FieldOrderNumber, field.TypeInt, value)
+	}
+	if value, ok := sdu.mutation.AddedOrderNumber(); ok {
+		_spec.AddField(statdescription.FieldOrderNumber, field.TypeInt, value)
+	}
 	if sdu.mutation.GameCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -447,6 +466,19 @@ func (sduo *StatDescriptionUpdateOne) SetNillableMetadata(s *string) *StatDescri
 // ClearMetadata clears the value of the "metadata" field.
 func (sduo *StatDescriptionUpdateOne) ClearMetadata() *StatDescriptionUpdateOne {
 	sduo.mutation.ClearMetadata()
+	return sduo
+}
+
+// SetOrderNumber sets the "order_number" field.
+func (sduo *StatDescriptionUpdateOne) SetOrderNumber(i int) *StatDescriptionUpdateOne {
+	sduo.mutation.ResetOrderNumber()
+	sduo.mutation.SetOrderNumber(i)
+	return sduo
+}
+
+// AddOrderNumber adds i to the "order_number" field.
+func (sduo *StatDescriptionUpdateOne) AddOrderNumber(i int) *StatDescriptionUpdateOne {
+	sduo.mutation.AddOrderNumber(i)
 	return sduo
 }
 
@@ -667,6 +699,12 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 	}
 	if sduo.mutation.MetadataCleared() {
 		_spec.ClearField(statdescription.FieldMetadata, field.TypeString)
+	}
+	if value, ok := sduo.mutation.OrderNumber(); ok {
+		_spec.SetField(statdescription.FieldOrderNumber, field.TypeInt, value)
+	}
+	if value, ok := sduo.mutation.AddedOrderNumber(); ok {
+		_spec.AddField(statdescription.FieldOrderNumber, field.TypeInt, value)
 	}
 	if sduo.mutation.GameCleared() {
 		edge := &sqlgraph.EdgeSpec{

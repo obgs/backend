@@ -234,6 +234,7 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		Metadata    func(childComplexity int) int
 		Name        func(childComplexity int) int
+		OrderNumber func(childComplexity int) int
 		Type        func(childComplexity int) int
 	}
 
@@ -274,6 +275,7 @@ type ComplexityRoot struct {
 type GameResolver interface {
 	Favorites(ctx context.Context, obj *ent.Game) (*model.Favorites, error)
 	IsFavorite(ctx context.Context, obj *ent.Game) (bool, error)
+	StatDescriptions(ctx context.Context, obj *ent.Game) ([]*ent.StatDescription, error)
 }
 type GroupResolver interface {
 	Role(ctx context.Context, obj *ent.Group) (*enums.Role, error)
@@ -1186,6 +1188,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.StatDescription.Name(childComplexity), true
 
+	case "StatDescription.orderNumber":
+		if e.complexity.StatDescription.OrderNumber == nil {
+			break
+		}
+
+		return e.complexity.StatDescription.OrderNumber(childComplexity), true
+
 	case "StatDescription.type":
 		if e.complexity.StatDescription.Type == nil {
 			break
@@ -1447,7 +1456,6 @@ type Game implements Node {
   description: String
   boardgamegeekURL: String
   author: User!
-  statDescriptions: [StatDescription!]!
 }
 """A connection to a list of items."""
 type GameConnection {
@@ -2012,6 +2020,7 @@ type StatDescription implements Node {
   name: String!
   description: String
   metadata: String
+  orderNumber: Int!
 }
 """StatDescriptionStatType is enum for the field type"""
 enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
@@ -2139,6 +2148,7 @@ extend type Game {
   Whether the current user has favorited this game
   """
   isFavorite: Boolean!
+  statDescriptions: [StatDescription!]!
 }
 
 input CreateGameInput {
@@ -3414,62 +3424,6 @@ func (ec *executionContext) fieldContext_Game_author(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Game_statDescriptions(ctx context.Context, field graphql.CollectedField, obj *ent.Game) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Game_statDescriptions(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.StatDescriptions(ctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.StatDescription)
-	fc.Result = res
-	return ec.marshalNStatDescription2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐStatDescriptionᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Game_statDescriptions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Game",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_StatDescription_id(ctx, field)
-			case "type":
-				return ec.fieldContext_StatDescription_type(ctx, field)
-			case "name":
-				return ec.fieldContext_StatDescription_name(ctx, field)
-			case "description":
-				return ec.fieldContext_StatDescription_description(ctx, field)
-			case "metadata":
-				return ec.fieldContext_StatDescription_metadata(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type StatDescription", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Game_favorites(ctx context.Context, field graphql.CollectedField, obj *ent.Game) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Game_favorites(ctx, field)
 	if err != nil {
@@ -3559,6 +3513,64 @@ func (ec *executionContext) fieldContext_Game_isFavorite(ctx context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_statDescriptions(ctx context.Context, field graphql.CollectedField, obj *ent.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_statDescriptions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().StatDescriptions(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.StatDescription)
+	fc.Result = res
+	return ec.marshalNStatDescription2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐStatDescriptionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_statDescriptions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_StatDescription_id(ctx, field)
+			case "type":
+				return ec.fieldContext_StatDescription_type(ctx, field)
+			case "name":
+				return ec.fieldContext_StatDescription_name(ctx, field)
+			case "description":
+				return ec.fieldContext_StatDescription_description(ctx, field)
+			case "metadata":
+				return ec.fieldContext_StatDescription_metadata(ctx, field)
+			case "orderNumber":
+				return ec.fieldContext_StatDescription_orderNumber(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StatDescription", field.Name)
 		},
 	}
 	return fc, nil
@@ -3759,12 +3771,12 @@ func (ec *executionContext) fieldContext_GameEdge_node(ctx context.Context, fiel
 				return ec.fieldContext_Game_boardgamegeekURL(ctx, field)
 			case "author":
 				return ec.fieldContext_Game_author(ctx, field)
-			case "statDescriptions":
-				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			case "favorites":
 				return ec.fieldContext_Game_favorites(ctx, field)
 			case "isFavorite":
 				return ec.fieldContext_Game_isFavorite(ctx, field)
+			case "statDescriptions":
+				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
 		},
@@ -5442,12 +5454,12 @@ func (ec *executionContext) fieldContext_Match_game(ctx context.Context, field g
 				return ec.fieldContext_Game_boardgamegeekURL(ctx, field)
 			case "author":
 				return ec.fieldContext_Game_author(ctx, field)
-			case "statDescriptions":
-				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			case "favorites":
 				return ec.fieldContext_Game_favorites(ctx, field)
 			case "isFavorite":
 				return ec.fieldContext_Game_isFavorite(ctx, field)
+			case "statDescriptions":
+				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
 		},
@@ -5879,12 +5891,12 @@ func (ec *executionContext) fieldContext_Mutation_createGame(ctx context.Context
 				return ec.fieldContext_Game_boardgamegeekURL(ctx, field)
 			case "author":
 				return ec.fieldContext_Game_author(ctx, field)
-			case "statDescriptions":
-				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			case "favorites":
 				return ec.fieldContext_Game_favorites(ctx, field)
 			case "isFavorite":
 				return ec.fieldContext_Game_isFavorite(ctx, field)
+			case "statDescriptions":
+				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
 		},
@@ -8997,6 +9009,50 @@ func (ec *executionContext) fieldContext_StatDescription_metadata(ctx context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _StatDescription_orderNumber(ctx context.Context, field graphql.CollectedField, obj *ent.StatDescription) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_StatDescription_orderNumber(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OrderNumber, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_StatDescription_orderNumber(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StatDescription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Statistic_id(ctx context.Context, field graphql.CollectedField, obj *ent.Statistic) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Statistic_id(ctx, field)
 	if err != nil {
@@ -9188,6 +9244,8 @@ func (ec *executionContext) fieldContext_Statistic_statDescription(ctx context.C
 				return ec.fieldContext_StatDescription_description(ctx, field)
 			case "metadata":
 				return ec.fieldContext_StatDescription_metadata(ctx, field)
+			case "orderNumber":
+				return ec.fieldContext_StatDescription_orderNumber(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StatDescription", field.Name)
 		},
@@ -9691,12 +9749,12 @@ func (ec *executionContext) fieldContext_User_games(ctx context.Context, field g
 				return ec.fieldContext_Game_boardgamegeekURL(ctx, field)
 			case "author":
 				return ec.fieldContext_Game_author(ctx, field)
-			case "statDescriptions":
-				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			case "favorites":
 				return ec.fieldContext_Game_favorites(ctx, field)
 			case "isFavorite":
 				return ec.fieldContext_Game_isFavorite(ctx, field)
+			case "statDescriptions":
+				return ec.fieldContext_Game_statDescriptions(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
 		},
@@ -14721,26 +14779,6 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 				return innerFunc(ctx)
 
 			})
-		case "statDescriptions":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Game_statDescriptions(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
-
-			})
 		case "favorites":
 			field := field
 
@@ -14771,6 +14809,26 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Game_isFavorite(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "statDescriptions":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_statDescriptions(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -16307,6 +16365,13 @@ func (ec *executionContext) _StatDescription(ctx context.Context, sel ast.Select
 
 			out.Values[i] = ec._StatDescription_metadata(ctx, field, obj)
 
+		case "orderNumber":
+
+			out.Values[i] = ec._StatDescription_orderNumber(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

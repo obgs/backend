@@ -25,6 +25,8 @@ type StatDescription struct {
 	Description string `json:"description,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata string `json:"metadata,omitempty"`
+	// OrderNumber holds the value of the "order_number" field.
+	OrderNumber int `json:"order_number,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the StatDescriptionQuery when eager-loading is set.
 	Edges StatDescriptionEdges `json:"edges"`
@@ -69,6 +71,8 @@ func (*StatDescription) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case statdescription.FieldID:
 			values[i] = new(guidgql.GUID)
+		case statdescription.FieldOrderNumber:
+			values[i] = new(sql.NullInt64)
 		case statdescription.FieldName, statdescription.FieldDescription, statdescription.FieldMetadata:
 			values[i] = new(sql.NullString)
 		case statdescription.FieldType:
@@ -117,6 +121,12 @@ func (sd *StatDescription) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field metadata", values[i])
 			} else if value.Valid {
 				sd.Metadata = value.String
+			}
+		case statdescription.FieldOrderNumber:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field order_number", values[i])
+			} else if value.Valid {
+				sd.OrderNumber = int(value.Int64)
 			}
 		}
 	}
@@ -167,6 +177,9 @@ func (sd *StatDescription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
 	builder.WriteString(sd.Metadata)
+	builder.WriteString(", ")
+	builder.WriteString("order_number=")
+	builder.WriteString(fmt.Sprintf("%v", sd.OrderNumber))
 	builder.WriteByte(')')
 	return builder.String()
 }

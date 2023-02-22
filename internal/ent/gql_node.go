@@ -57,7 +57,7 @@ func (ga *Game) Node(ctx context.Context) (node *Node, err error) {
 		ID:     ga.ID,
 		Type:   "Game",
 		Fields: make([]*Field, 5),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(ga.Name); err != nil {
@@ -107,16 +107,6 @@ func (ga *Game) Node(ctx context.Context) (node *Node, err error) {
 	err = ga.QueryAuthor().
 		Select(user.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[1] = &Edge{
-		Type: "StatDescription",
-		Name: "stat_descriptions",
-	}
-	err = ga.QueryStatDescriptions().
-		Select(statdescription.FieldID).
-		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -492,7 +482,7 @@ func (sd *StatDescription) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     sd.ID,
 		Type:   "StatDescription",
-		Fields: make([]*Field, 4),
+		Fields: make([]*Field, 5),
 		Edges:  make([]*Edge, 0),
 	}
 	var buf []byte
@@ -526,6 +516,14 @@ func (sd *StatDescription) Node(ctx context.Context) (node *Node, err error) {
 	node.Fields[3] = &Field{
 		Type:  "string",
 		Name:  "metadata",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(sd.OrderNumber); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "int",
+		Name:  "order_number",
 		Value: string(buf),
 	}
 	return node, nil

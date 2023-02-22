@@ -5681,23 +5681,25 @@ func (m *PlayerSupervisionRequestApprovalMutation) ResetEdge(name string) error 
 // StatDescriptionMutation represents an operation that mutates the StatDescription nodes in the graph.
 type StatDescriptionMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *guidgql.GUID
-	_type         *stat.StatType
-	name          *string
-	description   *string
-	metadata      *string
-	clearedFields map[string]struct{}
-	game          map[guidgql.GUID]struct{}
-	removedgame   map[guidgql.GUID]struct{}
-	clearedgame   bool
-	stats         map[guidgql.GUID]struct{}
-	removedstats  map[guidgql.GUID]struct{}
-	clearedstats  bool
-	done          bool
-	oldValue      func(context.Context) (*StatDescription, error)
-	predicates    []predicate.StatDescription
+	op              Op
+	typ             string
+	id              *guidgql.GUID
+	_type           *stat.StatType
+	name            *string
+	description     *string
+	metadata        *string
+	order_number    *int
+	addorder_number *int
+	clearedFields   map[string]struct{}
+	game            map[guidgql.GUID]struct{}
+	removedgame     map[guidgql.GUID]struct{}
+	clearedgame     bool
+	stats           map[guidgql.GUID]struct{}
+	removedstats    map[guidgql.GUID]struct{}
+	clearedstats    bool
+	done            bool
+	oldValue        func(context.Context) (*StatDescription, error)
+	predicates      []predicate.StatDescription
 }
 
 var _ ent.Mutation = (*StatDescriptionMutation)(nil)
@@ -5974,6 +5976,62 @@ func (m *StatDescriptionMutation) ResetMetadata() {
 	delete(m.clearedFields, statdescription.FieldMetadata)
 }
 
+// SetOrderNumber sets the "order_number" field.
+func (m *StatDescriptionMutation) SetOrderNumber(i int) {
+	m.order_number = &i
+	m.addorder_number = nil
+}
+
+// OrderNumber returns the value of the "order_number" field in the mutation.
+func (m *StatDescriptionMutation) OrderNumber() (r int, exists bool) {
+	v := m.order_number
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrderNumber returns the old "order_number" field's value of the StatDescription entity.
+// If the StatDescription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StatDescriptionMutation) OldOrderNumber(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrderNumber is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrderNumber requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrderNumber: %w", err)
+	}
+	return oldValue.OrderNumber, nil
+}
+
+// AddOrderNumber adds i to the "order_number" field.
+func (m *StatDescriptionMutation) AddOrderNumber(i int) {
+	if m.addorder_number != nil {
+		*m.addorder_number += i
+	} else {
+		m.addorder_number = &i
+	}
+}
+
+// AddedOrderNumber returns the value that was added to the "order_number" field in this mutation.
+func (m *StatDescriptionMutation) AddedOrderNumber() (r int, exists bool) {
+	v := m.addorder_number
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOrderNumber resets all changes to the "order_number" field.
+func (m *StatDescriptionMutation) ResetOrderNumber() {
+	m.order_number = nil
+	m.addorder_number = nil
+}
+
 // AddGameIDs adds the "game" edge to the Game entity by ids.
 func (m *StatDescriptionMutation) AddGameIDs(ids ...guidgql.GUID) {
 	if m.game == nil {
@@ -6101,7 +6159,7 @@ func (m *StatDescriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *StatDescriptionMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m._type != nil {
 		fields = append(fields, statdescription.FieldType)
 	}
@@ -6113,6 +6171,9 @@ func (m *StatDescriptionMutation) Fields() []string {
 	}
 	if m.metadata != nil {
 		fields = append(fields, statdescription.FieldMetadata)
+	}
+	if m.order_number != nil {
+		fields = append(fields, statdescription.FieldOrderNumber)
 	}
 	return fields
 }
@@ -6130,6 +6191,8 @@ func (m *StatDescriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case statdescription.FieldMetadata:
 		return m.Metadata()
+	case statdescription.FieldOrderNumber:
+		return m.OrderNumber()
 	}
 	return nil, false
 }
@@ -6147,6 +6210,8 @@ func (m *StatDescriptionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldDescription(ctx)
 	case statdescription.FieldMetadata:
 		return m.OldMetadata(ctx)
+	case statdescription.FieldOrderNumber:
+		return m.OldOrderNumber(ctx)
 	}
 	return nil, fmt.Errorf("unknown StatDescription field %s", name)
 }
@@ -6184,6 +6249,13 @@ func (m *StatDescriptionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetMetadata(v)
 		return nil
+	case statdescription.FieldOrderNumber:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrderNumber(v)
+		return nil
 	}
 	return fmt.Errorf("unknown StatDescription field %s", name)
 }
@@ -6191,13 +6263,21 @@ func (m *StatDescriptionMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *StatDescriptionMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addorder_number != nil {
+		fields = append(fields, statdescription.FieldOrderNumber)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *StatDescriptionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case statdescription.FieldOrderNumber:
+		return m.AddedOrderNumber()
+	}
 	return nil, false
 }
 
@@ -6206,6 +6286,13 @@ func (m *StatDescriptionMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *StatDescriptionMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case statdescription.FieldOrderNumber:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOrderNumber(v)
+		return nil
 	}
 	return fmt.Errorf("unknown StatDescription numeric field %s", name)
 }
@@ -6259,6 +6346,9 @@ func (m *StatDescriptionMutation) ResetField(name string) error {
 		return nil
 	case statdescription.FieldMetadata:
 		m.ResetMetadata()
+		return nil
+	case statdescription.FieldOrderNumber:
+		m.ResetOrderNumber()
 		return nil
 	}
 	return fmt.Errorf("unknown StatDescription field %s", name)

@@ -66,6 +66,12 @@ func (sdc *StatDescriptionCreate) SetNillableMetadata(s *string) *StatDescriptio
 	return sdc
 }
 
+// SetOrderNumber sets the "order_number" field.
+func (sdc *StatDescriptionCreate) SetOrderNumber(i int) *StatDescriptionCreate {
+	sdc.mutation.SetOrderNumber(i)
+	return sdc
+}
+
 // SetID sets the "id" field.
 func (sdc *StatDescriptionCreate) SetID(gu guidgql.GUID) *StatDescriptionCreate {
 	sdc.mutation.SetID(gu)
@@ -215,6 +221,9 @@ func (sdc *StatDescriptionCreate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "StatDescription.name": %w`, err)}
 		}
 	}
+	if _, ok := sdc.mutation.OrderNumber(); !ok {
+		return &ValidationError{Name: "order_number", err: errors.New(`ent: missing required field "StatDescription.order_number"`)}
+	}
 	return nil
 }
 
@@ -267,6 +276,10 @@ func (sdc *StatDescriptionCreate) createSpec() (*StatDescription, *sqlgraph.Crea
 	if value, ok := sdc.mutation.Metadata(); ok {
 		_spec.SetField(statdescription.FieldMetadata, field.TypeString, value)
 		_node.Metadata = value
+	}
+	if value, ok := sdc.mutation.OrderNumber(); ok {
+		_spec.SetField(statdescription.FieldOrderNumber, field.TypeInt, value)
+		_node.OrderNumber = value
 	}
 	if nodes := sdc.mutation.GameIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -418,6 +431,24 @@ func (u *StatDescriptionUpsert) ClearMetadata() *StatDescriptionUpsert {
 	return u
 }
 
+// SetOrderNumber sets the "order_number" field.
+func (u *StatDescriptionUpsert) SetOrderNumber(v int) *StatDescriptionUpsert {
+	u.Set(statdescription.FieldOrderNumber, v)
+	return u
+}
+
+// UpdateOrderNumber sets the "order_number" field to the value that was provided on create.
+func (u *StatDescriptionUpsert) UpdateOrderNumber() *StatDescriptionUpsert {
+	u.SetExcluded(statdescription.FieldOrderNumber)
+	return u
+}
+
+// AddOrderNumber adds v to the "order_number" field.
+func (u *StatDescriptionUpsert) AddOrderNumber(v int) *StatDescriptionUpsert {
+	u.Add(statdescription.FieldOrderNumber, v)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -533,6 +564,27 @@ func (u *StatDescriptionUpsertOne) UpdateMetadata() *StatDescriptionUpsertOne {
 func (u *StatDescriptionUpsertOne) ClearMetadata() *StatDescriptionUpsertOne {
 	return u.Update(func(s *StatDescriptionUpsert) {
 		s.ClearMetadata()
+	})
+}
+
+// SetOrderNumber sets the "order_number" field.
+func (u *StatDescriptionUpsertOne) SetOrderNumber(v int) *StatDescriptionUpsertOne {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.SetOrderNumber(v)
+	})
+}
+
+// AddOrderNumber adds v to the "order_number" field.
+func (u *StatDescriptionUpsertOne) AddOrderNumber(v int) *StatDescriptionUpsertOne {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.AddOrderNumber(v)
+	})
+}
+
+// UpdateOrderNumber sets the "order_number" field to the value that was provided on create.
+func (u *StatDescriptionUpsertOne) UpdateOrderNumber() *StatDescriptionUpsertOne {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.UpdateOrderNumber()
 	})
 }
 
@@ -814,6 +866,27 @@ func (u *StatDescriptionUpsertBulk) UpdateMetadata() *StatDescriptionUpsertBulk 
 func (u *StatDescriptionUpsertBulk) ClearMetadata() *StatDescriptionUpsertBulk {
 	return u.Update(func(s *StatDescriptionUpsert) {
 		s.ClearMetadata()
+	})
+}
+
+// SetOrderNumber sets the "order_number" field.
+func (u *StatDescriptionUpsertBulk) SetOrderNumber(v int) *StatDescriptionUpsertBulk {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.SetOrderNumber(v)
+	})
+}
+
+// AddOrderNumber adds v to the "order_number" field.
+func (u *StatDescriptionUpsertBulk) AddOrderNumber(v int) *StatDescriptionUpsertBulk {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.AddOrderNumber(v)
+	})
+}
+
+// UpdateOrderNumber sets the "order_number" field to the value that was provided on create.
+func (u *StatDescriptionUpsertBulk) UpdateOrderNumber() *StatDescriptionUpsertBulk {
+	return u.Update(func(s *StatDescriptionUpsert) {
+		s.UpdateOrderNumber()
 	})
 }
 

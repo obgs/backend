@@ -41,7 +41,7 @@ func (Game) Edges() []ent.Edge {
 		edge.From("author", User.Type).Ref("games").Required().Unique(),
 		edge.To("favorites", GameFavorite.Type),
 		edge.From("stat_descriptions", StatDescription.Type).Ref("game").Required().Annotations(
-			entgql.Skip(entgql.SkipWhereInput),
+			entgql.Skip(entgql.SkipAll),
 		),
 		edge.To("matches", Match.Type).Annotations(entgql.Skip(entgql.SkipAll)),
 	}

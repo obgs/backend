@@ -16,25 +16,32 @@ func createTerraformingMars(ctx context.Context, tx *ent.Tx, author *ent.User) *
 	stats := tx.StatDescription.CreateBulk(
 		tx.StatDescription.Create().
 			SetName("Terraforming Rating").
-			SetType(stat.Numeric),
+			SetType(stat.Numeric).
+			SetOrderNumber(1),
 		tx.StatDescription.Create().
 			SetName("Milestones").
-			SetType(stat.Numeric),
+			SetType(stat.Numeric).
+			SetOrderNumber(2),
 		tx.StatDescription.Create().
 			SetName("Awards").
-			SetType(stat.Numeric),
+			SetType(stat.Numeric).
+			SetOrderNumber(3),
 		tx.StatDescription.Create().
 			SetName("Greeneries").
-			SetType(stat.Numeric),
+			SetType(stat.Numeric).
+			SetOrderNumber(4),
 		tx.StatDescription.Create().
 			SetName("Cities").
-			SetType(stat.Numeric),
+			SetType(stat.Numeric).
+			SetOrderNumber(5),
 		tx.StatDescription.Create().
 			SetName("Cards").
-			SetType(stat.Numeric),
+			SetType(stat.Numeric).
+			SetOrderNumber(6),
 		tx.StatDescription.Create().
 			SetName("Crisis").
-			SetType(stat.Numeric),
+			SetType(stat.Numeric).
+			SetOrderNumber(7),
 	).SaveX(ctx)
 
 	return tx.Game.Create().
