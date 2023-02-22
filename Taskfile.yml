@@ -8,7 +8,11 @@ env:
 
 tasks:
   atlas_auto:
-    - go run --mod=mod internal/ent/migrate/main.go {{.CLI_ARGS}}
+    cmds:
+      - cmd: psql {{.MAIN_URL}} -c "CREATE DATABASE test"
+        ignore_error: true
+        silent: true
+      - go run --mod=mod internal/ent/migrate/main.go {{.CLI_ARGS}} {{.TEST_URL}}
 
   atlas_apply:
     - atlas migrate apply --dir {{.DIR}} -u {{.MAIN_URL}}
