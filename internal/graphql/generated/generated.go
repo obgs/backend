@@ -2282,6 +2282,7 @@ input StatDescriptionInput {
   name: String!
   description: String
   metadata: StatMetadataInput
+  orderNumber: Int!
 }
 `, BuiltIn: false},
 	{Name: "../schema/user.graphql", Input: `extend type User {
@@ -14000,7 +14001,7 @@ func (ec *executionContext) unmarshalInputStatDescriptionInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"type", "name", "description", "metadata"}
+	fieldsInOrder := [...]string{"type", "name", "description", "metadata", "orderNumber"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14036,6 +14037,14 @@ func (ec *executionContext) unmarshalInputStatDescriptionInput(ctx context.Conte
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("metadata"))
 			it.Metadata, err = ec.unmarshalOStatMetadataInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐStatMetadataInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "orderNumber":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderNumber"))
+			it.OrderNumber, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}

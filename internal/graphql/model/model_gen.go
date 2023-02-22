@@ -77,6 +77,7 @@ type StatDescriptionInput struct {
 	Name        string             `json:"name"`
 	Description *string            `json:"description"`
 	Metadata    *StatMetadataInput `json:"metadata"`
+	OrderNumber int                `json:"orderNumber"`
 }
 
 type StatInput struct {

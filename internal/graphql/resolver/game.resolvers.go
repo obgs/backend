@@ -72,7 +72,8 @@ func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGam
 			SetType(desc.Type).
 			SetName(desc.Name).
 			SetDescription(*desc.Description).
-			SetMetadata(metadata)
+			SetMetadata(metadata).
+			SetOrderNumber(desc.OrderNumber)
 
 		createDescriptons = append(
 			createDescriptons,
