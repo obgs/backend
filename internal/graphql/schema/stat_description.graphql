@@ -21,4 +21,5 @@ input StatDescriptionInput {
   name: String!
   description: String
   metadata: StatMetadataInput
+  orderNumber: Int!
 }

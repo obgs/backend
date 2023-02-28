@@ -22,6 +22,9 @@ issues:
     - path: "internal/graphql/resolver/*.*.go"
       linters:
         - gofumpt
+    - path: "internal/ent/migrate/seed/*.*.go"
+      linters:
+        - gomnd
 
 linters:
   enable-all: true

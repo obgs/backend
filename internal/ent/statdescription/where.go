@@ -102,6 +102,13 @@ func Metadata(v string) predicate.StatDescription {
 	})
 }
 
+// OrderNumber applies equality check predicate on the "order_number" field. It's identical to OrderNumberEQ.
+func OrderNumber(v int) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldOrderNumber), v))
+	})
+}
+
 // TypeEQ applies the EQ predicate on the "type" field.
 func TypeEQ(v stat.StatType) predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {
@@ -460,6 +467,70 @@ func MetadataEqualFold(v string) predicate.StatDescription {
 func MetadataContainsFold(v string) predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldMetadata), v))
+	})
+}
+
+// OrderNumberEQ applies the EQ predicate on the "order_number" field.
+func OrderNumberEQ(v int) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldOrderNumber), v))
+	})
+}
+
+// OrderNumberNEQ applies the NEQ predicate on the "order_number" field.
+func OrderNumberNEQ(v int) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldOrderNumber), v))
+	})
+}
+
+// OrderNumberIn applies the In predicate on the "order_number" field.
+func OrderNumberIn(vs ...int) predicate.StatDescription {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.In(s.C(FieldOrderNumber), v...))
+	})
+}
+
+// OrderNumberNotIn applies the NotIn predicate on the "order_number" field.
+func OrderNumberNotIn(vs ...int) predicate.StatDescription {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.NotIn(s.C(FieldOrderNumber), v...))
+	})
+}
+
+// OrderNumberGT applies the GT predicate on the "order_number" field.
+func OrderNumberGT(v int) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldOrderNumber), v))
+	})
+}
+
+// OrderNumberGTE applies the GTE predicate on the "order_number" field.
+func OrderNumberGTE(v int) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldOrderNumber), v))
+	})
+}
+
+// OrderNumberLT applies the LT predicate on the "order_number" field.
+func OrderNumberLT(v int) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldOrderNumber), v))
+	})
+}
+
+// OrderNumberLTE applies the LTE predicate on the "order_number" field.
+func OrderNumberLTE(v int) predicate.StatDescription {
+	return predicate.StatDescription(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldOrderNumber), v))
 	})
 }
 

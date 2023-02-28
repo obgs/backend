@@ -23,6 +23,7 @@ func (StatDescription) Fields() []ent.Field {
 		field.String("name").NotEmpty(),
 		field.String("description").Optional().Default(""),
 		field.String("metadata").Optional().Annotations(entgql.Skip(entgql.SkipWhereInput)),
+		field.Int("order_number").Annotations(entgql.Skip(entgql.SkipWhereInput)),
 	}
 }
 

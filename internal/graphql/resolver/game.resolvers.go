@@ -49,6 +49,11 @@ func (r *gameResolver) IsFavorite(ctx context.Context, obj *ent.Game) (bool, err
 	return obj.QueryFavorites().Where(gamefavorite.HasUserWith(user.ID(u.ID))).Exist(ctx)
 }
 
+// StatDescriptions is the resolver for the statDescriptions field.
+func (r *gameResolver) StatDescriptions(ctx context.Context, obj *ent.Game) ([]*ent.StatDescription, error) {
+	return obj.QueryStatDescriptions().Order(ent.Asc("order_number")).All(ctx)
+}
+
 // CreateGame is the resolver for the createGame field.
 func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGameInput) (*ent.Game, error) {
 	u, err := auth.UserFromContext(ctx)
@@ -67,7 +72,8 @@ func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGam
 			SetType(desc.Type).
 			SetName(desc.Name).
 			SetDescription(*desc.Description).
-			SetMetadata(metadata)
+			SetMetadata(metadata).
+			SetOrderNumber(desc.OrderNumber)
 
 		createDescriptons = append(
 			createDescriptons,

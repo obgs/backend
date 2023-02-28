@@ -247,6 +247,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "metadata", Type: field.TypeString, Nullable: true},
+		{Name: "order_number", Type: field.TypeInt},
 	}
 	// StatDescriptionsTable holds the schema information for the "stat_descriptions" table.
 	StatDescriptionsTable = &schema.Table{

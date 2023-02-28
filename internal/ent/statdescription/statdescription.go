@@ -23,6 +23,8 @@ const (
 	FieldDescription = "description"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
+	// FieldOrderNumber holds the string denoting the order_number field in the database.
+	FieldOrderNumber = "order_number"
 	// EdgeGame holds the string denoting the game edge name in mutations.
 	EdgeGame = "game"
 	// EdgeStats holds the string denoting the stats edge name in mutations.
@@ -50,6 +52,7 @@ var Columns = []string{
 	FieldName,
 	FieldDescription,
 	FieldMetadata,
+	FieldOrderNumber,
 }
 
 var (

@@ -13,7 +13,6 @@ type Game implements Node {
   description: String
   boardgamegeekURL: String
   author: User!
-  statDescriptions: [StatDescription!]!
 }
 """A connection to a list of items."""
 type GameConnection {
@@ -578,6 +577,7 @@ type StatDescription implements Node {
   name: String!
   description: String
   metadata: String
+  orderNumber: Int!
 }
 """StatDescriptionStatType is enum for the field type"""
 enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
