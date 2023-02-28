@@ -3,12 +3,27 @@
 package model
 
 import (
+	"fmt"
+	"io"
+	"strconv"
+
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 )
+
+// This type is exposed for type safety on client side
+type AggregateMetadata struct {
+	Type    AggregateMetadataType `json:"type"`
+	StatIds []*guidgql.GUID       `json:"statIds"`
+}
+
+type AggregateMetadataInput struct {
+	Type             AggregateMetadataType `json:"type"`
+	StatOrderNumbers []int                 `json:"statOrderNumbers"`
+}
 
 type CreateGameInput struct {
 	Name             string                  `json:"name"`
@@ -89,5 +104,46 @@ type StatInput struct {
 
 type StatMetadataInput struct {
 	// Once input unions are in graphql, this will be one
-	EnumMetadata *EnumMetadataInput `json:"enumMetadata"`
+	EnumMetadata      *EnumMetadataInput      `json:"enumMetadata"`
+	AggregateMetadata *AggregateMetadataInput `json:"aggregateMetadata"`
+}
+
+type AggregateMetadataType string
+
+const (
+	// Sum of all values
+	AggregateMetadataTypeSum AggregateMetadataType = "sum"
+)
+
+var AllAggregateMetadataType = []AggregateMetadataType{
+	AggregateMetadataTypeSum,
+}
+
+func (e AggregateMetadataType) IsValid() bool {
+	switch e {
+	case AggregateMetadataTypeSum:
+		return true
+	}
+	return false
+}
+
+func (e AggregateMetadataType) String() string {
+	return string(e)
+}
+
+func (e *AggregateMetadataType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AggregateMetadataType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AggregateMetadataType", str)
+	}
+	return nil
+}
+
+func (e AggregateMetadataType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

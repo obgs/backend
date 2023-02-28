@@ -53,6 +53,11 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AggregateMetadata struct {
+		StatIds func(childComplexity int) int
+		Type    func(childComplexity int) int
+	}
+
 	EnumMetadata struct {
 		PossibleValues func(childComplexity int) int
 	}
@@ -326,6 +331,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AggregateMetadata.statIds":
+		if e.complexity.AggregateMetadata.StatIds == nil {
+			break
+		}
+
+		return e.complexity.AggregateMetadata.StatIds(childComplexity), true
+
+	case "AggregateMetadata.type":
+		if e.complexity.AggregateMetadata.Type == nil {
+			break
+		}
+
+		return e.complexity.AggregateMetadata.Type(childComplexity), true
 
 	case "EnumMetadata.possibleValues":
 		if e.complexity.EnumMetadata.PossibleValues == nil {
@@ -1357,6 +1376,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAggregateMetadataInput,
 		ec.unmarshalInputCreateGameInput,
 		ec.unmarshalInputCreateMatchInput,
 		ec.unmarshalInputCreateOrUpdateGroupInput,
@@ -2026,6 +2046,7 @@ type StatDescription implements Node {
 enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
   numeric
   enum
+  aggregate
 }
 type Statistic implements Node {
   id: ID!
@@ -2270,11 +2291,32 @@ type EnumMetadata {
   possibleValues: [String!]!
 }
 
+enum AggregateMetadataType {
+  """
+  Sum of all values
+  """
+  sum
+}
+
+input AggregateMetadataInput {
+  type: AggregateMetadataType!
+  statOrderNumbers: [Int!]!
+}
+
+"""
+This type is exposed for type safety on client side
+"""
+type AggregateMetadata {
+  type: AggregateMetadataType!
+  statIds: [ID!]!
+}
+
 input StatMetadataInput {
   """
   Once input unions are in graphql, this will be one
   """
   enumMetadata: EnumMetadataInput
+  aggregateMetadata: AggregateMetadataInput
 }
 
 input StatDescriptionInput {
@@ -2942,6 +2984,94 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AggregateMetadata_type(ctx context.Context, field graphql.CollectedField, obj *model.AggregateMetadata) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AggregateMetadata_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.AggregateMetadataType)
+	fc.Result = res
+	return ec.marshalNAggregateMetadataType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐAggregateMetadataType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AggregateMetadata_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AggregateMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AggregateMetadataType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AggregateMetadata_statIds(ctx context.Context, field graphql.CollectedField, obj *model.AggregateMetadata) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AggregateMetadata_statIds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StatIds, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*guidgql.GUID)
+	fc.Result = res
+	return ec.marshalNID2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUIDᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AggregateMetadata_statIds(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AggregateMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _EnumMetadata_possibleValues(ctx context.Context, field graphql.CollectedField, obj *model.EnumMetadata) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_EnumMetadata_possibleValues(ctx, field)
@@ -11942,6 +12072,42 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAggregateMetadataInput(ctx context.Context, obj interface{}) (model.AggregateMetadataInput, error) {
+	var it model.AggregateMetadataInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"type", "statOrderNumbers"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			it.Type, err = ec.unmarshalNAggregateMetadataType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐAggregateMetadataType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "statOrderNumbers":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statOrderNumbers"))
+			it.StatOrderNumbers, err = ec.unmarshalNInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, obj interface{}) (model.CreateGameInput, error) {
 	var it model.CreateGameInput
 	asMap := map[string]interface{}{}
@@ -14105,7 +14271,7 @@ func (ec *executionContext) unmarshalInputStatMetadataInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"enumMetadata"}
+	fieldsInOrder := [...]string{"enumMetadata", "aggregateMetadata"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14117,6 +14283,14 @@ func (ec *executionContext) unmarshalInputStatMetadataInput(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enumMetadata"))
 			it.EnumMetadata, err = ec.unmarshalOEnumMetadataInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumMetadataInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "aggregateMetadata":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("aggregateMetadata"))
+			it.AggregateMetadata, err = ec.unmarshalOAggregateMetadataInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐAggregateMetadataInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -14658,6 +14832,41 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var aggregateMetadataImplementors = []string{"AggregateMetadata"}
+
+func (ec *executionContext) _AggregateMetadata(ctx context.Context, sel ast.SelectionSet, obj *model.AggregateMetadata) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, aggregateMetadataImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AggregateMetadata")
+		case "type":
+
+			out.Values[i] = ec._AggregateMetadata_type(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "statIds":
+
+			out.Values[i] = ec._AggregateMetadata_statIds(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var enumMetadataImplementors = []string{"EnumMetadata"}
 
@@ -17050,6 +17259,16 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAggregateMetadataType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐAggregateMetadataType(ctx context.Context, v interface{}) (model.AggregateMetadataType, error) {
+	var res model.AggregateMetadataType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAggregateMetadataType2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐAggregateMetadataType(ctx context.Context, sel ast.SelectionSet, v model.AggregateMetadataType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -17340,6 +17559,38 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNInt2ᚕintᚄ(ctx context.Context, v interface{}) ([]int, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]int, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNInt2int(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNInt2ᚕintᚄ(ctx context.Context, sel ast.SelectionSet, v []int) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNInt2int(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNMatch2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐMatch(ctx context.Context, sel ast.SelectionSet, v ent.Match) graphql.Marshaler {
@@ -18075,6 +18326,14 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalOAggregateMetadataInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐAggregateMetadataInput(ctx context.Context, v interface{}) (*model.AggregateMetadataInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAggregateMetadataInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {

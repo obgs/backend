@@ -9,11 +9,32 @@ type EnumMetadata {
   possibleValues: [String!]!
 }
 
+enum AggregateMetadataType {
+  """
+  Sum of all values
+  """
+  sum
+}
+
+input AggregateMetadataInput {
+  type: AggregateMetadataType!
+  statOrderNumbers: [Int!]!
+}
+
+"""
+This type is exposed for type safety on client side
+"""
+type AggregateMetadata {
+  type: AggregateMetadataType!
+  statIds: [ID!]!
+}
+
 input StatMetadataInput {
   """
   Once input unions are in graphql, this will be one
   """
   enumMetadata: EnumMetadataInput
+  aggregateMetadata: AggregateMetadataInput
 }
 
 input StatDescriptionInput {
