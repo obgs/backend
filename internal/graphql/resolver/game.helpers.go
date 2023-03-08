@@ -35,7 +35,8 @@ func addReferencesForAggregateStats(ctx context.Context, client *ent.Client, sta
 		orderNumbers := input[i].Metadata.AggregateMetadata.StatOrderNumbers
 		aggregateMetadata.StatIds = make([]guidgql.GUID, len(orderNumbers))
 		for j, orderNumber := range orderNumbers {
-			aggregateMetadata.StatIds[j] = stats[orderNumber].ID
+			// order numbers start at 1
+			aggregateMetadata.StatIds[j] = stats[orderNumber-1].ID
 		}
 
 		metadataBytes, err := json.Marshal(aggregateMetadata)
