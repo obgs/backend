@@ -38,6 +38,15 @@ func (t *AggregateType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (t AggregateType) MarshalJSON() ([]byte, error) {
+	switch t {
+	case AggregateSum:
+		return json.Marshal("sum")
+	default:
+		return nil, fmt.Errorf("invalid AggregateType %q", t)
+	}
+}
+
 // New returns the default value for StatType.
 func New() StatType {
 	return Numeric
