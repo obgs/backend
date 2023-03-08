@@ -92,3 +92,16 @@ func (guid *GUID) Scan(src interface{}) error {
 func (guid GUID) Value() (driver.Value, error) {
 	return guid.String(), nil
 }
+
+func (guid GUID) MarshalJSON() ([]byte, error) {
+	return []byte(strconv.Quote(guid.String())), nil
+}
+
+func (guid *GUID) UnmarshalJSON(data []byte) error {
+	unquoted, err := strconv.Unquote(string(data))
+	if err != nil {
+		return err
+	}
+
+	return guid.UnmarshalGQL(unquoted)
+}
