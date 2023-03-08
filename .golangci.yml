@@ -25,6 +25,7 @@ issues:
     - path: "internal/ent/migrate/seed/*.*.go"
       linters:
         - gomnd
+        - funlen
 
 linters:
   enable-all: true
