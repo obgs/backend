@@ -36,7 +36,12 @@ func addReferencesForAggregateStats(ctx context.Context, client *ent.Client, sta
 		aggregateMetadata.StatIds = make([]guidgql.GUID, len(orderNumbers))
 		for j, orderNumber := range orderNumbers {
 			// order numbers start at 1
-			aggregateMetadata.StatIds[j] = stats[orderNumber-1].ID
+			s := stats[orderNumber-1]
+			// we can only sum numeric stats
+			if aggregateMetadata.Type == stat.AggregateSum && s.Type != stat.Numeric {
+				return fmt.Errorf("can only sum numeric stats")
+			}
+			aggregateMetadata.StatIds[j] = s.ID
 		}
 
 		metadataBytes, err := json.Marshal(aggregateMetadata)
