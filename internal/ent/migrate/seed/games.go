@@ -67,7 +67,7 @@ func createTerraformingMars(ctx context.Context, tx *ent.Tx, author *ent.User) *
 	overallScoreMetadata := stat.AggregateStatMetadata{
 		Type: stat.AggregateSum,
 		StatIds: []guidgql.GUID{
-			stats[0].ID, stats[1].ID, stats[2].ID, stats[5].ID, stats[6].ID, stats[7].ID,
+			stats[0].ID, stats[1].ID, stats[2].ID, stats[3].ID, stats[4].ID, stats[6].ID, stats[7].ID,
 		},
 	}
 	overallScoreMetadataBytes, _ := json.Marshal(overallScoreMetadata)
