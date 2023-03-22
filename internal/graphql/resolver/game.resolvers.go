@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+	"sort"
 
 	"github.com/open-boardgame-stats/backend/internal/auth"
 	"github.com/open-boardgame-stats/backend/internal/ent"
@@ -56,19 +57,26 @@ func (r *gameResolver) StatDescriptions(ctx context.Context, obj *ent.Game) ([]*
 
 // CreateGame is the resolver for the createGame field.
 func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGameInput) (*ent.Game, error) {
+	client := ent.FromContext(ctx)
+
 	u, err := auth.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	createDescriptons := make([]*ent.StatDescriptionCreate, 0, len(input.StatDescriptions))
+	// stats should come from the client in the correct order
+	// but we sort them just in case
+	sort.Slice(input.StatDescriptions, func(i, j int) bool {
+		return input.StatDescriptions[i].OrderNumber < input.StatDescriptions[j].OrderNumber
+	})
 	for _, desc := range input.StatDescriptions {
 		metadata, err := marshalStatMetadata(desc.Type, desc.Metadata)
 		if err != nil {
 			return nil, err
 		}
 
-		create := r.client.StatDescription.Create().
+		create := client.StatDescription.Create().
 			SetType(desc.Type).
 			SetName(desc.Name).
 			SetDescription(*desc.Description).
@@ -81,12 +89,17 @@ func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGam
 		)
 	}
 
-	descriptions, err := r.client.StatDescription.CreateBulk(createDescriptons...).Save(ctx)
+	descriptions, err := client.StatDescription.CreateBulk(createDescriptons...).Save(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.client.Game.Create().
+	err = addReferencesForAggregateStats(ctx, client, descriptions, input.StatDescriptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.Game.Create().
 		SetName(input.Name).
 		SetDescription(*input.Description).
 		SetBoardgamegeekURL(*input.BoardgamegeekURL).

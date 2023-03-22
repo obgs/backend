@@ -583,6 +583,7 @@ type StatDescription implements Node {
 enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
   numeric
   enum
+  aggregate
 }
 type Statistic implements Node {
   id: ID!

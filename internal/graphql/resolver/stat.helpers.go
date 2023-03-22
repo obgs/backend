@@ -8,6 +8,10 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
 
+const (
+	MIN_SUM_STATS = 2
+)
+
 func marshalStatMetadata(t stat.StatType, input *model.StatMetadataInput) (metadata string, err error) {
 	if input == nil {
 		return "", nil
@@ -25,6 +29,20 @@ func marshalStatMetadata(t stat.StatType, input *model.StatMetadataInput) (metad
 		}
 
 		bytes, err := json.Marshal(input.EnumMetadata)
+		if err != nil {
+			return "", err
+		}
+
+		metadata = string(bytes)
+	case stat.Aggregate:
+		if input.AggregateMetadata == nil {
+			return "", fmt.Errorf("aggregate metadata is required for aggregate stat")
+		}
+		if len(input.AggregateMetadata.StatOrderNumbers) < MIN_SUM_STATS {
+			return "", fmt.Errorf("aggregate stat must have at least two stats")
+		}
+
+		bytes, err := json.Marshal(input.AggregateMetadata)
 		if err != nil {
 			return "", err
 		}

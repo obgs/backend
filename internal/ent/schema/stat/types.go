@@ -2,6 +2,7 @@ package stat
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strconv"
@@ -12,7 +13,39 @@ type StatType int
 const (
 	Numeric StatType = iota
 	Enum
+	Aggregate
 )
+
+type AggregateType int
+
+const (
+	AggregateSum AggregateType = iota
+)
+
+func (t *AggregateType) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	switch s {
+	case "sum":
+		*t = AggregateSum
+	default:
+		return fmt.Errorf("invalid AggregateType %q", s)
+	}
+
+	return nil
+}
+
+func (t AggregateType) MarshalJSON() ([]byte, error) {
+	switch t {
+	case AggregateSum:
+		return json.Marshal("sum")
+	default:
+		return nil, fmt.Errorf("invalid AggregateType %q", t)
+	}
+}
 
 // New returns the default value for StatType.
 func New() StatType {
@@ -25,6 +58,8 @@ func (t StatType) String() string {
 		return "numeric"
 	case Enum:
 		return "enum"
+	case Aggregate:
+		return "aggregate"
 	default:
 		return "unknown"
 	}
@@ -34,6 +69,7 @@ func (t StatType) Values() []string {
 	return []string{
 		Numeric.String(),
 		Enum.String(),
+		Aggregate.String(),
 	}
 }
 
@@ -45,6 +81,8 @@ func UnmarshalStatType(src interface{}) (StatType, error) {
 			return Numeric, nil
 		case "enum":
 			return Enum, nil
+		case "aggregate":
+			return Aggregate, nil
 		default:
 			return 0, fmt.Errorf("invalid StatType %q", v)
 		}
