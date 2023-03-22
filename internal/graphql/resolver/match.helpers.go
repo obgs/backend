@@ -14,15 +14,15 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
 
-func calculateAggregateStatValues(ctx context.Context, client *ent.Client, input []*model.StatInput, playerIds []guidgql.GUID, m *ent.Match) ([]*ent.StatisticCreate, error) {
+func prepareAggregateStatCalculation(ctx context.Context, client *ent.Client, input []*model.StatInput, m *ent.Match) (map[guidgql.GUID]*ent.StatDescription, []*ent.StatDescription, map[guidgql.GUID]*model.StatInput, error) {
 	g, err := m.Game(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get game: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to get game: %w", err)
 	}
 
 	statDescriptions, err := client.StatDescription.Query().Where(statdescription.HasGameWith(game.ID(g.ID))).All(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	// create a map of stat descriptions for faster lookup
@@ -39,6 +39,15 @@ func calculateAggregateStatValues(ctx context.Context, client *ent.Client, input
 	statInputs := make(map[guidgql.GUID]*model.StatInput, len(input))
 	for _, s := range input {
 		statInputs[s.StatID] = s
+	}
+
+	return stats, aggregateStats, statInputs, nil
+}
+
+func calculateAggregateStatValues(ctx context.Context, client *ent.Client, input []*model.StatInput, playerIds []guidgql.GUID, m *ent.Match) ([]*ent.StatisticCreate, error) {
+	stats, aggregateStats, statInputs, err := prepareAggregateStatCalculation(ctx, client, input, m)
+	if err != nil {
+		return nil, err
 	}
 
 	createAggregateStats := make([]*ent.StatisticCreate, 0, len(aggregateStats)*len(playerIds))
@@ -61,8 +70,8 @@ func calculateAggregateStatValues(ctx context.Context, client *ent.Client, input
 					return nil, fmt.Errorf("stat %s is not numeric", *statID)
 				}
 
-				s := statInputs[*statID]
-				if s == nil {
+				s, ok := statInputs[*statID]
+				if !ok || s == nil {
 					return nil, fmt.Errorf("stat %s not found in input", *statID)
 				}
 
