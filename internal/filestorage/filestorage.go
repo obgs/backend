@@ -73,6 +73,7 @@ func (s *FileStorageService) SignUploadURL(ctx context.Context) (string, error) 
 	req, err := s.s3PresignClient.PresignPutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key.String()),
+		ACL:    types.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
 		return "", err
