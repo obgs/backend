@@ -5,9 +5,11 @@ package resolver
 
 import (
 	"context"
+
+	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
 
-// GetFileUploadURL is the resolver for the getFileUploadURL field.
-func (r *queryResolver) GetFileUploadURL(ctx context.Context) (string, error) {
+// PreSignUploadURL is the resolver for the preSignUploadURL field.
+func (r *queryResolver) PreSignUploadURL(ctx context.Context) (*model.UploadURL, error) {
 	return r.filestorage.SignUploadURL(ctx)
 }

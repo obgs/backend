@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	miniocreds "github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/open-boardgame-stats/backend/internal/graphql/model"
 )
 
 type FileStorageService struct {
@@ -68,7 +69,7 @@ func NewFileStorageService(accessKeyID,
 }
 
 // SignUploadURL signs a URL for uploading a file to S3
-func (s *FileStorageService) SignUploadURL(ctx context.Context) (string, error) {
+func (s *FileStorageService) SignUploadURL(ctx context.Context) (*model.UploadURL, error) {
 	key := uuid.New()
 	req, err := s.s3PresignClient.PresignPutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(s.bucket),
@@ -76,10 +77,23 @@ func (s *FileStorageService) SignUploadURL(ctx context.Context) (string, error) 
 		ACL:    types.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return req.URL, nil
+	headers := make([]*model.Header, 0, len(req.SignedHeader))
+	for k, v := range req.SignedHeader {
+		for _, vv := range v {
+			headers = append(headers, &model.Header{
+				Key:   k,
+				Value: vv,
+			})
+		}
+	}
+
+	return &model.UploadURL{
+		URL:     req.URL,
+		Headers: headers,
+	}, nil
 }
 
 func (s *FileStorageService) CreateBucket(ctx context.Context) error {

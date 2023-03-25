@@ -77,6 +77,11 @@ type GroupSettingsInput struct {
 	MinimumRoleToInvite *enums.Role              `json:"minimumRoleToInvite"`
 }
 
+type Header struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type RequestPlayerSupervisionInput struct {
 	PlayerID guidgql.GUID `json:"playerId"`
 	Message  *string      `json:"message"`
@@ -106,6 +111,11 @@ type StatMetadataInput struct {
 	// Once input unions are in graphql, this will be one
 	EnumMetadata      *EnumMetadataInput      `json:"enumMetadata"`
 	AggregateMetadata *AggregateMetadataInput `json:"aggregateMetadata"`
+}
+
+type UploadURL struct {
+	URL     string    `json:"url"`
+	Headers []*Header `json:"headers"`
 }
 
 type AggregateMetadataType string
