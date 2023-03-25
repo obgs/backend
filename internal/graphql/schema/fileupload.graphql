@@ -1,3 +1,13 @@
+type Header {
+  key: String!
+  value: String!
+}
+
+type UploadURL {
+  url: String!
+  headers: [Header!]!
+}
+
 extend type Query {
-  getFileUploadURL: String! @authenticated
+  preSignUploadURL: UploadURL! @authenticated
 }

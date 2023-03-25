@@ -146,6 +146,11 @@ type ComplexityRoot struct {
 		Visibility          func(childComplexity int) int
 	}
 
+	Header struct {
+		Key   func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
 	Match struct {
 		Game    func(childComplexity int) int
 		ID      func(childComplexity int) int
@@ -224,13 +229,13 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Games            func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.GameWhereInput) int
-		GetFileUploadURL func(childComplexity int) int
 		Groups           func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.GroupWhereInput) int
 		Matches          func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.MatchWhereInput) int
 		Me               func(childComplexity int) int
 		Node             func(childComplexity int, id guidgql.GUID) int
 		Nodes            func(childComplexity int, ids []*guidgql.GUID) int
 		Players          func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.PlayerWhereInput) int
+		PreSignUploadURL func(childComplexity int) int
 		Users            func(childComplexity int, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.UserWhereInput) int
 	}
 
@@ -249,6 +254,11 @@ type ComplexityRoot struct {
 		Player          func(childComplexity int) int
 		StatDescription func(childComplexity int) int
 		Value           func(childComplexity int) int
+	}
+
+	UploadURL struct {
+		Headers func(childComplexity int) int
+		URL     func(childComplexity int) int
 	}
 
 	User struct {
@@ -309,7 +319,7 @@ type QueryResolver interface {
 	Matches(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.MatchWhereInput) (*ent.MatchConnection, error)
 	Players(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.PlayerWhereInput) (*ent.PlayerConnection, error)
 	Users(ctx context.Context, after *ent.Cursor, first *int, before *ent.Cursor, last *int, where *ent.UserWhereInput) (*ent.UserConnection, error)
-	GetFileUploadURL(ctx context.Context) (string, error)
+	PreSignUploadURL(ctx context.Context) (*model.UploadURL, error)
 	Me(ctx context.Context) (*ent.User, error)
 }
 type UserResolver interface {
@@ -693,6 +703,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.GroupSettings.Visibility(childComplexity), true
+
+	case "Header.key":
+		if e.complexity.Header.Key == nil {
+			break
+		}
+
+		return e.complexity.Header.Key(childComplexity), true
+
+	case "Header.value":
+		if e.complexity.Header.Value == nil {
+			break
+		}
+
+		return e.complexity.Header.Value(childComplexity), true
 
 	case "Match.game":
 		if e.complexity.Match.Game == nil {
@@ -1093,13 +1117,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Games(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["where"].(*ent.GameWhereInput)), true
 
-	case "Query.getFileUploadURL":
-		if e.complexity.Query.GetFileUploadURL == nil {
-			break
-		}
-
-		return e.complexity.Query.GetFileUploadURL(childComplexity), true
-
 	case "Query.groups":
 		if e.complexity.Query.Groups == nil {
 			break
@@ -1166,6 +1183,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Players(childComplexity, args["after"].(*ent.Cursor), args["first"].(*int), args["before"].(*ent.Cursor), args["last"].(*int), args["where"].(*ent.PlayerWhereInput)), true
+
+	case "Query.preSignUploadURL":
+		if e.complexity.Query.PreSignUploadURL == nil {
+			break
+		}
+
+		return e.complexity.Query.PreSignUploadURL(childComplexity), true
 
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
@@ -1255,6 +1279,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Statistic.Value(childComplexity), true
+
+	case "UploadURL.headers":
+		if e.complexity.UploadURL.Headers == nil {
+			break
+		}
+
+		return e.complexity.UploadURL.Headers(childComplexity), true
+
+	case "UploadURL.url":
+		if e.complexity.UploadURL.URL == nil {
+			break
+		}
+
+		return e.complexity.UploadURL.URL(childComplexity), true
 
 	case "User.avatarURL":
 		if e.complexity.User.AvatarURL == nil {
@@ -2154,8 +2192,18 @@ input UserWhereInput {
   hasGamesWith: [GameWhereInput!]
 }
 `, BuiltIn: false},
-	{Name: "../schema/fileupload.graphql", Input: `extend type Query {
-  getFileUploadURL: String! @authenticated
+	{Name: "../schema/fileupload.graphql", Input: `type Header {
+  key: String!
+  value: String!
+}
+
+type UploadURL {
+  url: String!
+  headers: [Header!]!
+}
+
+extend type Query {
+  preSignUploadURL: UploadURL! @authenticated
 }
 `, BuiltIn: false},
 	{Name: "../schema/game.graphql", Input: `type Favorites {
@@ -5488,6 +5536,94 @@ func (ec *executionContext) fieldContext_GroupSettings_minimumRoleToInvite(ctx c
 	return fc, nil
 }
 
+func (ec *executionContext) _Header_key(ctx context.Context, field graphql.CollectedField, obj *model.Header) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Header_key(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Header_key(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Header",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Header_value(ctx context.Context, field graphql.CollectedField, obj *model.Header) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Header_value(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Header_value(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Header",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Match_id(ctx context.Context, field graphql.CollectedField, obj *ent.Match) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Match_id(ctx, field)
 	if err != nil {
@@ -8645,8 +8781,8 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_getFileUploadURL(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_getFileUploadURL(ctx, field)
+func (ec *executionContext) _Query_preSignUploadURL(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_preSignUploadURL(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8660,7 +8796,7 @@ func (ec *executionContext) _Query_getFileUploadURL(ctx context.Context, field g
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().GetFileUploadURL(rctx)
+			return ec.resolvers.Query().PreSignUploadURL(rctx)
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Authenticated == nil {
@@ -8676,10 +8812,10 @@ func (ec *executionContext) _Query_getFileUploadURL(ctx context.Context, field g
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(string); ok {
+		if data, ok := tmp.(*model.UploadURL); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/open-boardgame-stats/backend/internal/graphql/model.UploadURL`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8691,19 +8827,25 @@ func (ec *executionContext) _Query_getFileUploadURL(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.UploadURL)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNUploadURL2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐUploadURL(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getFileUploadURL(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_preSignUploadURL(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_UploadURL_url(ctx, field)
+			case "headers":
+				return ec.fieldContext_UploadURL_headers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UploadURL", field.Name)
 		},
 	}
 	return fc, nil
@@ -9437,6 +9579,100 @@ func (ec *executionContext) fieldContext_Statistic_player(ctx context.Context, f
 				return ec.fieldContext_Player_matches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadURL_url(ctx context.Context, field graphql.CollectedField, obj *model.UploadURL) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadURL_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UploadURL_url(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadURL",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadURL_headers(ctx context.Context, field graphql.CollectedField, obj *model.UploadURL) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadURL_headers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Headers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Header)
+	fc.Result = res
+	return ec.marshalNHeader2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐHeaderᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UploadURL_headers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadURL",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "key":
+				return ec.fieldContext_Header_key(ctx, field)
+			case "value":
+				return ec.fieldContext_Header_value(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Header", field.Name)
 		},
 	}
 	return fc, nil
@@ -15617,6 +15853,41 @@ func (ec *executionContext) _GroupSettings(ctx context.Context, sel ast.Selectio
 	return out
 }
 
+var headerImplementors = []string{"Header"}
+
+func (ec *executionContext) _Header(ctx context.Context, sel ast.SelectionSet, obj *model.Header) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, headerImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Header")
+		case "key":
+
+			out.Values[i] = ec._Header_key(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "value":
+
+			out.Values[i] = ec._Header_value(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var matchImplementors = []string{"Match", "Node"}
 
 func (ec *executionContext) _Match(ctx context.Context, sel ast.SelectionSet, obj *ent.Match) graphql.Marshaler {
@@ -16475,7 +16746,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
-		case "getFileUploadURL":
+		case "preSignUploadURL":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -16484,7 +16755,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getFileUploadURL(ctx, field)
+				res = ec._Query_preSignUploadURL(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -16685,6 +16956,41 @@ func (ec *executionContext) _Statistic(ctx context.Context, sel ast.SelectionSet
 				return innerFunc(ctx)
 
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var uploadURLImplementors = []string{"UploadURL"}
+
+func (ec *executionContext) _UploadURL(ctx context.Context, sel ast.SelectionSet, obj *model.UploadURL) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, uploadURLImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UploadURL")
+		case "url":
+
+			out.Values[i] = ec._UploadURL_url(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "headers":
+
+			out.Values[i] = ec._UploadURL_headers(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -17488,6 +17794,60 @@ func (ec *executionContext) unmarshalNGroupWhereInput2ᚖgithubᚗcomᚋopenᚑb
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNHeader2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐHeaderᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Header) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNHeader2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐHeader(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNHeader2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐHeader(ctx context.Context, sel ast.SelectionSet, v *model.Header) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Header(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNID2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx context.Context, v interface{}) (guidgql.GUID, error) {
 	var res guidgql.GUID
 	err := res.UnmarshalGQL(v)
@@ -17996,6 +18356,20 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUpdateUserInput(ctx context.Context, v interface{}) (ent.UpdateUserInput, error) {
 	res, err := ec.unmarshalInputUpdateUserInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUploadURL2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐUploadURL(ctx context.Context, sel ast.SelectionSet, v model.UploadURL) graphql.Marshaler {
+	return ec._UploadURL(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUploadURL2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐUploadURL(ctx context.Context, sel ast.SelectionSet, v *model.UploadURL) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UploadURL(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v ent.User) graphql.Marshaler {
