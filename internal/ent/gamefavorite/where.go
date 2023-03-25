@@ -11,73 +11,47 @@ import (
 
 // ID filters vertices based on their ID field.
 func ID(id guidgql.GUID) predicate.GameFavorite {
-	return predicate.GameFavorite(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.GameFavorite(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
 func IDEQ(id guidgql.GUID) predicate.GameFavorite {
-	return predicate.GameFavorite(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.GameFavorite(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
 func IDNEQ(id guidgql.GUID) predicate.GameFavorite {
-	return predicate.GameFavorite(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldID), id))
-	})
+	return predicate.GameFavorite(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.GameFavorite {
-	return predicate.GameFavorite(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.In(s.C(FieldID), v...))
-	})
+	return predicate.GameFavorite(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.GameFavorite {
-	return predicate.GameFavorite(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.NotIn(s.C(FieldID), v...))
-	})
+	return predicate.GameFavorite(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
 func IDGT(id guidgql.GUID) predicate.GameFavorite {
-	return predicate.GameFavorite(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldID), id))
-	})
+	return predicate.GameFavorite(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
 func IDGTE(id guidgql.GUID) predicate.GameFavorite {
-	return predicate.GameFavorite(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldID), id))
-	})
+	return predicate.GameFavorite(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
 func IDLT(id guidgql.GUID) predicate.GameFavorite {
-	return predicate.GameFavorite(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldID), id))
-	})
+	return predicate.GameFavorite(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
 func IDLTE(id guidgql.GUID) predicate.GameFavorite {
-	return predicate.GameFavorite(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldID), id))
-	})
+	return predicate.GameFavorite(sql.FieldLTE(FieldID, id))
 }
 
 // HasGame applies the HasEdge predicate on the "game" edge.
@@ -85,7 +59,6 @@ func HasGame() predicate.GameFavorite {
 	return predicate.GameFavorite(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(GameTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, GameTable, GameColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -113,7 +86,6 @@ func HasUser() predicate.GameFavorite {
 	return predicate.GameFavorite(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(UserTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

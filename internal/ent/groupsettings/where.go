@@ -12,161 +12,99 @@ import (
 
 // ID filters vertices based on their ID field.
 func ID(id guidgql.GUID) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.GroupSettings(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
 func IDEQ(id guidgql.GUID) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.GroupSettings(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
 func IDNEQ(id guidgql.GUID) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldID), id))
-	})
+	return predicate.GroupSettings(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.In(s.C(FieldID), v...))
-	})
+	return predicate.GroupSettings(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.NotIn(s.C(FieldID), v...))
-	})
+	return predicate.GroupSettings(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
 func IDGT(id guidgql.GUID) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldID), id))
-	})
+	return predicate.GroupSettings(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
 func IDGTE(id guidgql.GUID) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldID), id))
-	})
+	return predicate.GroupSettings(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
 func IDLT(id guidgql.GUID) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldID), id))
-	})
+	return predicate.GroupSettings(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
 func IDLTE(id guidgql.GUID) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldID), id))
-	})
+	return predicate.GroupSettings(sql.FieldLTE(FieldID, id))
 }
 
 // VisibilityEQ applies the EQ predicate on the "visibility" field.
 func VisibilityEQ(v Visibility) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldVisibility), v))
-	})
+	return predicate.GroupSettings(sql.FieldEQ(FieldVisibility, v))
 }
 
 // VisibilityNEQ applies the NEQ predicate on the "visibility" field.
 func VisibilityNEQ(v Visibility) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldVisibility), v))
-	})
+	return predicate.GroupSettings(sql.FieldNEQ(FieldVisibility, v))
 }
 
 // VisibilityIn applies the In predicate on the "visibility" field.
 func VisibilityIn(vs ...Visibility) predicate.GroupSettings {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldVisibility), v...))
-	})
+	return predicate.GroupSettings(sql.FieldIn(FieldVisibility, vs...))
 }
 
 // VisibilityNotIn applies the NotIn predicate on the "visibility" field.
 func VisibilityNotIn(vs ...Visibility) predicate.GroupSettings {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldVisibility), v...))
-	})
+	return predicate.GroupSettings(sql.FieldNotIn(FieldVisibility, vs...))
 }
 
 // JoinPolicyEQ applies the EQ predicate on the "join_policy" field.
 func JoinPolicyEQ(v JoinPolicy) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldJoinPolicy), v))
-	})
+	return predicate.GroupSettings(sql.FieldEQ(FieldJoinPolicy, v))
 }
 
 // JoinPolicyNEQ applies the NEQ predicate on the "join_policy" field.
 func JoinPolicyNEQ(v JoinPolicy) predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldJoinPolicy), v))
-	})
+	return predicate.GroupSettings(sql.FieldNEQ(FieldJoinPolicy, v))
 }
 
 // JoinPolicyIn applies the In predicate on the "join_policy" field.
 func JoinPolicyIn(vs ...JoinPolicy) predicate.GroupSettings {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldJoinPolicy), v...))
-	})
+	return predicate.GroupSettings(sql.FieldIn(FieldJoinPolicy, vs...))
 }
 
 // JoinPolicyNotIn applies the NotIn predicate on the "join_policy" field.
 func JoinPolicyNotIn(vs ...JoinPolicy) predicate.GroupSettings {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldJoinPolicy), v...))
-	})
+	return predicate.GroupSettings(sql.FieldNotIn(FieldJoinPolicy, vs...))
 }
 
 // MinimumRoleToInviteEQ applies the EQ predicate on the "minimum_role_to_invite" field.
 func MinimumRoleToInviteEQ(v enums.Role) predicate.GroupSettings {
 	vc := v
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldMinimumRoleToInvite), vc))
-	})
+	return predicate.GroupSettings(sql.FieldEQ(FieldMinimumRoleToInvite, vc))
 }
 
 // MinimumRoleToInviteNEQ applies the NEQ predicate on the "minimum_role_to_invite" field.
 func MinimumRoleToInviteNEQ(v enums.Role) predicate.GroupSettings {
 	vc := v
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldMinimumRoleToInvite), vc))
-	})
+	return predicate.GroupSettings(sql.FieldNEQ(FieldMinimumRoleToInvite, vc))
 }
 
 // MinimumRoleToInviteIn applies the In predicate on the "minimum_role_to_invite" field.
@@ -175,9 +113,7 @@ func MinimumRoleToInviteIn(vs ...enums.Role) predicate.GroupSettings {
 	for i := range v {
 		v[i] = vs[i]
 	}
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldMinimumRoleToInvite), v...))
-	})
+	return predicate.GroupSettings(sql.FieldIn(FieldMinimumRoleToInvite, v...))
 }
 
 // MinimumRoleToInviteNotIn applies the NotIn predicate on the "minimum_role_to_invite" field.
@@ -186,23 +122,17 @@ func MinimumRoleToInviteNotIn(vs ...enums.Role) predicate.GroupSettings {
 	for i := range v {
 		v[i] = vs[i]
 	}
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldMinimumRoleToInvite), v...))
-	})
+	return predicate.GroupSettings(sql.FieldNotIn(FieldMinimumRoleToInvite, v...))
 }
 
 // MinimumRoleToInviteIsNil applies the IsNil predicate on the "minimum_role_to_invite" field.
 func MinimumRoleToInviteIsNil() predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.IsNull(s.C(FieldMinimumRoleToInvite)))
-	})
+	return predicate.GroupSettings(sql.FieldIsNull(FieldMinimumRoleToInvite))
 }
 
 // MinimumRoleToInviteNotNil applies the NotNil predicate on the "minimum_role_to_invite" field.
 func MinimumRoleToInviteNotNil() predicate.GroupSettings {
-	return predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.NotNull(s.C(FieldMinimumRoleToInvite)))
-	})
+	return predicate.GroupSettings(sql.FieldNotNull(FieldMinimumRoleToInvite))
 }
 
 // HasGroup applies the HasEdge predicate on the "group" edge.
@@ -210,7 +140,6 @@ func HasGroup() predicate.GroupSettings {
 	return predicate.GroupSettings(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(GroupTable, FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, GroupTable, GroupColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

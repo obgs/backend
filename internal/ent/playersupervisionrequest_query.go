@@ -22,11 +22,9 @@ import (
 // PlayerSupervisionRequestQuery is the builder for querying PlayerSupervisionRequest entities.
 type PlayerSupervisionRequestQuery struct {
 	config
-	limit              *int
-	offset             *int
-	unique             *bool
+	ctx                *QueryContext
 	order              []OrderFunc
-	fields             []string
+	inters             []Interceptor
 	predicates         []predicate.PlayerSupervisionRequest
 	withSender         *UserQuery
 	withPlayer         *PlayerQuery
@@ -46,26 +44,26 @@ func (psrq *PlayerSupervisionRequestQuery) Where(ps ...predicate.PlayerSupervisi
 	return psrq
 }
 
-// Limit adds a limit step to the query.
+// Limit the number of records to be returned by this query.
 func (psrq *PlayerSupervisionRequestQuery) Limit(limit int) *PlayerSupervisionRequestQuery {
-	psrq.limit = &limit
+	psrq.ctx.Limit = &limit
 	return psrq
 }
 
-// Offset adds an offset step to the query.
+// Offset to start from.
 func (psrq *PlayerSupervisionRequestQuery) Offset(offset int) *PlayerSupervisionRequestQuery {
-	psrq.offset = &offset
+	psrq.ctx.Offset = &offset
 	return psrq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (psrq *PlayerSupervisionRequestQuery) Unique(unique bool) *PlayerSupervisionRequestQuery {
-	psrq.unique = &unique
+	psrq.ctx.Unique = &unique
 	return psrq
 }
 
-// Order adds an order step to the query.
+// Order specifies how the records should be ordered.
 func (psrq *PlayerSupervisionRequestQuery) Order(o ...OrderFunc) *PlayerSupervisionRequestQuery {
 	psrq.order = append(psrq.order, o...)
 	return psrq
@@ -73,7 +71,7 @@ func (psrq *PlayerSupervisionRequestQuery) Order(o ...OrderFunc) *PlayerSupervis
 
 // QuerySender chains the current query on the "sender" edge.
 func (psrq *PlayerSupervisionRequestQuery) QuerySender() *UserQuery {
-	query := &UserQuery{config: psrq.config}
+	query := (&UserClient{config: psrq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := psrq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -95,7 +93,7 @@ func (psrq *PlayerSupervisionRequestQuery) QuerySender() *UserQuery {
 
 // QueryPlayer chains the current query on the "player" edge.
 func (psrq *PlayerSupervisionRequestQuery) QueryPlayer() *PlayerQuery {
-	query := &PlayerQuery{config: psrq.config}
+	query := (&PlayerClient{config: psrq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := psrq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -117,7 +115,7 @@ func (psrq *PlayerSupervisionRequestQuery) QueryPlayer() *PlayerQuery {
 
 // QueryApprovals chains the current query on the "approvals" edge.
 func (psrq *PlayerSupervisionRequestQuery) QueryApprovals() *PlayerSupervisionRequestApprovalQuery {
-	query := &PlayerSupervisionRequestApprovalQuery{config: psrq.config}
+	query := (&PlayerSupervisionRequestApprovalClient{config: psrq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := psrq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -140,7 +138,7 @@ func (psrq *PlayerSupervisionRequestQuery) QueryApprovals() *PlayerSupervisionRe
 // First returns the first PlayerSupervisionRequest entity from the query.
 // Returns a *NotFoundError when no PlayerSupervisionRequest was found.
 func (psrq *PlayerSupervisionRequestQuery) First(ctx context.Context) (*PlayerSupervisionRequest, error) {
-	nodes, err := psrq.Limit(1).All(ctx)
+	nodes, err := psrq.Limit(1).All(setContextOp(ctx, psrq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +161,7 @@ func (psrq *PlayerSupervisionRequestQuery) FirstX(ctx context.Context) *PlayerSu
 // Returns a *NotFoundError when no PlayerSupervisionRequest ID was found.
 func (psrq *PlayerSupervisionRequestQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = psrq.Limit(1).IDs(ctx); err != nil {
+	if ids, err = psrq.Limit(1).IDs(setContextOp(ctx, psrq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -186,7 +184,7 @@ func (psrq *PlayerSupervisionRequestQuery) FirstIDX(ctx context.Context) guidgql
 // Returns a *NotSingularError when more than one PlayerSupervisionRequest entity is found.
 // Returns a *NotFoundError when no PlayerSupervisionRequest entities are found.
 func (psrq *PlayerSupervisionRequestQuery) Only(ctx context.Context) (*PlayerSupervisionRequest, error) {
-	nodes, err := psrq.Limit(2).All(ctx)
+	nodes, err := psrq.Limit(2).All(setContextOp(ctx, psrq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +212,7 @@ func (psrq *PlayerSupervisionRequestQuery) OnlyX(ctx context.Context) *PlayerSup
 // Returns a *NotFoundError when no entities are found.
 func (psrq *PlayerSupervisionRequestQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = psrq.Limit(2).IDs(ctx); err != nil {
+	if ids, err = psrq.Limit(2).IDs(setContextOp(ctx, psrq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -239,10 +237,12 @@ func (psrq *PlayerSupervisionRequestQuery) OnlyIDX(ctx context.Context) guidgql.
 
 // All executes the query and returns a list of PlayerSupervisionRequests.
 func (psrq *PlayerSupervisionRequestQuery) All(ctx context.Context) ([]*PlayerSupervisionRequest, error) {
+	ctx = setContextOp(ctx, psrq.ctx, "All")
 	if err := psrq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	return psrq.sqlAll(ctx)
+	qr := querierAll[[]*PlayerSupervisionRequest, *PlayerSupervisionRequestQuery]()
+	return withInterceptors[[]*PlayerSupervisionRequest](ctx, psrq, qr, psrq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
@@ -255,9 +255,12 @@ func (psrq *PlayerSupervisionRequestQuery) AllX(ctx context.Context) []*PlayerSu
 }
 
 // IDs executes the query and returns a list of PlayerSupervisionRequest IDs.
-func (psrq *PlayerSupervisionRequestQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
-	var ids []guidgql.GUID
-	if err := psrq.Select(playersupervisionrequest.FieldID).Scan(ctx, &ids); err != nil {
+func (psrq *PlayerSupervisionRequestQuery) IDs(ctx context.Context) (ids []guidgql.GUID, err error) {
+	if psrq.ctx.Unique == nil && psrq.path != nil {
+		psrq.Unique(true)
+	}
+	ctx = setContextOp(ctx, psrq.ctx, "IDs")
+	if err = psrq.Select(playersupervisionrequest.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -274,10 +277,11 @@ func (psrq *PlayerSupervisionRequestQuery) IDsX(ctx context.Context) []guidgql.G
 
 // Count returns the count of the given query.
 func (psrq *PlayerSupervisionRequestQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, psrq.ctx, "Count")
 	if err := psrq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return psrq.sqlCount(ctx)
+	return withInterceptors[int](ctx, psrq, querierCount[*PlayerSupervisionRequestQuery](), psrq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
@@ -291,10 +295,15 @@ func (psrq *PlayerSupervisionRequestQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (psrq *PlayerSupervisionRequestQuery) Exist(ctx context.Context) (bool, error) {
-	if err := psrq.prepareQuery(ctx); err != nil {
-		return false, err
+	ctx = setContextOp(ctx, psrq.ctx, "Exist")
+	switch _, err := psrq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return psrq.sqlExist(ctx)
 }
 
 // ExistX is like Exist, but panics if an error occurs.
@@ -314,24 +323,23 @@ func (psrq *PlayerSupervisionRequestQuery) Clone() *PlayerSupervisionRequestQuer
 	}
 	return &PlayerSupervisionRequestQuery{
 		config:        psrq.config,
-		limit:         psrq.limit,
-		offset:        psrq.offset,
+		ctx:           psrq.ctx.Clone(),
 		order:         append([]OrderFunc{}, psrq.order...),
+		inters:        append([]Interceptor{}, psrq.inters...),
 		predicates:    append([]predicate.PlayerSupervisionRequest{}, psrq.predicates...),
 		withSender:    psrq.withSender.Clone(),
 		withPlayer:    psrq.withPlayer.Clone(),
 		withApprovals: psrq.withApprovals.Clone(),
 		// clone intermediate query.
-		sql:    psrq.sql.Clone(),
-		path:   psrq.path,
-		unique: psrq.unique,
+		sql:  psrq.sql.Clone(),
+		path: psrq.path,
 	}
 }
 
 // WithSender tells the query-builder to eager-load the nodes that are connected to
 // the "sender" edge. The optional arguments are used to configure the query builder of the edge.
 func (psrq *PlayerSupervisionRequestQuery) WithSender(opts ...func(*UserQuery)) *PlayerSupervisionRequestQuery {
-	query := &UserQuery{config: psrq.config}
+	query := (&UserClient{config: psrq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -342,7 +350,7 @@ func (psrq *PlayerSupervisionRequestQuery) WithSender(opts ...func(*UserQuery)) 
 // WithPlayer tells the query-builder to eager-load the nodes that are connected to
 // the "player" edge. The optional arguments are used to configure the query builder of the edge.
 func (psrq *PlayerSupervisionRequestQuery) WithPlayer(opts ...func(*PlayerQuery)) *PlayerSupervisionRequestQuery {
-	query := &PlayerQuery{config: psrq.config}
+	query := (&PlayerClient{config: psrq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -353,7 +361,7 @@ func (psrq *PlayerSupervisionRequestQuery) WithPlayer(opts ...func(*PlayerQuery)
 // WithApprovals tells the query-builder to eager-load the nodes that are connected to
 // the "approvals" edge. The optional arguments are used to configure the query builder of the edge.
 func (psrq *PlayerSupervisionRequestQuery) WithApprovals(opts ...func(*PlayerSupervisionRequestApprovalQuery)) *PlayerSupervisionRequestQuery {
-	query := &PlayerSupervisionRequestApprovalQuery{config: psrq.config}
+	query := (&PlayerSupervisionRequestApprovalClient{config: psrq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -376,16 +384,11 @@ func (psrq *PlayerSupervisionRequestQuery) WithApprovals(opts ...func(*PlayerSup
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (psrq *PlayerSupervisionRequestQuery) GroupBy(field string, fields ...string) *PlayerSupervisionRequestGroupBy {
-	grbuild := &PlayerSupervisionRequestGroupBy{config: psrq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := psrq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return psrq.sqlQuery(ctx), nil
-	}
+	psrq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &PlayerSupervisionRequestGroupBy{build: psrq}
+	grbuild.flds = &psrq.ctx.Fields
 	grbuild.label = playersupervisionrequest.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	grbuild.scan = grbuild.Scan
 	return grbuild
 }
 
@@ -402,11 +405,11 @@ func (psrq *PlayerSupervisionRequestQuery) GroupBy(field string, fields ...strin
 //		Select(playersupervisionrequest.FieldMessage).
 //		Scan(ctx, &v)
 func (psrq *PlayerSupervisionRequestQuery) Select(fields ...string) *PlayerSupervisionRequestSelect {
-	psrq.fields = append(psrq.fields, fields...)
-	selbuild := &PlayerSupervisionRequestSelect{PlayerSupervisionRequestQuery: psrq}
-	selbuild.label = playersupervisionrequest.Label
-	selbuild.flds, selbuild.scan = &psrq.fields, selbuild.Scan
-	return selbuild
+	psrq.ctx.Fields = append(psrq.ctx.Fields, fields...)
+	sbuild := &PlayerSupervisionRequestSelect{PlayerSupervisionRequestQuery: psrq}
+	sbuild.label = playersupervisionrequest.Label
+	sbuild.flds, sbuild.scan = &psrq.ctx.Fields, sbuild.Scan
+	return sbuild
 }
 
 // Aggregate returns a PlayerSupervisionRequestSelect configured with the given aggregations.
@@ -415,7 +418,17 @@ func (psrq *PlayerSupervisionRequestQuery) Aggregate(fns ...AggregateFunc) *Play
 }
 
 func (psrq *PlayerSupervisionRequestQuery) prepareQuery(ctx context.Context) error {
-	for _, f := range psrq.fields {
+	for _, inter := range psrq.inters {
+		if inter == nil {
+			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
+		}
+		if trv, ok := inter.(Traverser); ok {
+			if err := trv.Traverse(ctx, psrq); err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range psrq.ctx.Fields {
 		if !playersupervisionrequest.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -519,6 +532,9 @@ func (psrq *PlayerSupervisionRequestQuery) loadSender(ctx context.Context, query
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -547,6 +563,9 @@ func (psrq *PlayerSupervisionRequestQuery) loadPlayer(ctx context.Context, query
 			ids = append(ids, fk)
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
 	}
 	query.Where(player.IDIn(ids...))
 	neighbors, err := query.All(ctx)
@@ -601,41 +620,22 @@ func (psrq *PlayerSupervisionRequestQuery) sqlCount(ctx context.Context) (int, e
 	if len(psrq.modifiers) > 0 {
 		_spec.Modifiers = psrq.modifiers
 	}
-	_spec.Node.Columns = psrq.fields
-	if len(psrq.fields) > 0 {
-		_spec.Unique = psrq.unique != nil && *psrq.unique
+	_spec.Node.Columns = psrq.ctx.Fields
+	if len(psrq.ctx.Fields) > 0 {
+		_spec.Unique = psrq.ctx.Unique != nil && *psrq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, psrq.driver, _spec)
 }
 
-func (psrq *PlayerSupervisionRequestQuery) sqlExist(ctx context.Context) (bool, error) {
-	switch _, err := psrq.FirstID(ctx); {
-	case IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("ent: check existence: %w", err)
-	default:
-		return true, nil
-	}
-}
-
 func (psrq *PlayerSupervisionRequestQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   playersupervisionrequest.Table,
-			Columns: playersupervisionrequest.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: playersupervisionrequest.FieldID,
-			},
-		},
-		From:   psrq.sql,
-		Unique: true,
-	}
-	if unique := psrq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(playersupervisionrequest.Table, playersupervisionrequest.Columns, sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString))
+	_spec.From = psrq.sql
+	if unique := psrq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if psrq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := psrq.fields; len(fields) > 0 {
+	if fields := psrq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, playersupervisionrequest.FieldID)
 		for i := range fields {
@@ -651,10 +651,10 @@ func (psrq *PlayerSupervisionRequestQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := psrq.limit; limit != nil {
+	if limit := psrq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := psrq.offset; offset != nil {
+	if offset := psrq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := psrq.order; len(ps) > 0 {
@@ -670,7 +670,7 @@ func (psrq *PlayerSupervisionRequestQuery) querySpec() *sqlgraph.QuerySpec {
 func (psrq *PlayerSupervisionRequestQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(psrq.driver.Dialect())
 	t1 := builder.Table(playersupervisionrequest.Table)
-	columns := psrq.fields
+	columns := psrq.ctx.Fields
 	if len(columns) == 0 {
 		columns = playersupervisionrequest.Columns
 	}
@@ -679,7 +679,7 @@ func (psrq *PlayerSupervisionRequestQuery) sqlQuery(ctx context.Context) *sql.Se
 		selector = psrq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if psrq.unique != nil && *psrq.unique {
+	if psrq.ctx.Unique != nil && *psrq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range psrq.predicates {
@@ -688,12 +688,12 @@ func (psrq *PlayerSupervisionRequestQuery) sqlQuery(ctx context.Context) *sql.Se
 	for _, p := range psrq.order {
 		p(selector)
 	}
-	if offset := psrq.offset; offset != nil {
+	if offset := psrq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := psrq.limit; limit != nil {
+	if limit := psrq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -702,7 +702,7 @@ func (psrq *PlayerSupervisionRequestQuery) sqlQuery(ctx context.Context) *sql.Se
 // WithNamedApprovals tells the query-builder to eager-load the nodes that are connected to the "approvals"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (psrq *PlayerSupervisionRequestQuery) WithNamedApprovals(name string, opts ...func(*PlayerSupervisionRequestApprovalQuery)) *PlayerSupervisionRequestQuery {
-	query := &PlayerSupervisionRequestApprovalQuery{config: psrq.config}
+	query := (&PlayerSupervisionRequestApprovalClient{config: psrq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -715,13 +715,8 @@ func (psrq *PlayerSupervisionRequestQuery) WithNamedApprovals(name string, opts 
 
 // PlayerSupervisionRequestGroupBy is the group-by builder for PlayerSupervisionRequest entities.
 type PlayerSupervisionRequestGroupBy struct {
-	config
 	selector
-	fields []string
-	fns    []AggregateFunc
-	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	build *PlayerSupervisionRequestQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
@@ -730,58 +725,46 @@ func (psrgb *PlayerSupervisionRequestGroupBy) Aggregate(fns ...AggregateFunc) *P
 	return psrgb
 }
 
-// Scan applies the group-by query and scans the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (psrgb *PlayerSupervisionRequestGroupBy) Scan(ctx context.Context, v any) error {
-	query, err := psrgb.path(ctx)
-	if err != nil {
+	ctx = setContextOp(ctx, psrgb.build.ctx, "GroupBy")
+	if err := psrgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	psrgb.sql = query
-	return psrgb.sqlScan(ctx, v)
+	return scanWithInterceptors[*PlayerSupervisionRequestQuery, *PlayerSupervisionRequestGroupBy](ctx, psrgb.build, psrgb, psrgb.build.inters, v)
 }
 
-func (psrgb *PlayerSupervisionRequestGroupBy) sqlScan(ctx context.Context, v any) error {
-	for _, f := range psrgb.fields {
-		if !playersupervisionrequest.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
-		}
+func (psrgb *PlayerSupervisionRequestGroupBy) sqlScan(ctx context.Context, root *PlayerSupervisionRequestQuery, v any) error {
+	selector := root.sqlQuery(ctx).Select()
+	aggregation := make([]string, 0, len(psrgb.fns))
+	for _, fn := range psrgb.fns {
+		aggregation = append(aggregation, fn(selector))
 	}
-	selector := psrgb.sqlQuery()
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(*psrgb.flds)+len(psrgb.fns))
+		for _, f := range *psrgb.flds {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	selector.GroupBy(selector.Columns(*psrgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := psrgb.driver.Query(ctx, query, args, rows); err != nil {
+	if err := psrgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-func (psrgb *PlayerSupervisionRequestGroupBy) sqlQuery() *sql.Selector {
-	selector := psrgb.sql.Select()
-	aggregation := make([]string, 0, len(psrgb.fns))
-	for _, fn := range psrgb.fns {
-		aggregation = append(aggregation, fn(selector))
-	}
-	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(psrgb.fields)+len(psrgb.fns))
-		for _, f := range psrgb.fields {
-			columns = append(columns, selector.C(f))
-		}
-		columns = append(columns, aggregation...)
-		selector.Select(columns...)
-	}
-	return selector.GroupBy(selector.Columns(psrgb.fields...)...)
-}
-
 // PlayerSupervisionRequestSelect is the builder for selecting fields of PlayerSupervisionRequest entities.
 type PlayerSupervisionRequestSelect struct {
 	*PlayerSupervisionRequestQuery
 	selector
-	// intermediate query (i.e. traversal path).
-	sql *sql.Selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
@@ -792,26 +775,27 @@ func (psrs *PlayerSupervisionRequestSelect) Aggregate(fns ...AggregateFunc) *Pla
 
 // Scan applies the selector query and scans the result into the given value.
 func (psrs *PlayerSupervisionRequestSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, psrs.ctx, "Select")
 	if err := psrs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	psrs.sql = psrs.PlayerSupervisionRequestQuery.sqlQuery(ctx)
-	return psrs.sqlScan(ctx, v)
+	return scanWithInterceptors[*PlayerSupervisionRequestQuery, *PlayerSupervisionRequestSelect](ctx, psrs.PlayerSupervisionRequestQuery, psrs, psrs.inters, v)
 }
 
-func (psrs *PlayerSupervisionRequestSelect) sqlScan(ctx context.Context, v any) error {
+func (psrs *PlayerSupervisionRequestSelect) sqlScan(ctx context.Context, root *PlayerSupervisionRequestQuery, v any) error {
+	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(psrs.fns))
 	for _, fn := range psrs.fns {
-		aggregation = append(aggregation, fn(psrs.sql))
+		aggregation = append(aggregation, fn(selector))
 	}
 	switch n := len(*psrs.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
-		psrs.sql.Select(aggregation...)
+		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
-		psrs.sql.AppendSelect(aggregation...)
+		selector.AppendSelect(aggregation...)
 	}
 	rows := &sql.Rows{}
-	query, args := psrs.sql.Query()
+	query, args := selector.Query()
 	if err := psrs.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

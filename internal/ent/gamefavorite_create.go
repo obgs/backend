@@ -68,50 +68,8 @@ func (gfc *GameFavoriteCreate) Mutation() *GameFavoriteMutation {
 
 // Save creates the GameFavorite in the database.
 func (gfc *GameFavoriteCreate) Save(ctx context.Context) (*GameFavorite, error) {
-	var (
-		err  error
-		node *GameFavorite
-	)
 	gfc.defaults()
-	if len(gfc.hooks) == 0 {
-		if err = gfc.check(); err != nil {
-			return nil, err
-		}
-		node, err = gfc.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GameFavoriteMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gfc.check(); err != nil {
-				return nil, err
-			}
-			gfc.mutation = mutation
-			if node, err = gfc.sqlSave(ctx); err != nil {
-				return nil, err
-			}
-			mutation.id = &node.ID
-			mutation.done = true
-			return node, err
-		})
-		for i := len(gfc.hooks) - 1; i >= 0; i-- {
-			if gfc.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gfc.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, gfc.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*GameFavorite)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from GameFavoriteMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*GameFavorite, GameFavoriteMutation](ctx, gfc.sqlSave, gfc.mutation, gfc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -156,6 +114,9 @@ func (gfc *GameFavoriteCreate) check() error {
 }
 
 func (gfc *GameFavoriteCreate) sqlSave(ctx context.Context) (*GameFavorite, error) {
+	if err := gfc.check(); err != nil {
+		return nil, err
+	}
 	_node, _spec := gfc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, gfc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -170,19 +131,15 @@ func (gfc *GameFavoriteCreate) sqlSave(ctx context.Context) (*GameFavorite, erro
 			return nil, err
 		}
 	}
+	gfc.mutation.id = &_node.ID
+	gfc.mutation.done = true
 	return _node, nil
 }
 
 func (gfc *GameFavoriteCreate) createSpec() (*GameFavorite, *sqlgraph.CreateSpec) {
 	var (
 		_node = &GameFavorite{config: gfc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: gamefavorite.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: gamefavorite.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(gamefavorite.Table, sqlgraph.NewFieldSpec(gamefavorite.FieldID, field.TypeString))
 	)
 	_spec.OnConflict = gfc.conflict
 	if id, ok := gfc.mutation.ID(); ok {
@@ -197,10 +154,7 @@ func (gfc *GameFavoriteCreate) createSpec() (*GameFavorite, *sqlgraph.CreateSpec
 			Columns: []string{gamefavorite.GameColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -217,10 +171,7 @@ func (gfc *GameFavoriteCreate) createSpec() (*GameFavorite, *sqlgraph.CreateSpec
 			Columns: []string{gamefavorite.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

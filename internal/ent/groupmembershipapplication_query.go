@@ -20,11 +20,9 @@ import (
 // GroupMembershipApplicationQuery is the builder for querying GroupMembershipApplication entities.
 type GroupMembershipApplicationQuery struct {
 	config
-	limit      *int
-	offset     *int
-	unique     *bool
+	ctx        *QueryContext
 	order      []OrderFunc
-	fields     []string
+	inters     []Interceptor
 	predicates []predicate.GroupMembershipApplication
 	withUser   *UserQuery
 	withGroup  *GroupQuery
@@ -42,26 +40,26 @@ func (gmaq *GroupMembershipApplicationQuery) Where(ps ...predicate.GroupMembersh
 	return gmaq
 }
 
-// Limit adds a limit step to the query.
+// Limit the number of records to be returned by this query.
 func (gmaq *GroupMembershipApplicationQuery) Limit(limit int) *GroupMembershipApplicationQuery {
-	gmaq.limit = &limit
+	gmaq.ctx.Limit = &limit
 	return gmaq
 }
 
-// Offset adds an offset step to the query.
+// Offset to start from.
 func (gmaq *GroupMembershipApplicationQuery) Offset(offset int) *GroupMembershipApplicationQuery {
-	gmaq.offset = &offset
+	gmaq.ctx.Offset = &offset
 	return gmaq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (gmaq *GroupMembershipApplicationQuery) Unique(unique bool) *GroupMembershipApplicationQuery {
-	gmaq.unique = &unique
+	gmaq.ctx.Unique = &unique
 	return gmaq
 }
 
-// Order adds an order step to the query.
+// Order specifies how the records should be ordered.
 func (gmaq *GroupMembershipApplicationQuery) Order(o ...OrderFunc) *GroupMembershipApplicationQuery {
 	gmaq.order = append(gmaq.order, o...)
 	return gmaq
@@ -69,7 +67,7 @@ func (gmaq *GroupMembershipApplicationQuery) Order(o ...OrderFunc) *GroupMembers
 
 // QueryUser chains the current query on the "user" edge.
 func (gmaq *GroupMembershipApplicationQuery) QueryUser() *UserQuery {
-	query := &UserQuery{config: gmaq.config}
+	query := (&UserClient{config: gmaq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := gmaq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -91,7 +89,7 @@ func (gmaq *GroupMembershipApplicationQuery) QueryUser() *UserQuery {
 
 // QueryGroup chains the current query on the "group" edge.
 func (gmaq *GroupMembershipApplicationQuery) QueryGroup() *GroupQuery {
-	query := &GroupQuery{config: gmaq.config}
+	query := (&GroupClient{config: gmaq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := gmaq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -114,7 +112,7 @@ func (gmaq *GroupMembershipApplicationQuery) QueryGroup() *GroupQuery {
 // First returns the first GroupMembershipApplication entity from the query.
 // Returns a *NotFoundError when no GroupMembershipApplication was found.
 func (gmaq *GroupMembershipApplicationQuery) First(ctx context.Context) (*GroupMembershipApplication, error) {
-	nodes, err := gmaq.Limit(1).All(ctx)
+	nodes, err := gmaq.Limit(1).All(setContextOp(ctx, gmaq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +135,7 @@ func (gmaq *GroupMembershipApplicationQuery) FirstX(ctx context.Context) *GroupM
 // Returns a *NotFoundError when no GroupMembershipApplication ID was found.
 func (gmaq *GroupMembershipApplicationQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = gmaq.Limit(1).IDs(ctx); err != nil {
+	if ids, err = gmaq.Limit(1).IDs(setContextOp(ctx, gmaq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -160,7 +158,7 @@ func (gmaq *GroupMembershipApplicationQuery) FirstIDX(ctx context.Context) guidg
 // Returns a *NotSingularError when more than one GroupMembershipApplication entity is found.
 // Returns a *NotFoundError when no GroupMembershipApplication entities are found.
 func (gmaq *GroupMembershipApplicationQuery) Only(ctx context.Context) (*GroupMembershipApplication, error) {
-	nodes, err := gmaq.Limit(2).All(ctx)
+	nodes, err := gmaq.Limit(2).All(setContextOp(ctx, gmaq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +186,7 @@ func (gmaq *GroupMembershipApplicationQuery) OnlyX(ctx context.Context) *GroupMe
 // Returns a *NotFoundError when no entities are found.
 func (gmaq *GroupMembershipApplicationQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = gmaq.Limit(2).IDs(ctx); err != nil {
+	if ids, err = gmaq.Limit(2).IDs(setContextOp(ctx, gmaq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -213,10 +211,12 @@ func (gmaq *GroupMembershipApplicationQuery) OnlyIDX(ctx context.Context) guidgq
 
 // All executes the query and returns a list of GroupMembershipApplications.
 func (gmaq *GroupMembershipApplicationQuery) All(ctx context.Context) ([]*GroupMembershipApplication, error) {
+	ctx = setContextOp(ctx, gmaq.ctx, "All")
 	if err := gmaq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	return gmaq.sqlAll(ctx)
+	qr := querierAll[[]*GroupMembershipApplication, *GroupMembershipApplicationQuery]()
+	return withInterceptors[[]*GroupMembershipApplication](ctx, gmaq, qr, gmaq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
@@ -229,9 +229,12 @@ func (gmaq *GroupMembershipApplicationQuery) AllX(ctx context.Context) []*GroupM
 }
 
 // IDs executes the query and returns a list of GroupMembershipApplication IDs.
-func (gmaq *GroupMembershipApplicationQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
-	var ids []guidgql.GUID
-	if err := gmaq.Select(groupmembershipapplication.FieldID).Scan(ctx, &ids); err != nil {
+func (gmaq *GroupMembershipApplicationQuery) IDs(ctx context.Context) (ids []guidgql.GUID, err error) {
+	if gmaq.ctx.Unique == nil && gmaq.path != nil {
+		gmaq.Unique(true)
+	}
+	ctx = setContextOp(ctx, gmaq.ctx, "IDs")
+	if err = gmaq.Select(groupmembershipapplication.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -248,10 +251,11 @@ func (gmaq *GroupMembershipApplicationQuery) IDsX(ctx context.Context) []guidgql
 
 // Count returns the count of the given query.
 func (gmaq *GroupMembershipApplicationQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, gmaq.ctx, "Count")
 	if err := gmaq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return gmaq.sqlCount(ctx)
+	return withInterceptors[int](ctx, gmaq, querierCount[*GroupMembershipApplicationQuery](), gmaq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
@@ -265,10 +269,15 @@ func (gmaq *GroupMembershipApplicationQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (gmaq *GroupMembershipApplicationQuery) Exist(ctx context.Context) (bool, error) {
-	if err := gmaq.prepareQuery(ctx); err != nil {
-		return false, err
+	ctx = setContextOp(ctx, gmaq.ctx, "Exist")
+	switch _, err := gmaq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return gmaq.sqlExist(ctx)
 }
 
 // ExistX is like Exist, but panics if an error occurs.
@@ -288,23 +297,22 @@ func (gmaq *GroupMembershipApplicationQuery) Clone() *GroupMembershipApplication
 	}
 	return &GroupMembershipApplicationQuery{
 		config:     gmaq.config,
-		limit:      gmaq.limit,
-		offset:     gmaq.offset,
+		ctx:        gmaq.ctx.Clone(),
 		order:      append([]OrderFunc{}, gmaq.order...),
+		inters:     append([]Interceptor{}, gmaq.inters...),
 		predicates: append([]predicate.GroupMembershipApplication{}, gmaq.predicates...),
 		withUser:   gmaq.withUser.Clone(),
 		withGroup:  gmaq.withGroup.Clone(),
 		// clone intermediate query.
-		sql:    gmaq.sql.Clone(),
-		path:   gmaq.path,
-		unique: gmaq.unique,
+		sql:  gmaq.sql.Clone(),
+		path: gmaq.path,
 	}
 }
 
 // WithUser tells the query-builder to eager-load the nodes that are connected to
 // the "user" edge. The optional arguments are used to configure the query builder of the edge.
 func (gmaq *GroupMembershipApplicationQuery) WithUser(opts ...func(*UserQuery)) *GroupMembershipApplicationQuery {
-	query := &UserQuery{config: gmaq.config}
+	query := (&UserClient{config: gmaq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -315,7 +323,7 @@ func (gmaq *GroupMembershipApplicationQuery) WithUser(opts ...func(*UserQuery)) 
 // WithGroup tells the query-builder to eager-load the nodes that are connected to
 // the "group" edge. The optional arguments are used to configure the query builder of the edge.
 func (gmaq *GroupMembershipApplicationQuery) WithGroup(opts ...func(*GroupQuery)) *GroupMembershipApplicationQuery {
-	query := &GroupQuery{config: gmaq.config}
+	query := (&GroupClient{config: gmaq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -338,16 +346,11 @@ func (gmaq *GroupMembershipApplicationQuery) WithGroup(opts ...func(*GroupQuery)
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (gmaq *GroupMembershipApplicationQuery) GroupBy(field string, fields ...string) *GroupMembershipApplicationGroupBy {
-	grbuild := &GroupMembershipApplicationGroupBy{config: gmaq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := gmaq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return gmaq.sqlQuery(ctx), nil
-	}
+	gmaq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &GroupMembershipApplicationGroupBy{build: gmaq}
+	grbuild.flds = &gmaq.ctx.Fields
 	grbuild.label = groupmembershipapplication.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	grbuild.scan = grbuild.Scan
 	return grbuild
 }
 
@@ -364,11 +367,11 @@ func (gmaq *GroupMembershipApplicationQuery) GroupBy(field string, fields ...str
 //		Select(groupmembershipapplication.FieldMessage).
 //		Scan(ctx, &v)
 func (gmaq *GroupMembershipApplicationQuery) Select(fields ...string) *GroupMembershipApplicationSelect {
-	gmaq.fields = append(gmaq.fields, fields...)
-	selbuild := &GroupMembershipApplicationSelect{GroupMembershipApplicationQuery: gmaq}
-	selbuild.label = groupmembershipapplication.Label
-	selbuild.flds, selbuild.scan = &gmaq.fields, selbuild.Scan
-	return selbuild
+	gmaq.ctx.Fields = append(gmaq.ctx.Fields, fields...)
+	sbuild := &GroupMembershipApplicationSelect{GroupMembershipApplicationQuery: gmaq}
+	sbuild.label = groupmembershipapplication.Label
+	sbuild.flds, sbuild.scan = &gmaq.ctx.Fields, sbuild.Scan
+	return sbuild
 }
 
 // Aggregate returns a GroupMembershipApplicationSelect configured with the given aggregations.
@@ -377,7 +380,17 @@ func (gmaq *GroupMembershipApplicationQuery) Aggregate(fns ...AggregateFunc) *Gr
 }
 
 func (gmaq *GroupMembershipApplicationQuery) prepareQuery(ctx context.Context) error {
-	for _, f := range gmaq.fields {
+	for _, inter := range gmaq.inters {
+		if inter == nil {
+			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
+		}
+		if trv, ok := inter.(Traverser); ok {
+			if err := trv.Traverse(ctx, gmaq); err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range gmaq.ctx.Fields {
 		if !groupmembershipapplication.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -462,6 +475,9 @@ func (gmaq *GroupMembershipApplicationQuery) loadUser(ctx context.Context, query
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -491,6 +507,9 @@ func (gmaq *GroupMembershipApplicationQuery) loadGroup(ctx context.Context, quer
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(group.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -513,41 +532,22 @@ func (gmaq *GroupMembershipApplicationQuery) sqlCount(ctx context.Context) (int,
 	if len(gmaq.modifiers) > 0 {
 		_spec.Modifiers = gmaq.modifiers
 	}
-	_spec.Node.Columns = gmaq.fields
-	if len(gmaq.fields) > 0 {
-		_spec.Unique = gmaq.unique != nil && *gmaq.unique
+	_spec.Node.Columns = gmaq.ctx.Fields
+	if len(gmaq.ctx.Fields) > 0 {
+		_spec.Unique = gmaq.ctx.Unique != nil && *gmaq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, gmaq.driver, _spec)
 }
 
-func (gmaq *GroupMembershipApplicationQuery) sqlExist(ctx context.Context) (bool, error) {
-	switch _, err := gmaq.FirstID(ctx); {
-	case IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("ent: check existence: %w", err)
-	default:
-		return true, nil
-	}
-}
-
 func (gmaq *GroupMembershipApplicationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   groupmembershipapplication.Table,
-			Columns: groupmembershipapplication.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupmembershipapplication.FieldID,
-			},
-		},
-		From:   gmaq.sql,
-		Unique: true,
-	}
-	if unique := gmaq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(groupmembershipapplication.Table, groupmembershipapplication.Columns, sqlgraph.NewFieldSpec(groupmembershipapplication.FieldID, field.TypeString))
+	_spec.From = gmaq.sql
+	if unique := gmaq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if gmaq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := gmaq.fields; len(fields) > 0 {
+	if fields := gmaq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, groupmembershipapplication.FieldID)
 		for i := range fields {
@@ -563,10 +563,10 @@ func (gmaq *GroupMembershipApplicationQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := gmaq.limit; limit != nil {
+	if limit := gmaq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := gmaq.offset; offset != nil {
+	if offset := gmaq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := gmaq.order; len(ps) > 0 {
@@ -582,7 +582,7 @@ func (gmaq *GroupMembershipApplicationQuery) querySpec() *sqlgraph.QuerySpec {
 func (gmaq *GroupMembershipApplicationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(gmaq.driver.Dialect())
 	t1 := builder.Table(groupmembershipapplication.Table)
-	columns := gmaq.fields
+	columns := gmaq.ctx.Fields
 	if len(columns) == 0 {
 		columns = groupmembershipapplication.Columns
 	}
@@ -591,7 +591,7 @@ func (gmaq *GroupMembershipApplicationQuery) sqlQuery(ctx context.Context) *sql.
 		selector = gmaq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if gmaq.unique != nil && *gmaq.unique {
+	if gmaq.ctx.Unique != nil && *gmaq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range gmaq.predicates {
@@ -600,12 +600,12 @@ func (gmaq *GroupMembershipApplicationQuery) sqlQuery(ctx context.Context) *sql.
 	for _, p := range gmaq.order {
 		p(selector)
 	}
-	if offset := gmaq.offset; offset != nil {
+	if offset := gmaq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := gmaq.limit; limit != nil {
+	if limit := gmaq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -613,13 +613,8 @@ func (gmaq *GroupMembershipApplicationQuery) sqlQuery(ctx context.Context) *sql.
 
 // GroupMembershipApplicationGroupBy is the group-by builder for GroupMembershipApplication entities.
 type GroupMembershipApplicationGroupBy struct {
-	config
 	selector
-	fields []string
-	fns    []AggregateFunc
-	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	build *GroupMembershipApplicationQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
@@ -628,58 +623,46 @@ func (gmagb *GroupMembershipApplicationGroupBy) Aggregate(fns ...AggregateFunc) 
 	return gmagb
 }
 
-// Scan applies the group-by query and scans the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (gmagb *GroupMembershipApplicationGroupBy) Scan(ctx context.Context, v any) error {
-	query, err := gmagb.path(ctx)
-	if err != nil {
+	ctx = setContextOp(ctx, gmagb.build.ctx, "GroupBy")
+	if err := gmagb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	gmagb.sql = query
-	return gmagb.sqlScan(ctx, v)
+	return scanWithInterceptors[*GroupMembershipApplicationQuery, *GroupMembershipApplicationGroupBy](ctx, gmagb.build, gmagb, gmagb.build.inters, v)
 }
 
-func (gmagb *GroupMembershipApplicationGroupBy) sqlScan(ctx context.Context, v any) error {
-	for _, f := range gmagb.fields {
-		if !groupmembershipapplication.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
-		}
+func (gmagb *GroupMembershipApplicationGroupBy) sqlScan(ctx context.Context, root *GroupMembershipApplicationQuery, v any) error {
+	selector := root.sqlQuery(ctx).Select()
+	aggregation := make([]string, 0, len(gmagb.fns))
+	for _, fn := range gmagb.fns {
+		aggregation = append(aggregation, fn(selector))
 	}
-	selector := gmagb.sqlQuery()
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(*gmagb.flds)+len(gmagb.fns))
+		for _, f := range *gmagb.flds {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	selector.GroupBy(selector.Columns(*gmagb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := gmagb.driver.Query(ctx, query, args, rows); err != nil {
+	if err := gmagb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-func (gmagb *GroupMembershipApplicationGroupBy) sqlQuery() *sql.Selector {
-	selector := gmagb.sql.Select()
-	aggregation := make([]string, 0, len(gmagb.fns))
-	for _, fn := range gmagb.fns {
-		aggregation = append(aggregation, fn(selector))
-	}
-	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(gmagb.fields)+len(gmagb.fns))
-		for _, f := range gmagb.fields {
-			columns = append(columns, selector.C(f))
-		}
-		columns = append(columns, aggregation...)
-		selector.Select(columns...)
-	}
-	return selector.GroupBy(selector.Columns(gmagb.fields...)...)
-}
-
 // GroupMembershipApplicationSelect is the builder for selecting fields of GroupMembershipApplication entities.
 type GroupMembershipApplicationSelect struct {
 	*GroupMembershipApplicationQuery
 	selector
-	// intermediate query (i.e. traversal path).
-	sql *sql.Selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
@@ -690,26 +673,27 @@ func (gmas *GroupMembershipApplicationSelect) Aggregate(fns ...AggregateFunc) *G
 
 // Scan applies the selector query and scans the result into the given value.
 func (gmas *GroupMembershipApplicationSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, gmas.ctx, "Select")
 	if err := gmas.prepareQuery(ctx); err != nil {
 		return err
 	}
-	gmas.sql = gmas.GroupMembershipApplicationQuery.sqlQuery(ctx)
-	return gmas.sqlScan(ctx, v)
+	return scanWithInterceptors[*GroupMembershipApplicationQuery, *GroupMembershipApplicationSelect](ctx, gmas.GroupMembershipApplicationQuery, gmas, gmas.inters, v)
 }
 
-func (gmas *GroupMembershipApplicationSelect) sqlScan(ctx context.Context, v any) error {
+func (gmas *GroupMembershipApplicationSelect) sqlScan(ctx context.Context, root *GroupMembershipApplicationQuery, v any) error {
+	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(gmas.fns))
 	for _, fn := range gmas.fns {
-		aggregation = append(aggregation, fn(gmas.sql))
+		aggregation = append(aggregation, fn(selector))
 	}
 	switch n := len(*gmas.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
-		gmas.sql.Select(aggregation...)
+		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
-		gmas.sql.AppendSelect(aggregation...)
+		selector.AppendSelect(aggregation...)
 	}
 	rows := &sql.Rows{}
-	query, args := gmas.sql.Query()
+	query, args := selector.Query()
 	if err := gmas.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

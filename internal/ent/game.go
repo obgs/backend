@@ -172,29 +172,29 @@ func (ga *Game) assignValues(columns []string, values []any) error {
 
 // QueryAuthor queries the "author" edge of the Game entity.
 func (ga *Game) QueryAuthor() *UserQuery {
-	return (&GameClient{config: ga.config}).QueryAuthor(ga)
+	return NewGameClient(ga.config).QueryAuthor(ga)
 }
 
 // QueryFavorites queries the "favorites" edge of the Game entity.
 func (ga *Game) QueryFavorites() *GameFavoriteQuery {
-	return (&GameClient{config: ga.config}).QueryFavorites(ga)
+	return NewGameClient(ga.config).QueryFavorites(ga)
 }
 
 // QueryStatDescriptions queries the "stat_descriptions" edge of the Game entity.
 func (ga *Game) QueryStatDescriptions() *StatDescriptionQuery {
-	return (&GameClient{config: ga.config}).QueryStatDescriptions(ga)
+	return NewGameClient(ga.config).QueryStatDescriptions(ga)
 }
 
 // QueryMatches queries the "matches" edge of the Game entity.
 func (ga *Game) QueryMatches() *MatchQuery {
-	return (&GameClient{config: ga.config}).QueryMatches(ga)
+	return NewGameClient(ga.config).QueryMatches(ga)
 }
 
 // Update returns a builder for updating this Game.
 // Note that you need to call Game.Unwrap() before calling this method if this Game
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (ga *Game) Update() *GameUpdateOne {
-	return (&GameClient{config: ga.config}).UpdateOne(ga)
+	return NewGameClient(ga.config).UpdateOne(ga)
 }
 
 // Unwrap unwraps the Game entity that was returned from a transaction after it was closed,
@@ -305,9 +305,3 @@ func (ga *Game) appendNamedMatches(name string, edges ...*Match) {
 
 // Games is a parsable slice of Game.
 type Games []*Game
-
-func (ga Games) config(cfg config) {
-	for _i := range ga {
-		ga[_i].config = cfg
-	}
-}

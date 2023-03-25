@@ -29,8 +29,8 @@ type CreateGameInput struct {
 	Name             string                  `json:"name"`
 	MinPlayers       int                     `json:"minPlayers"`
 	MaxPlayers       int                     `json:"maxPlayers"`
-	Description      *string                 `json:"description"`
-	BoardgamegeekURL *string                 `json:"boardgamegeekURL"`
+	Description      *string                 `json:"description,omitempty"`
+	BoardgamegeekURL *string                 `json:"boardgamegeekURL,omitempty"`
 	StatDescriptions []*StatDescriptionInput `json:"statDescriptions"`
 }
 
@@ -41,9 +41,9 @@ type CreateMatchInput struct {
 }
 
 type CreateOrUpdateGroupInput struct {
-	ID          *guidgql.GUID       `json:"id"`
+	ID          *guidgql.GUID       `json:"id,omitempty"`
 	Name        string              `json:"name"`
-	Description *string             `json:"description"`
+	Description *string             `json:"description,omitempty"`
 	LogoURL     string              `json:"logoUrl"`
 	Settings    *GroupSettingsInput `json:"settings"`
 }
@@ -68,13 +68,13 @@ type Favorites struct {
 
 type GroupApplicationInput struct {
 	GroupID guidgql.GUID `json:"groupId"`
-	Message *string      `json:"message"`
+	Message *string      `json:"message,omitempty"`
 }
 
 type GroupSettingsInput struct {
 	Visibility          groupsettings.Visibility `json:"visibility"`
 	JoinPolicy          groupsettings.JoinPolicy `json:"joinPolicy"`
-	MinimumRoleToInvite *enums.Role              `json:"minimumRoleToInvite"`
+	MinimumRoleToInvite *enums.Role              `json:"minimumRoleToInvite,omitempty"`
 }
 
 type Header struct {
@@ -84,7 +84,7 @@ type Header struct {
 
 type RequestPlayerSupervisionInput struct {
 	PlayerID guidgql.GUID `json:"playerId"`
-	Message  *string      `json:"message"`
+	Message  *string      `json:"message,omitempty"`
 }
 
 type ResolvePlayerSupervisionRequestInput struct {
@@ -95,8 +95,8 @@ type ResolvePlayerSupervisionRequestInput struct {
 type StatDescriptionInput struct {
 	Type        stat.StatType      `json:"type"`
 	Name        string             `json:"name"`
-	Description *string            `json:"description"`
-	Metadata    *StatMetadataInput `json:"metadata"`
+	Description *string            `json:"description,omitempty"`
+	Metadata    *StatMetadataInput `json:"metadata,omitempty"`
 	OrderNumber int                `json:"orderNumber"`
 }
 
@@ -109,8 +109,8 @@ type StatInput struct {
 
 type StatMetadataInput struct {
 	// Once input unions are in graphql, this will be one
-	EnumMetadata      *EnumMetadataInput      `json:"enumMetadata"`
-	AggregateMetadata *AggregateMetadataInput `json:"aggregateMetadata"`
+	EnumMetadata      *EnumMetadataInput      `json:"enumMetadata,omitempty"`
+	AggregateMetadata *AggregateMetadataInput `json:"aggregateMetadata,omitempty"`
 }
 
 type UploadURL struct {

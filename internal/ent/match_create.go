@@ -88,50 +88,8 @@ func (mc *MatchCreate) Mutation() *MatchMutation {
 
 // Save creates the Match in the database.
 func (mc *MatchCreate) Save(ctx context.Context) (*Match, error) {
-	var (
-		err  error
-		node *Match
-	)
 	mc.defaults()
-	if len(mc.hooks) == 0 {
-		if err = mc.check(); err != nil {
-			return nil, err
-		}
-		node, err = mc.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*MatchMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = mc.check(); err != nil {
-				return nil, err
-			}
-			mc.mutation = mutation
-			if node, err = mc.sqlSave(ctx); err != nil {
-				return nil, err
-			}
-			mutation.id = &node.ID
-			mutation.done = true
-			return node, err
-		})
-		for i := len(mc.hooks) - 1; i >= 0; i-- {
-			if mc.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = mc.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, mc.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*Match)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from MatchMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*Match, MatchMutation](ctx, mc.sqlSave, mc.mutation, mc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -176,6 +134,9 @@ func (mc *MatchCreate) check() error {
 }
 
 func (mc *MatchCreate) sqlSave(ctx context.Context) (*Match, error) {
+	if err := mc.check(); err != nil {
+		return nil, err
+	}
 	_node, _spec := mc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, mc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -190,19 +151,15 @@ func (mc *MatchCreate) sqlSave(ctx context.Context) (*Match, error) {
 			return nil, err
 		}
 	}
+	mc.mutation.id = &_node.ID
+	mc.mutation.done = true
 	return _node, nil
 }
 
 func (mc *MatchCreate) createSpec() (*Match, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Match{config: mc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: match.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: match.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(match.Table, sqlgraph.NewFieldSpec(match.FieldID, field.TypeString))
 	)
 	_spec.OnConflict = mc.conflict
 	if id, ok := mc.mutation.ID(); ok {
@@ -217,10 +174,7 @@ func (mc *MatchCreate) createSpec() (*Match, *sqlgraph.CreateSpec) {
 			Columns: []string{match.GameColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -237,10 +191,7 @@ func (mc *MatchCreate) createSpec() (*Match, *sqlgraph.CreateSpec) {
 			Columns: match.PlayersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: player.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -256,10 +207,7 @@ func (mc *MatchCreate) createSpec() (*Match, *sqlgraph.CreateSpec) {
 			Columns: []string{match.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -140,24 +140,24 @@ func (psr *PlayerSupervisionRequest) assignValues(columns []string, values []any
 
 // QuerySender queries the "sender" edge of the PlayerSupervisionRequest entity.
 func (psr *PlayerSupervisionRequest) QuerySender() *UserQuery {
-	return (&PlayerSupervisionRequestClient{config: psr.config}).QuerySender(psr)
+	return NewPlayerSupervisionRequestClient(psr.config).QuerySender(psr)
 }
 
 // QueryPlayer queries the "player" edge of the PlayerSupervisionRequest entity.
 func (psr *PlayerSupervisionRequest) QueryPlayer() *PlayerQuery {
-	return (&PlayerSupervisionRequestClient{config: psr.config}).QueryPlayer(psr)
+	return NewPlayerSupervisionRequestClient(psr.config).QueryPlayer(psr)
 }
 
 // QueryApprovals queries the "approvals" edge of the PlayerSupervisionRequest entity.
 func (psr *PlayerSupervisionRequest) QueryApprovals() *PlayerSupervisionRequestApprovalQuery {
-	return (&PlayerSupervisionRequestClient{config: psr.config}).QueryApprovals(psr)
+	return NewPlayerSupervisionRequestClient(psr.config).QueryApprovals(psr)
 }
 
 // Update returns a builder for updating this PlayerSupervisionRequest.
 // Note that you need to call PlayerSupervisionRequest.Unwrap() before calling this method if this PlayerSupervisionRequest
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (psr *PlayerSupervisionRequest) Update() *PlayerSupervisionRequestUpdateOne {
-	return (&PlayerSupervisionRequestClient{config: psr.config}).UpdateOne(psr)
+	return NewPlayerSupervisionRequestClient(psr.config).UpdateOne(psr)
 }
 
 // Unwrap unwraps the PlayerSupervisionRequest entity that was returned from a transaction after it was closed,
@@ -208,9 +208,3 @@ func (psr *PlayerSupervisionRequest) appendNamedApprovals(name string, edges ...
 
 // PlayerSupervisionRequests is a parsable slice of PlayerSupervisionRequest.
 type PlayerSupervisionRequests []*PlayerSupervisionRequest
-
-func (psr PlayerSupervisionRequests) config(cfg config) {
-	for _i := range psr {
-		psr[_i].config = cfg
-	}
-}

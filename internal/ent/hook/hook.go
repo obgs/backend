@@ -15,11 +15,10 @@ type GameFunc func(context.Context, *ent.GameMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
 func (f GameFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.GameMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GameMutation", m)
+	if mv, ok := m.(*ent.GameMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GameMutation", m)
 }
 
 // The GameFavoriteFunc type is an adapter to allow the use of ordinary
@@ -28,11 +27,10 @@ type GameFavoriteFunc func(context.Context, *ent.GameFavoriteMutation) (ent.Valu
 
 // Mutate calls f(ctx, m).
 func (f GameFavoriteFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.GameFavoriteMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GameFavoriteMutation", m)
+	if mv, ok := m.(*ent.GameFavoriteMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GameFavoriteMutation", m)
 }
 
 // The GroupFunc type is an adapter to allow the use of ordinary
@@ -41,11 +39,10 @@ type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
 func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.GroupMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
+	if mv, ok := m.(*ent.GroupMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
 }
 
 // The GroupMembershipFunc type is an adapter to allow the use of ordinary
@@ -54,11 +51,10 @@ type GroupMembershipFunc func(context.Context, *ent.GroupMembershipMutation) (en
 
 // Mutate calls f(ctx, m).
 func (f GroupMembershipFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.GroupMembershipMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMembershipMutation", m)
+	if mv, ok := m.(*ent.GroupMembershipMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMembershipMutation", m)
 }
 
 // The GroupMembershipApplicationFunc type is an adapter to allow the use of ordinary
@@ -67,11 +63,10 @@ type GroupMembershipApplicationFunc func(context.Context, *ent.GroupMembershipAp
 
 // Mutate calls f(ctx, m).
 func (f GroupMembershipApplicationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.GroupMembershipApplicationMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMembershipApplicationMutation", m)
+	if mv, ok := m.(*ent.GroupMembershipApplicationMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMembershipApplicationMutation", m)
 }
 
 // The GroupSettingsFunc type is an adapter to allow the use of ordinary
@@ -80,11 +75,10 @@ type GroupSettingsFunc func(context.Context, *ent.GroupSettingsMutation) (ent.Va
 
 // Mutate calls f(ctx, m).
 func (f GroupSettingsFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.GroupSettingsMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupSettingsMutation", m)
+	if mv, ok := m.(*ent.GroupSettingsMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupSettingsMutation", m)
 }
 
 // The MatchFunc type is an adapter to allow the use of ordinary
@@ -93,11 +87,10 @@ type MatchFunc func(context.Context, *ent.MatchMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
 func (f MatchFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.MatchMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MatchMutation", m)
+	if mv, ok := m.(*ent.MatchMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MatchMutation", m)
 }
 
 // The PlayerFunc type is an adapter to allow the use of ordinary
@@ -106,11 +99,10 @@ type PlayerFunc func(context.Context, *ent.PlayerMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
 func (f PlayerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.PlayerMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerMutation", m)
+	if mv, ok := m.(*ent.PlayerMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerMutation", m)
 }
 
 // The PlayerSupervisionRequestFunc type is an adapter to allow the use of ordinary
@@ -119,11 +111,10 @@ type PlayerSupervisionRequestFunc func(context.Context, *ent.PlayerSupervisionRe
 
 // Mutate calls f(ctx, m).
 func (f PlayerSupervisionRequestFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.PlayerSupervisionRequestMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerSupervisionRequestMutation", m)
+	if mv, ok := m.(*ent.PlayerSupervisionRequestMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerSupervisionRequestMutation", m)
 }
 
 // The PlayerSupervisionRequestApprovalFunc type is an adapter to allow the use of ordinary
@@ -132,11 +123,10 @@ type PlayerSupervisionRequestApprovalFunc func(context.Context, *ent.PlayerSuper
 
 // Mutate calls f(ctx, m).
 func (f PlayerSupervisionRequestApprovalFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.PlayerSupervisionRequestApprovalMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerSupervisionRequestApprovalMutation", m)
+	if mv, ok := m.(*ent.PlayerSupervisionRequestApprovalMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerSupervisionRequestApprovalMutation", m)
 }
 
 // The StatDescriptionFunc type is an adapter to allow the use of ordinary
@@ -145,11 +135,10 @@ type StatDescriptionFunc func(context.Context, *ent.StatDescriptionMutation) (en
 
 // Mutate calls f(ctx, m).
 func (f StatDescriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.StatDescriptionMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatDescriptionMutation", m)
+	if mv, ok := m.(*ent.StatDescriptionMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatDescriptionMutation", m)
 }
 
 // The StatisticFunc type is an adapter to allow the use of ordinary
@@ -158,11 +147,10 @@ type StatisticFunc func(context.Context, *ent.StatisticMutation) (ent.Value, err
 
 // Mutate calls f(ctx, m).
 func (f StatisticFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.StatisticMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatisticMutation", m)
+	if mv, ok := m.(*ent.StatisticMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatisticMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary
@@ -171,11 +159,10 @@ type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
 func (f UserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.UserMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
+	if mv, ok := m.(*ent.UserMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
 }
 
 // Condition is a hook condition function.

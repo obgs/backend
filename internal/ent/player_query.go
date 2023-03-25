@@ -23,11 +23,9 @@ import (
 // PlayerQuery is the builder for querying Player entities.
 type PlayerQuery struct {
 	config
-	limit                        *int
-	offset                       *int
-	unique                       *bool
+	ctx                          *QueryContext
 	order                        []OrderFunc
-	fields                       []string
+	inters                       []Interceptor
 	predicates                   []predicate.Player
 	withOwner                    *UserQuery
 	withSupervisors              *UserQuery
@@ -52,26 +50,26 @@ func (pq *PlayerQuery) Where(ps ...predicate.Player) *PlayerQuery {
 	return pq
 }
 
-// Limit adds a limit step to the query.
+// Limit the number of records to be returned by this query.
 func (pq *PlayerQuery) Limit(limit int) *PlayerQuery {
-	pq.limit = &limit
+	pq.ctx.Limit = &limit
 	return pq
 }
 
-// Offset adds an offset step to the query.
+// Offset to start from.
 func (pq *PlayerQuery) Offset(offset int) *PlayerQuery {
-	pq.offset = &offset
+	pq.ctx.Offset = &offset
 	return pq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (pq *PlayerQuery) Unique(unique bool) *PlayerQuery {
-	pq.unique = &unique
+	pq.ctx.Unique = &unique
 	return pq
 }
 
-// Order adds an order step to the query.
+// Order specifies how the records should be ordered.
 func (pq *PlayerQuery) Order(o ...OrderFunc) *PlayerQuery {
 	pq.order = append(pq.order, o...)
 	return pq
@@ -79,7 +77,7 @@ func (pq *PlayerQuery) Order(o ...OrderFunc) *PlayerQuery {
 
 // QueryOwner chains the current query on the "owner" edge.
 func (pq *PlayerQuery) QueryOwner() *UserQuery {
-	query := &UserQuery{config: pq.config}
+	query := (&UserClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -101,7 +99,7 @@ func (pq *PlayerQuery) QueryOwner() *UserQuery {
 
 // QuerySupervisors chains the current query on the "supervisors" edge.
 func (pq *PlayerQuery) QuerySupervisors() *UserQuery {
-	query := &UserQuery{config: pq.config}
+	query := (&UserClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -123,7 +121,7 @@ func (pq *PlayerQuery) QuerySupervisors() *UserQuery {
 
 // QuerySupervisionRequests chains the current query on the "supervision_requests" edge.
 func (pq *PlayerQuery) QuerySupervisionRequests() *PlayerSupervisionRequestQuery {
-	query := &PlayerSupervisionRequestQuery{config: pq.config}
+	query := (&PlayerSupervisionRequestClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -145,7 +143,7 @@ func (pq *PlayerQuery) QuerySupervisionRequests() *PlayerSupervisionRequestQuery
 
 // QueryMatches chains the current query on the "matches" edge.
 func (pq *PlayerQuery) QueryMatches() *MatchQuery {
-	query := &MatchQuery{config: pq.config}
+	query := (&MatchClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -167,7 +165,7 @@ func (pq *PlayerQuery) QueryMatches() *MatchQuery {
 
 // QueryStats chains the current query on the "stats" edge.
 func (pq *PlayerQuery) QueryStats() *StatisticQuery {
-	query := &StatisticQuery{config: pq.config}
+	query := (&StatisticClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -190,7 +188,7 @@ func (pq *PlayerQuery) QueryStats() *StatisticQuery {
 // First returns the first Player entity from the query.
 // Returns a *NotFoundError when no Player was found.
 func (pq *PlayerQuery) First(ctx context.Context) (*Player, error) {
-	nodes, err := pq.Limit(1).All(ctx)
+	nodes, err := pq.Limit(1).All(setContextOp(ctx, pq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +211,7 @@ func (pq *PlayerQuery) FirstX(ctx context.Context) *Player {
 // Returns a *NotFoundError when no Player ID was found.
 func (pq *PlayerQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = pq.Limit(1).IDs(ctx); err != nil {
+	if ids, err = pq.Limit(1).IDs(setContextOp(ctx, pq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -236,7 +234,7 @@ func (pq *PlayerQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 // Returns a *NotSingularError when more than one Player entity is found.
 // Returns a *NotFoundError when no Player entities are found.
 func (pq *PlayerQuery) Only(ctx context.Context) (*Player, error) {
-	nodes, err := pq.Limit(2).All(ctx)
+	nodes, err := pq.Limit(2).All(setContextOp(ctx, pq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +262,7 @@ func (pq *PlayerQuery) OnlyX(ctx context.Context) *Player {
 // Returns a *NotFoundError when no entities are found.
 func (pq *PlayerQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = pq.Limit(2).IDs(ctx); err != nil {
+	if ids, err = pq.Limit(2).IDs(setContextOp(ctx, pq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -289,10 +287,12 @@ func (pq *PlayerQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 
 // All executes the query and returns a list of Players.
 func (pq *PlayerQuery) All(ctx context.Context) ([]*Player, error) {
+	ctx = setContextOp(ctx, pq.ctx, "All")
 	if err := pq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	return pq.sqlAll(ctx)
+	qr := querierAll[[]*Player, *PlayerQuery]()
+	return withInterceptors[[]*Player](ctx, pq, qr, pq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
@@ -305,9 +305,12 @@ func (pq *PlayerQuery) AllX(ctx context.Context) []*Player {
 }
 
 // IDs executes the query and returns a list of Player IDs.
-func (pq *PlayerQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
-	var ids []guidgql.GUID
-	if err := pq.Select(player.FieldID).Scan(ctx, &ids); err != nil {
+func (pq *PlayerQuery) IDs(ctx context.Context) (ids []guidgql.GUID, err error) {
+	if pq.ctx.Unique == nil && pq.path != nil {
+		pq.Unique(true)
+	}
+	ctx = setContextOp(ctx, pq.ctx, "IDs")
+	if err = pq.Select(player.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -324,10 +327,11 @@ func (pq *PlayerQuery) IDsX(ctx context.Context) []guidgql.GUID {
 
 // Count returns the count of the given query.
 func (pq *PlayerQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, pq.ctx, "Count")
 	if err := pq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return pq.sqlCount(ctx)
+	return withInterceptors[int](ctx, pq, querierCount[*PlayerQuery](), pq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
@@ -341,10 +345,15 @@ func (pq *PlayerQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (pq *PlayerQuery) Exist(ctx context.Context) (bool, error) {
-	if err := pq.prepareQuery(ctx); err != nil {
-		return false, err
+	ctx = setContextOp(ctx, pq.ctx, "Exist")
+	switch _, err := pq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return pq.sqlExist(ctx)
 }
 
 // ExistX is like Exist, but panics if an error occurs.
@@ -364,9 +373,9 @@ func (pq *PlayerQuery) Clone() *PlayerQuery {
 	}
 	return &PlayerQuery{
 		config:                  pq.config,
-		limit:                   pq.limit,
-		offset:                  pq.offset,
+		ctx:                     pq.ctx.Clone(),
 		order:                   append([]OrderFunc{}, pq.order...),
+		inters:                  append([]Interceptor{}, pq.inters...),
 		predicates:              append([]predicate.Player{}, pq.predicates...),
 		withOwner:               pq.withOwner.Clone(),
 		withSupervisors:         pq.withSupervisors.Clone(),
@@ -374,16 +383,15 @@ func (pq *PlayerQuery) Clone() *PlayerQuery {
 		withMatches:             pq.withMatches.Clone(),
 		withStats:               pq.withStats.Clone(),
 		// clone intermediate query.
-		sql:    pq.sql.Clone(),
-		path:   pq.path,
-		unique: pq.unique,
+		sql:  pq.sql.Clone(),
+		path: pq.path,
 	}
 }
 
 // WithOwner tells the query-builder to eager-load the nodes that are connected to
 // the "owner" edge. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithOwner(opts ...func(*UserQuery)) *PlayerQuery {
-	query := &UserQuery{config: pq.config}
+	query := (&UserClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -394,7 +402,7 @@ func (pq *PlayerQuery) WithOwner(opts ...func(*UserQuery)) *PlayerQuery {
 // WithSupervisors tells the query-builder to eager-load the nodes that are connected to
 // the "supervisors" edge. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithSupervisors(opts ...func(*UserQuery)) *PlayerQuery {
-	query := &UserQuery{config: pq.config}
+	query := (&UserClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -405,7 +413,7 @@ func (pq *PlayerQuery) WithSupervisors(opts ...func(*UserQuery)) *PlayerQuery {
 // WithSupervisionRequests tells the query-builder to eager-load the nodes that are connected to
 // the "supervision_requests" edge. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithSupervisionRequests(opts ...func(*PlayerSupervisionRequestQuery)) *PlayerQuery {
-	query := &PlayerSupervisionRequestQuery{config: pq.config}
+	query := (&PlayerSupervisionRequestClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -416,7 +424,7 @@ func (pq *PlayerQuery) WithSupervisionRequests(opts ...func(*PlayerSupervisionRe
 // WithMatches tells the query-builder to eager-load the nodes that are connected to
 // the "matches" edge. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithMatches(opts ...func(*MatchQuery)) *PlayerQuery {
-	query := &MatchQuery{config: pq.config}
+	query := (&MatchClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -427,7 +435,7 @@ func (pq *PlayerQuery) WithMatches(opts ...func(*MatchQuery)) *PlayerQuery {
 // WithStats tells the query-builder to eager-load the nodes that are connected to
 // the "stats" edge. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithStats(opts ...func(*StatisticQuery)) *PlayerQuery {
-	query := &StatisticQuery{config: pq.config}
+	query := (&StatisticClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -450,16 +458,11 @@ func (pq *PlayerQuery) WithStats(opts ...func(*StatisticQuery)) *PlayerQuery {
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PlayerQuery) GroupBy(field string, fields ...string) *PlayerGroupBy {
-	grbuild := &PlayerGroupBy{config: pq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return pq.sqlQuery(ctx), nil
-	}
+	pq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &PlayerGroupBy{build: pq}
+	grbuild.flds = &pq.ctx.Fields
 	grbuild.label = player.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	grbuild.scan = grbuild.Scan
 	return grbuild
 }
 
@@ -476,11 +479,11 @@ func (pq *PlayerQuery) GroupBy(field string, fields ...string) *PlayerGroupBy {
 //		Select(player.FieldName).
 //		Scan(ctx, &v)
 func (pq *PlayerQuery) Select(fields ...string) *PlayerSelect {
-	pq.fields = append(pq.fields, fields...)
-	selbuild := &PlayerSelect{PlayerQuery: pq}
-	selbuild.label = player.Label
-	selbuild.flds, selbuild.scan = &pq.fields, selbuild.Scan
-	return selbuild
+	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
+	sbuild := &PlayerSelect{PlayerQuery: pq}
+	sbuild.label = player.Label
+	sbuild.flds, sbuild.scan = &pq.ctx.Fields, sbuild.Scan
+	return sbuild
 }
 
 // Aggregate returns a PlayerSelect configured with the given aggregations.
@@ -489,7 +492,17 @@ func (pq *PlayerQuery) Aggregate(fns ...AggregateFunc) *PlayerSelect {
 }
 
 func (pq *PlayerQuery) prepareQuery(ctx context.Context) error {
-	for _, f := range pq.fields {
+	for _, inter := range pq.inters {
+		if inter == nil {
+			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
+		}
+		if trv, ok := inter.(Traverser); ok {
+			if err := trv.Traverse(ctx, pq); err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range pq.ctx.Fields {
 		if !player.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -629,6 +642,9 @@ func (pq *PlayerQuery) loadOwner(ctx context.Context, query *UserQuery, nodes []
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -668,27 +684,30 @@ func (pq *PlayerQuery) loadSupervisors(ctx context.Context, query *UserQuery, no
 	if err := query.prepareQuery(ctx); err != nil {
 		return err
 	}
-	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-		assign := spec.Assign
-		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]any, error) {
-			values, err := values(columns[1:])
-			if err != nil {
-				return nil, err
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(guidgql.GUID)}, values...), nil
 			}
-			return append([]any{new(guidgql.GUID)}, values...), nil
-		}
-		spec.Assign = func(columns []string, values []any) error {
-			outValue := *values[0].(*guidgql.GUID)
-			inValue := *values[1].(*guidgql.GUID)
-			if nids[inValue] == nil {
-				nids[inValue] = map[*Player]struct{}{byID[outValue]: {}}
-				return assign(columns[1:], values[1:])
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*guidgql.GUID)
+				inValue := *values[1].(*guidgql.GUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Player]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
 			}
-			nids[inValue][byID[outValue]] = struct{}{}
-			return nil
-		}
+		})
 	})
+	neighbors, err := withInterceptors[[]*User](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
@@ -757,27 +776,30 @@ func (pq *PlayerQuery) loadMatches(ctx context.Context, query *MatchQuery, nodes
 	if err := query.prepareQuery(ctx); err != nil {
 		return err
 	}
-	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-		assign := spec.Assign
-		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]any, error) {
-			values, err := values(columns[1:])
-			if err != nil {
-				return nil, err
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(guidgql.GUID)}, values...), nil
 			}
-			return append([]any{new(guidgql.GUID)}, values...), nil
-		}
-		spec.Assign = func(columns []string, values []any) error {
-			outValue := *values[0].(*guidgql.GUID)
-			inValue := *values[1].(*guidgql.GUID)
-			if nids[inValue] == nil {
-				nids[inValue] = map[*Player]struct{}{byID[outValue]: {}}
-				return assign(columns[1:], values[1:])
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*guidgql.GUID)
+				inValue := *values[1].(*guidgql.GUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Player]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
 			}
-			nids[inValue][byID[outValue]] = struct{}{}
-			return nil
-		}
+		})
 	})
+	neighbors, err := withInterceptors[[]*Match](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
@@ -829,41 +851,22 @@ func (pq *PlayerQuery) sqlCount(ctx context.Context) (int, error) {
 	if len(pq.modifiers) > 0 {
 		_spec.Modifiers = pq.modifiers
 	}
-	_spec.Node.Columns = pq.fields
-	if len(pq.fields) > 0 {
-		_spec.Unique = pq.unique != nil && *pq.unique
+	_spec.Node.Columns = pq.ctx.Fields
+	if len(pq.ctx.Fields) > 0 {
+		_spec.Unique = pq.ctx.Unique != nil && *pq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, pq.driver, _spec)
 }
 
-func (pq *PlayerQuery) sqlExist(ctx context.Context) (bool, error) {
-	switch _, err := pq.FirstID(ctx); {
-	case IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("ent: check existence: %w", err)
-	default:
-		return true, nil
-	}
-}
-
 func (pq *PlayerQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   player.Table,
-			Columns: player.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: player.FieldID,
-			},
-		},
-		From:   pq.sql,
-		Unique: true,
-	}
-	if unique := pq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(player.Table, player.Columns, sqlgraph.NewFieldSpec(player.FieldID, field.TypeString))
+	_spec.From = pq.sql
+	if unique := pq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if pq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := pq.fields; len(fields) > 0 {
+	if fields := pq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, player.FieldID)
 		for i := range fields {
@@ -879,10 +882,10 @@ func (pq *PlayerQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := pq.limit; limit != nil {
+	if limit := pq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := pq.offset; offset != nil {
+	if offset := pq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := pq.order; len(ps) > 0 {
@@ -898,7 +901,7 @@ func (pq *PlayerQuery) querySpec() *sqlgraph.QuerySpec {
 func (pq *PlayerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(pq.driver.Dialect())
 	t1 := builder.Table(player.Table)
-	columns := pq.fields
+	columns := pq.ctx.Fields
 	if len(columns) == 0 {
 		columns = player.Columns
 	}
@@ -907,7 +910,7 @@ func (pq *PlayerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector = pq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if pq.unique != nil && *pq.unique {
+	if pq.ctx.Unique != nil && *pq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range pq.predicates {
@@ -916,12 +919,12 @@ func (pq *PlayerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	for _, p := range pq.order {
 		p(selector)
 	}
-	if offset := pq.offset; offset != nil {
+	if offset := pq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := pq.limit; limit != nil {
+	if limit := pq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -930,7 +933,7 @@ func (pq *PlayerQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // WithNamedSupervisors tells the query-builder to eager-load the nodes that are connected to the "supervisors"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithNamedSupervisors(name string, opts ...func(*UserQuery)) *PlayerQuery {
-	query := &UserQuery{config: pq.config}
+	query := (&UserClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -944,7 +947,7 @@ func (pq *PlayerQuery) WithNamedSupervisors(name string, opts ...func(*UserQuery
 // WithNamedSupervisionRequests tells the query-builder to eager-load the nodes that are connected to the "supervision_requests"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithNamedSupervisionRequests(name string, opts ...func(*PlayerSupervisionRequestQuery)) *PlayerQuery {
-	query := &PlayerSupervisionRequestQuery{config: pq.config}
+	query := (&PlayerSupervisionRequestClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -958,7 +961,7 @@ func (pq *PlayerQuery) WithNamedSupervisionRequests(name string, opts ...func(*P
 // WithNamedMatches tells the query-builder to eager-load the nodes that are connected to the "matches"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithNamedMatches(name string, opts ...func(*MatchQuery)) *PlayerQuery {
-	query := &MatchQuery{config: pq.config}
+	query := (&MatchClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -972,7 +975,7 @@ func (pq *PlayerQuery) WithNamedMatches(name string, opts ...func(*MatchQuery)) 
 // WithNamedStats tells the query-builder to eager-load the nodes that are connected to the "stats"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (pq *PlayerQuery) WithNamedStats(name string, opts ...func(*StatisticQuery)) *PlayerQuery {
-	query := &StatisticQuery{config: pq.config}
+	query := (&StatisticClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -985,13 +988,8 @@ func (pq *PlayerQuery) WithNamedStats(name string, opts ...func(*StatisticQuery)
 
 // PlayerGroupBy is the group-by builder for Player entities.
 type PlayerGroupBy struct {
-	config
 	selector
-	fields []string
-	fns    []AggregateFunc
-	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	build *PlayerQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
@@ -1000,58 +998,46 @@ func (pgb *PlayerGroupBy) Aggregate(fns ...AggregateFunc) *PlayerGroupBy {
 	return pgb
 }
 
-// Scan applies the group-by query and scans the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (pgb *PlayerGroupBy) Scan(ctx context.Context, v any) error {
-	query, err := pgb.path(ctx)
-	if err != nil {
+	ctx = setContextOp(ctx, pgb.build.ctx, "GroupBy")
+	if err := pgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	pgb.sql = query
-	return pgb.sqlScan(ctx, v)
+	return scanWithInterceptors[*PlayerQuery, *PlayerGroupBy](ctx, pgb.build, pgb, pgb.build.inters, v)
 }
 
-func (pgb *PlayerGroupBy) sqlScan(ctx context.Context, v any) error {
-	for _, f := range pgb.fields {
-		if !player.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
-		}
+func (pgb *PlayerGroupBy) sqlScan(ctx context.Context, root *PlayerQuery, v any) error {
+	selector := root.sqlQuery(ctx).Select()
+	aggregation := make([]string, 0, len(pgb.fns))
+	for _, fn := range pgb.fns {
+		aggregation = append(aggregation, fn(selector))
 	}
-	selector := pgb.sqlQuery()
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(*pgb.flds)+len(pgb.fns))
+		for _, f := range *pgb.flds {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	selector.GroupBy(selector.Columns(*pgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := pgb.driver.Query(ctx, query, args, rows); err != nil {
+	if err := pgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-func (pgb *PlayerGroupBy) sqlQuery() *sql.Selector {
-	selector := pgb.sql.Select()
-	aggregation := make([]string, 0, len(pgb.fns))
-	for _, fn := range pgb.fns {
-		aggregation = append(aggregation, fn(selector))
-	}
-	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(pgb.fields)+len(pgb.fns))
-		for _, f := range pgb.fields {
-			columns = append(columns, selector.C(f))
-		}
-		columns = append(columns, aggregation...)
-		selector.Select(columns...)
-	}
-	return selector.GroupBy(selector.Columns(pgb.fields...)...)
-}
-
 // PlayerSelect is the builder for selecting fields of Player entities.
 type PlayerSelect struct {
 	*PlayerQuery
 	selector
-	// intermediate query (i.e. traversal path).
-	sql *sql.Selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
@@ -1062,26 +1048,27 @@ func (ps *PlayerSelect) Aggregate(fns ...AggregateFunc) *PlayerSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (ps *PlayerSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, ps.ctx, "Select")
 	if err := ps.prepareQuery(ctx); err != nil {
 		return err
 	}
-	ps.sql = ps.PlayerQuery.sqlQuery(ctx)
-	return ps.sqlScan(ctx, v)
+	return scanWithInterceptors[*PlayerQuery, *PlayerSelect](ctx, ps.PlayerQuery, ps, ps.inters, v)
 }
 
-func (ps *PlayerSelect) sqlScan(ctx context.Context, v any) error {
+func (ps *PlayerSelect) sqlScan(ctx context.Context, root *PlayerQuery, v any) error {
+	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(ps.fns))
 	for _, fn := range ps.fns {
-		aggregation = append(aggregation, fn(ps.sql))
+		aggregation = append(aggregation, fn(selector))
 	}
 	switch n := len(*ps.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
-		ps.sql.Select(aggregation...)
+		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
-		ps.sql.AppendSelect(aggregation...)
+		selector.AppendSelect(aggregation...)
 	}
 	rows := &sql.Rows{}
-	query, args := ps.sql.Query()
+	query, args := selector.Query()
 	if err := ps.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"fmt"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -28,34 +27,7 @@ func (gd *GameDelete) Where(ps ...predicate.Game) *GameDelete {
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (gd *GameDelete) Exec(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(gd.hooks) == 0 {
-		affected, err = gd.sqlExec(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GameMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			gd.mutation = mutation
-			affected, err = gd.sqlExec(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(gd.hooks) - 1; i >= 0; i-- {
-			if gd.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gd.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, gd.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, GameMutation](ctx, gd.sqlExec, gd.mutation, gd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
@@ -68,15 +40,7 @@ func (gd *GameDelete) ExecX(ctx context.Context) int {
 }
 
 func (gd *GameDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := &sqlgraph.DeleteSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table: game.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: game.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewDeleteSpec(game.Table, sqlgraph.NewFieldSpec(game.FieldID, field.TypeString))
 	if ps := gd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -88,12 +52,19 @@ func (gd *GameDelete) sqlExec(ctx context.Context) (int, error) {
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
+	gd.mutation.done = true
 	return affected, err
 }
 
 // GameDeleteOne is the builder for deleting a single Game entity.
 type GameDeleteOne struct {
 	gd *GameDelete
+}
+
+// Where appends a list predicates to the GameDelete builder.
+func (gdo *GameDeleteOne) Where(ps ...predicate.Game) *GameDeleteOne {
+	gdo.gd.mutation.Where(ps...)
+	return gdo
 }
 
 // Exec executes the deletion query.
@@ -111,5 +82,7 @@ func (gdo *GameDeleteOne) Exec(ctx context.Context) error {
 
 // ExecX is like Exec, but panics if an error occurs.
 func (gdo *GameDeleteOne) ExecX(ctx context.Context) {
-	gdo.gd.ExecX(ctx)
+	if err := gdo.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

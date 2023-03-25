@@ -22,11 +22,9 @@ import (
 // MatchQuery is the builder for querying Match entities.
 type MatchQuery struct {
 	config
-	limit            *int
-	offset           *int
-	unique           *bool
+	ctx              *QueryContext
 	order            []OrderFunc
-	fields           []string
+	inters           []Interceptor
 	predicates       []predicate.Match
 	withGame         *GameQuery
 	withPlayers      *PlayerQuery
@@ -47,26 +45,26 @@ func (mq *MatchQuery) Where(ps ...predicate.Match) *MatchQuery {
 	return mq
 }
 
-// Limit adds a limit step to the query.
+// Limit the number of records to be returned by this query.
 func (mq *MatchQuery) Limit(limit int) *MatchQuery {
-	mq.limit = &limit
+	mq.ctx.Limit = &limit
 	return mq
 }
 
-// Offset adds an offset step to the query.
+// Offset to start from.
 func (mq *MatchQuery) Offset(offset int) *MatchQuery {
-	mq.offset = &offset
+	mq.ctx.Offset = &offset
 	return mq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (mq *MatchQuery) Unique(unique bool) *MatchQuery {
-	mq.unique = &unique
+	mq.ctx.Unique = &unique
 	return mq
 }
 
-// Order adds an order step to the query.
+// Order specifies how the records should be ordered.
 func (mq *MatchQuery) Order(o ...OrderFunc) *MatchQuery {
 	mq.order = append(mq.order, o...)
 	return mq
@@ -74,7 +72,7 @@ func (mq *MatchQuery) Order(o ...OrderFunc) *MatchQuery {
 
 // QueryGame chains the current query on the "game" edge.
 func (mq *MatchQuery) QueryGame() *GameQuery {
-	query := &GameQuery{config: mq.config}
+	query := (&GameClient{config: mq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := mq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -96,7 +94,7 @@ func (mq *MatchQuery) QueryGame() *GameQuery {
 
 // QueryPlayers chains the current query on the "players" edge.
 func (mq *MatchQuery) QueryPlayers() *PlayerQuery {
-	query := &PlayerQuery{config: mq.config}
+	query := (&PlayerClient{config: mq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := mq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -118,7 +116,7 @@ func (mq *MatchQuery) QueryPlayers() *PlayerQuery {
 
 // QueryStats chains the current query on the "stats" edge.
 func (mq *MatchQuery) QueryStats() *StatisticQuery {
-	query := &StatisticQuery{config: mq.config}
+	query := (&StatisticClient{config: mq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := mq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -141,7 +139,7 @@ func (mq *MatchQuery) QueryStats() *StatisticQuery {
 // First returns the first Match entity from the query.
 // Returns a *NotFoundError when no Match was found.
 func (mq *MatchQuery) First(ctx context.Context) (*Match, error) {
-	nodes, err := mq.Limit(1).All(ctx)
+	nodes, err := mq.Limit(1).All(setContextOp(ctx, mq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +162,7 @@ func (mq *MatchQuery) FirstX(ctx context.Context) *Match {
 // Returns a *NotFoundError when no Match ID was found.
 func (mq *MatchQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = mq.Limit(1).IDs(ctx); err != nil {
+	if ids, err = mq.Limit(1).IDs(setContextOp(ctx, mq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -187,7 +185,7 @@ func (mq *MatchQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 // Returns a *NotSingularError when more than one Match entity is found.
 // Returns a *NotFoundError when no Match entities are found.
 func (mq *MatchQuery) Only(ctx context.Context) (*Match, error) {
-	nodes, err := mq.Limit(2).All(ctx)
+	nodes, err := mq.Limit(2).All(setContextOp(ctx, mq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +213,7 @@ func (mq *MatchQuery) OnlyX(ctx context.Context) *Match {
 // Returns a *NotFoundError when no entities are found.
 func (mq *MatchQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = mq.Limit(2).IDs(ctx); err != nil {
+	if ids, err = mq.Limit(2).IDs(setContextOp(ctx, mq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -240,10 +238,12 @@ func (mq *MatchQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 
 // All executes the query and returns a list of Matches.
 func (mq *MatchQuery) All(ctx context.Context) ([]*Match, error) {
+	ctx = setContextOp(ctx, mq.ctx, "All")
 	if err := mq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	return mq.sqlAll(ctx)
+	qr := querierAll[[]*Match, *MatchQuery]()
+	return withInterceptors[[]*Match](ctx, mq, qr, mq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
@@ -256,9 +256,12 @@ func (mq *MatchQuery) AllX(ctx context.Context) []*Match {
 }
 
 // IDs executes the query and returns a list of Match IDs.
-func (mq *MatchQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
-	var ids []guidgql.GUID
-	if err := mq.Select(match.FieldID).Scan(ctx, &ids); err != nil {
+func (mq *MatchQuery) IDs(ctx context.Context) (ids []guidgql.GUID, err error) {
+	if mq.ctx.Unique == nil && mq.path != nil {
+		mq.Unique(true)
+	}
+	ctx = setContextOp(ctx, mq.ctx, "IDs")
+	if err = mq.Select(match.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -275,10 +278,11 @@ func (mq *MatchQuery) IDsX(ctx context.Context) []guidgql.GUID {
 
 // Count returns the count of the given query.
 func (mq *MatchQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, mq.ctx, "Count")
 	if err := mq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return mq.sqlCount(ctx)
+	return withInterceptors[int](ctx, mq, querierCount[*MatchQuery](), mq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
@@ -292,10 +296,15 @@ func (mq *MatchQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (mq *MatchQuery) Exist(ctx context.Context) (bool, error) {
-	if err := mq.prepareQuery(ctx); err != nil {
-		return false, err
+	ctx = setContextOp(ctx, mq.ctx, "Exist")
+	switch _, err := mq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return mq.sqlExist(ctx)
 }
 
 // ExistX is like Exist, but panics if an error occurs.
@@ -315,24 +324,23 @@ func (mq *MatchQuery) Clone() *MatchQuery {
 	}
 	return &MatchQuery{
 		config:      mq.config,
-		limit:       mq.limit,
-		offset:      mq.offset,
+		ctx:         mq.ctx.Clone(),
 		order:       append([]OrderFunc{}, mq.order...),
+		inters:      append([]Interceptor{}, mq.inters...),
 		predicates:  append([]predicate.Match{}, mq.predicates...),
 		withGame:    mq.withGame.Clone(),
 		withPlayers: mq.withPlayers.Clone(),
 		withStats:   mq.withStats.Clone(),
 		// clone intermediate query.
-		sql:    mq.sql.Clone(),
-		path:   mq.path,
-		unique: mq.unique,
+		sql:  mq.sql.Clone(),
+		path: mq.path,
 	}
 }
 
 // WithGame tells the query-builder to eager-load the nodes that are connected to
 // the "game" edge. The optional arguments are used to configure the query builder of the edge.
 func (mq *MatchQuery) WithGame(opts ...func(*GameQuery)) *MatchQuery {
-	query := &GameQuery{config: mq.config}
+	query := (&GameClient{config: mq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -343,7 +351,7 @@ func (mq *MatchQuery) WithGame(opts ...func(*GameQuery)) *MatchQuery {
 // WithPlayers tells the query-builder to eager-load the nodes that are connected to
 // the "players" edge. The optional arguments are used to configure the query builder of the edge.
 func (mq *MatchQuery) WithPlayers(opts ...func(*PlayerQuery)) *MatchQuery {
-	query := &PlayerQuery{config: mq.config}
+	query := (&PlayerClient{config: mq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -354,7 +362,7 @@ func (mq *MatchQuery) WithPlayers(opts ...func(*PlayerQuery)) *MatchQuery {
 // WithStats tells the query-builder to eager-load the nodes that are connected to
 // the "stats" edge. The optional arguments are used to configure the query builder of the edge.
 func (mq *MatchQuery) WithStats(opts ...func(*StatisticQuery)) *MatchQuery {
-	query := &StatisticQuery{config: mq.config}
+	query := (&StatisticClient{config: mq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -365,27 +373,22 @@ func (mq *MatchQuery) WithStats(opts ...func(*StatisticQuery)) *MatchQuery {
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 func (mq *MatchQuery) GroupBy(field string, fields ...string) *MatchGroupBy {
-	grbuild := &MatchGroupBy{config: mq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := mq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return mq.sqlQuery(ctx), nil
-	}
+	mq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &MatchGroupBy{build: mq}
+	grbuild.flds = &mq.ctx.Fields
 	grbuild.label = match.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	grbuild.scan = grbuild.Scan
 	return grbuild
 }
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
 func (mq *MatchQuery) Select(fields ...string) *MatchSelect {
-	mq.fields = append(mq.fields, fields...)
-	selbuild := &MatchSelect{MatchQuery: mq}
-	selbuild.label = match.Label
-	selbuild.flds, selbuild.scan = &mq.fields, selbuild.Scan
-	return selbuild
+	mq.ctx.Fields = append(mq.ctx.Fields, fields...)
+	sbuild := &MatchSelect{MatchQuery: mq}
+	sbuild.label = match.Label
+	sbuild.flds, sbuild.scan = &mq.ctx.Fields, sbuild.Scan
+	return sbuild
 }
 
 // Aggregate returns a MatchSelect configured with the given aggregations.
@@ -394,7 +397,17 @@ func (mq *MatchQuery) Aggregate(fns ...AggregateFunc) *MatchSelect {
 }
 
 func (mq *MatchQuery) prepareQuery(ctx context.Context) error {
-	for _, f := range mq.fields {
+	for _, inter := range mq.inters {
+		if inter == nil {
+			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
+		}
+		if trv, ok := inter.(Traverser); ok {
+			if err := trv.Traverse(ctx, mq); err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range mq.ctx.Fields {
 		if !match.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -502,6 +515,9 @@ func (mq *MatchQuery) loadGame(ctx context.Context, query *GameQuery, nodes []*M
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(game.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -541,27 +557,30 @@ func (mq *MatchQuery) loadPlayers(ctx context.Context, query *PlayerQuery, nodes
 	if err := query.prepareQuery(ctx); err != nil {
 		return err
 	}
-	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-		assign := spec.Assign
-		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]any, error) {
-			values, err := values(columns[1:])
-			if err != nil {
-				return nil, err
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(guidgql.GUID)}, values...), nil
 			}
-			return append([]any{new(guidgql.GUID)}, values...), nil
-		}
-		spec.Assign = func(columns []string, values []any) error {
-			outValue := *values[0].(*guidgql.GUID)
-			inValue := *values[1].(*guidgql.GUID)
-			if nids[inValue] == nil {
-				nids[inValue] = map[*Match]struct{}{byID[outValue]: {}}
-				return assign(columns[1:], values[1:])
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*guidgql.GUID)
+				inValue := *values[1].(*guidgql.GUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Match]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
 			}
-			nids[inValue][byID[outValue]] = struct{}{}
-			return nil
-		}
+		})
 	})
+	neighbors, err := withInterceptors[[]*Player](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
@@ -613,41 +632,22 @@ func (mq *MatchQuery) sqlCount(ctx context.Context) (int, error) {
 	if len(mq.modifiers) > 0 {
 		_spec.Modifiers = mq.modifiers
 	}
-	_spec.Node.Columns = mq.fields
-	if len(mq.fields) > 0 {
-		_spec.Unique = mq.unique != nil && *mq.unique
+	_spec.Node.Columns = mq.ctx.Fields
+	if len(mq.ctx.Fields) > 0 {
+		_spec.Unique = mq.ctx.Unique != nil && *mq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, mq.driver, _spec)
 }
 
-func (mq *MatchQuery) sqlExist(ctx context.Context) (bool, error) {
-	switch _, err := mq.FirstID(ctx); {
-	case IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("ent: check existence: %w", err)
-	default:
-		return true, nil
-	}
-}
-
 func (mq *MatchQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   match.Table,
-			Columns: match.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: match.FieldID,
-			},
-		},
-		From:   mq.sql,
-		Unique: true,
-	}
-	if unique := mq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(match.Table, match.Columns, sqlgraph.NewFieldSpec(match.FieldID, field.TypeString))
+	_spec.From = mq.sql
+	if unique := mq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if mq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := mq.fields; len(fields) > 0 {
+	if fields := mq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, match.FieldID)
 		for i := range fields {
@@ -663,10 +663,10 @@ func (mq *MatchQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := mq.limit; limit != nil {
+	if limit := mq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := mq.offset; offset != nil {
+	if offset := mq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := mq.order; len(ps) > 0 {
@@ -682,7 +682,7 @@ func (mq *MatchQuery) querySpec() *sqlgraph.QuerySpec {
 func (mq *MatchQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(mq.driver.Dialect())
 	t1 := builder.Table(match.Table)
-	columns := mq.fields
+	columns := mq.ctx.Fields
 	if len(columns) == 0 {
 		columns = match.Columns
 	}
@@ -691,7 +691,7 @@ func (mq *MatchQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector = mq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if mq.unique != nil && *mq.unique {
+	if mq.ctx.Unique != nil && *mq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range mq.predicates {
@@ -700,12 +700,12 @@ func (mq *MatchQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	for _, p := range mq.order {
 		p(selector)
 	}
-	if offset := mq.offset; offset != nil {
+	if offset := mq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := mq.limit; limit != nil {
+	if limit := mq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -714,7 +714,7 @@ func (mq *MatchQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // WithNamedPlayers tells the query-builder to eager-load the nodes that are connected to the "players"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (mq *MatchQuery) WithNamedPlayers(name string, opts ...func(*PlayerQuery)) *MatchQuery {
-	query := &PlayerQuery{config: mq.config}
+	query := (&PlayerClient{config: mq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -728,7 +728,7 @@ func (mq *MatchQuery) WithNamedPlayers(name string, opts ...func(*PlayerQuery)) 
 // WithNamedStats tells the query-builder to eager-load the nodes that are connected to the "stats"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (mq *MatchQuery) WithNamedStats(name string, opts ...func(*StatisticQuery)) *MatchQuery {
-	query := &StatisticQuery{config: mq.config}
+	query := (&StatisticClient{config: mq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -741,13 +741,8 @@ func (mq *MatchQuery) WithNamedStats(name string, opts ...func(*StatisticQuery))
 
 // MatchGroupBy is the group-by builder for Match entities.
 type MatchGroupBy struct {
-	config
 	selector
-	fields []string
-	fns    []AggregateFunc
-	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	build *MatchQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
@@ -756,58 +751,46 @@ func (mgb *MatchGroupBy) Aggregate(fns ...AggregateFunc) *MatchGroupBy {
 	return mgb
 }
 
-// Scan applies the group-by query and scans the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (mgb *MatchGroupBy) Scan(ctx context.Context, v any) error {
-	query, err := mgb.path(ctx)
-	if err != nil {
+	ctx = setContextOp(ctx, mgb.build.ctx, "GroupBy")
+	if err := mgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	mgb.sql = query
-	return mgb.sqlScan(ctx, v)
+	return scanWithInterceptors[*MatchQuery, *MatchGroupBy](ctx, mgb.build, mgb, mgb.build.inters, v)
 }
 
-func (mgb *MatchGroupBy) sqlScan(ctx context.Context, v any) error {
-	for _, f := range mgb.fields {
-		if !match.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
-		}
+func (mgb *MatchGroupBy) sqlScan(ctx context.Context, root *MatchQuery, v any) error {
+	selector := root.sqlQuery(ctx).Select()
+	aggregation := make([]string, 0, len(mgb.fns))
+	for _, fn := range mgb.fns {
+		aggregation = append(aggregation, fn(selector))
 	}
-	selector := mgb.sqlQuery()
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(*mgb.flds)+len(mgb.fns))
+		for _, f := range *mgb.flds {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	selector.GroupBy(selector.Columns(*mgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := mgb.driver.Query(ctx, query, args, rows); err != nil {
+	if err := mgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-func (mgb *MatchGroupBy) sqlQuery() *sql.Selector {
-	selector := mgb.sql.Select()
-	aggregation := make([]string, 0, len(mgb.fns))
-	for _, fn := range mgb.fns {
-		aggregation = append(aggregation, fn(selector))
-	}
-	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(mgb.fields)+len(mgb.fns))
-		for _, f := range mgb.fields {
-			columns = append(columns, selector.C(f))
-		}
-		columns = append(columns, aggregation...)
-		selector.Select(columns...)
-	}
-	return selector.GroupBy(selector.Columns(mgb.fields...)...)
-}
-
 // MatchSelect is the builder for selecting fields of Match entities.
 type MatchSelect struct {
 	*MatchQuery
 	selector
-	// intermediate query (i.e. traversal path).
-	sql *sql.Selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
@@ -818,26 +801,27 @@ func (ms *MatchSelect) Aggregate(fns ...AggregateFunc) *MatchSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (ms *MatchSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, ms.ctx, "Select")
 	if err := ms.prepareQuery(ctx); err != nil {
 		return err
 	}
-	ms.sql = ms.MatchQuery.sqlQuery(ctx)
-	return ms.sqlScan(ctx, v)
+	return scanWithInterceptors[*MatchQuery, *MatchSelect](ctx, ms.MatchQuery, ms, ms.inters, v)
 }
 
-func (ms *MatchSelect) sqlScan(ctx context.Context, v any) error {
+func (ms *MatchSelect) sqlScan(ctx context.Context, root *MatchQuery, v any) error {
+	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(ms.fns))
 	for _, fn := range ms.fns {
-		aggregation = append(aggregation, fn(ms.sql))
+		aggregation = append(aggregation, fn(selector))
 	}
 	switch n := len(*ms.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
-		ms.sql.Select(aggregation...)
+		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
-		ms.sql.AppendSelect(aggregation...)
+		selector.AppendSelect(aggregation...)
 	}
 	rows := &sql.Rows{}
-	query, args := ms.sql.Query()
+	query, args := selector.Query()
 	if err := ms.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

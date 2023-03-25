@@ -602,8 +602,9 @@ input UpdateUserInput {
   avatarURL: String
   addPlayerIDs: [ID!]
   removePlayerIDs: [ID!]
-  clearMainPlayer: Boolean
+  clearPlayers: Boolean
   mainPlayerID: ID
+  clearMainPlayer: Boolean
 }
 type User implements Node {
   id: ID!

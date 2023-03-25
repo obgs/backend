@@ -19,11 +19,9 @@ import (
 // GroupSettingsQuery is the builder for querying GroupSettings entities.
 type GroupSettingsQuery struct {
 	config
-	limit      *int
-	offset     *int
-	unique     *bool
+	ctx        *QueryContext
 	order      []OrderFunc
-	fields     []string
+	inters     []Interceptor
 	predicates []predicate.GroupSettings
 	withGroup  *GroupQuery
 	withFKs    bool
@@ -40,26 +38,26 @@ func (gsq *GroupSettingsQuery) Where(ps ...predicate.GroupSettings) *GroupSettin
 	return gsq
 }
 
-// Limit adds a limit step to the query.
+// Limit the number of records to be returned by this query.
 func (gsq *GroupSettingsQuery) Limit(limit int) *GroupSettingsQuery {
-	gsq.limit = &limit
+	gsq.ctx.Limit = &limit
 	return gsq
 }
 
-// Offset adds an offset step to the query.
+// Offset to start from.
 func (gsq *GroupSettingsQuery) Offset(offset int) *GroupSettingsQuery {
-	gsq.offset = &offset
+	gsq.ctx.Offset = &offset
 	return gsq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (gsq *GroupSettingsQuery) Unique(unique bool) *GroupSettingsQuery {
-	gsq.unique = &unique
+	gsq.ctx.Unique = &unique
 	return gsq
 }
 
-// Order adds an order step to the query.
+// Order specifies how the records should be ordered.
 func (gsq *GroupSettingsQuery) Order(o ...OrderFunc) *GroupSettingsQuery {
 	gsq.order = append(gsq.order, o...)
 	return gsq
@@ -67,7 +65,7 @@ func (gsq *GroupSettingsQuery) Order(o ...OrderFunc) *GroupSettingsQuery {
 
 // QueryGroup chains the current query on the "group" edge.
 func (gsq *GroupSettingsQuery) QueryGroup() *GroupQuery {
-	query := &GroupQuery{config: gsq.config}
+	query := (&GroupClient{config: gsq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := gsq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -90,7 +88,7 @@ func (gsq *GroupSettingsQuery) QueryGroup() *GroupQuery {
 // First returns the first GroupSettings entity from the query.
 // Returns a *NotFoundError when no GroupSettings was found.
 func (gsq *GroupSettingsQuery) First(ctx context.Context) (*GroupSettings, error) {
-	nodes, err := gsq.Limit(1).All(ctx)
+	nodes, err := gsq.Limit(1).All(setContextOp(ctx, gsq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +111,7 @@ func (gsq *GroupSettingsQuery) FirstX(ctx context.Context) *GroupSettings {
 // Returns a *NotFoundError when no GroupSettings ID was found.
 func (gsq *GroupSettingsQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = gsq.Limit(1).IDs(ctx); err != nil {
+	if ids, err = gsq.Limit(1).IDs(setContextOp(ctx, gsq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -136,7 +134,7 @@ func (gsq *GroupSettingsQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 // Returns a *NotSingularError when more than one GroupSettings entity is found.
 // Returns a *NotFoundError when no GroupSettings entities are found.
 func (gsq *GroupSettingsQuery) Only(ctx context.Context) (*GroupSettings, error) {
-	nodes, err := gsq.Limit(2).All(ctx)
+	nodes, err := gsq.Limit(2).All(setContextOp(ctx, gsq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +162,7 @@ func (gsq *GroupSettingsQuery) OnlyX(ctx context.Context) *GroupSettings {
 // Returns a *NotFoundError when no entities are found.
 func (gsq *GroupSettingsQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = gsq.Limit(2).IDs(ctx); err != nil {
+	if ids, err = gsq.Limit(2).IDs(setContextOp(ctx, gsq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -189,10 +187,12 @@ func (gsq *GroupSettingsQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 
 // All executes the query and returns a list of GroupSettingsSlice.
 func (gsq *GroupSettingsQuery) All(ctx context.Context) ([]*GroupSettings, error) {
+	ctx = setContextOp(ctx, gsq.ctx, "All")
 	if err := gsq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	return gsq.sqlAll(ctx)
+	qr := querierAll[[]*GroupSettings, *GroupSettingsQuery]()
+	return withInterceptors[[]*GroupSettings](ctx, gsq, qr, gsq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
@@ -205,9 +205,12 @@ func (gsq *GroupSettingsQuery) AllX(ctx context.Context) []*GroupSettings {
 }
 
 // IDs executes the query and returns a list of GroupSettings IDs.
-func (gsq *GroupSettingsQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
-	var ids []guidgql.GUID
-	if err := gsq.Select(groupsettings.FieldID).Scan(ctx, &ids); err != nil {
+func (gsq *GroupSettingsQuery) IDs(ctx context.Context) (ids []guidgql.GUID, err error) {
+	if gsq.ctx.Unique == nil && gsq.path != nil {
+		gsq.Unique(true)
+	}
+	ctx = setContextOp(ctx, gsq.ctx, "IDs")
+	if err = gsq.Select(groupsettings.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -224,10 +227,11 @@ func (gsq *GroupSettingsQuery) IDsX(ctx context.Context) []guidgql.GUID {
 
 // Count returns the count of the given query.
 func (gsq *GroupSettingsQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, gsq.ctx, "Count")
 	if err := gsq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return gsq.sqlCount(ctx)
+	return withInterceptors[int](ctx, gsq, querierCount[*GroupSettingsQuery](), gsq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
@@ -241,10 +245,15 @@ func (gsq *GroupSettingsQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (gsq *GroupSettingsQuery) Exist(ctx context.Context) (bool, error) {
-	if err := gsq.prepareQuery(ctx); err != nil {
-		return false, err
+	ctx = setContextOp(ctx, gsq.ctx, "Exist")
+	switch _, err := gsq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return gsq.sqlExist(ctx)
 }
 
 // ExistX is like Exist, but panics if an error occurs.
@@ -264,22 +273,21 @@ func (gsq *GroupSettingsQuery) Clone() *GroupSettingsQuery {
 	}
 	return &GroupSettingsQuery{
 		config:     gsq.config,
-		limit:      gsq.limit,
-		offset:     gsq.offset,
+		ctx:        gsq.ctx.Clone(),
 		order:      append([]OrderFunc{}, gsq.order...),
+		inters:     append([]Interceptor{}, gsq.inters...),
 		predicates: append([]predicate.GroupSettings{}, gsq.predicates...),
 		withGroup:  gsq.withGroup.Clone(),
 		// clone intermediate query.
-		sql:    gsq.sql.Clone(),
-		path:   gsq.path,
-		unique: gsq.unique,
+		sql:  gsq.sql.Clone(),
+		path: gsq.path,
 	}
 }
 
 // WithGroup tells the query-builder to eager-load the nodes that are connected to
 // the "group" edge. The optional arguments are used to configure the query builder of the edge.
 func (gsq *GroupSettingsQuery) WithGroup(opts ...func(*GroupQuery)) *GroupSettingsQuery {
-	query := &GroupQuery{config: gsq.config}
+	query := (&GroupClient{config: gsq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -302,16 +310,11 @@ func (gsq *GroupSettingsQuery) WithGroup(opts ...func(*GroupQuery)) *GroupSettin
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (gsq *GroupSettingsQuery) GroupBy(field string, fields ...string) *GroupSettingsGroupBy {
-	grbuild := &GroupSettingsGroupBy{config: gsq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := gsq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return gsq.sqlQuery(ctx), nil
-	}
+	gsq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &GroupSettingsGroupBy{build: gsq}
+	grbuild.flds = &gsq.ctx.Fields
 	grbuild.label = groupsettings.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	grbuild.scan = grbuild.Scan
 	return grbuild
 }
 
@@ -328,11 +331,11 @@ func (gsq *GroupSettingsQuery) GroupBy(field string, fields ...string) *GroupSet
 //		Select(groupsettings.FieldVisibility).
 //		Scan(ctx, &v)
 func (gsq *GroupSettingsQuery) Select(fields ...string) *GroupSettingsSelect {
-	gsq.fields = append(gsq.fields, fields...)
-	selbuild := &GroupSettingsSelect{GroupSettingsQuery: gsq}
-	selbuild.label = groupsettings.Label
-	selbuild.flds, selbuild.scan = &gsq.fields, selbuild.Scan
-	return selbuild
+	gsq.ctx.Fields = append(gsq.ctx.Fields, fields...)
+	sbuild := &GroupSettingsSelect{GroupSettingsQuery: gsq}
+	sbuild.label = groupsettings.Label
+	sbuild.flds, sbuild.scan = &gsq.ctx.Fields, sbuild.Scan
+	return sbuild
 }
 
 // Aggregate returns a GroupSettingsSelect configured with the given aggregations.
@@ -341,7 +344,17 @@ func (gsq *GroupSettingsQuery) Aggregate(fns ...AggregateFunc) *GroupSettingsSel
 }
 
 func (gsq *GroupSettingsQuery) prepareQuery(ctx context.Context) error {
-	for _, f := range gsq.fields {
+	for _, inter := range gsq.inters {
+		if inter == nil {
+			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
+		}
+		if trv, ok := inter.(Traverser); ok {
+			if err := trv.Traverse(ctx, gsq); err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range gsq.ctx.Fields {
 		if !groupsettings.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -419,6 +432,9 @@ func (gsq *GroupSettingsQuery) loadGroup(ctx context.Context, query *GroupQuery,
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(group.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -441,41 +457,22 @@ func (gsq *GroupSettingsQuery) sqlCount(ctx context.Context) (int, error) {
 	if len(gsq.modifiers) > 0 {
 		_spec.Modifiers = gsq.modifiers
 	}
-	_spec.Node.Columns = gsq.fields
-	if len(gsq.fields) > 0 {
-		_spec.Unique = gsq.unique != nil && *gsq.unique
+	_spec.Node.Columns = gsq.ctx.Fields
+	if len(gsq.ctx.Fields) > 0 {
+		_spec.Unique = gsq.ctx.Unique != nil && *gsq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, gsq.driver, _spec)
 }
 
-func (gsq *GroupSettingsQuery) sqlExist(ctx context.Context) (bool, error) {
-	switch _, err := gsq.FirstID(ctx); {
-	case IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("ent: check existence: %w", err)
-	default:
-		return true, nil
-	}
-}
-
 func (gsq *GroupSettingsQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   groupsettings.Table,
-			Columns: groupsettings.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupsettings.FieldID,
-			},
-		},
-		From:   gsq.sql,
-		Unique: true,
-	}
-	if unique := gsq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(groupsettings.Table, groupsettings.Columns, sqlgraph.NewFieldSpec(groupsettings.FieldID, field.TypeString))
+	_spec.From = gsq.sql
+	if unique := gsq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if gsq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := gsq.fields; len(fields) > 0 {
+	if fields := gsq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, groupsettings.FieldID)
 		for i := range fields {
@@ -491,10 +488,10 @@ func (gsq *GroupSettingsQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := gsq.limit; limit != nil {
+	if limit := gsq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := gsq.offset; offset != nil {
+	if offset := gsq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := gsq.order; len(ps) > 0 {
@@ -510,7 +507,7 @@ func (gsq *GroupSettingsQuery) querySpec() *sqlgraph.QuerySpec {
 func (gsq *GroupSettingsQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(gsq.driver.Dialect())
 	t1 := builder.Table(groupsettings.Table)
-	columns := gsq.fields
+	columns := gsq.ctx.Fields
 	if len(columns) == 0 {
 		columns = groupsettings.Columns
 	}
@@ -519,7 +516,7 @@ func (gsq *GroupSettingsQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector = gsq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if gsq.unique != nil && *gsq.unique {
+	if gsq.ctx.Unique != nil && *gsq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range gsq.predicates {
@@ -528,12 +525,12 @@ func (gsq *GroupSettingsQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	for _, p := range gsq.order {
 		p(selector)
 	}
-	if offset := gsq.offset; offset != nil {
+	if offset := gsq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := gsq.limit; limit != nil {
+	if limit := gsq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -541,13 +538,8 @@ func (gsq *GroupSettingsQuery) sqlQuery(ctx context.Context) *sql.Selector {
 
 // GroupSettingsGroupBy is the group-by builder for GroupSettings entities.
 type GroupSettingsGroupBy struct {
-	config
 	selector
-	fields []string
-	fns    []AggregateFunc
-	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	build *GroupSettingsQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
@@ -556,58 +548,46 @@ func (gsgb *GroupSettingsGroupBy) Aggregate(fns ...AggregateFunc) *GroupSettings
 	return gsgb
 }
 
-// Scan applies the group-by query and scans the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (gsgb *GroupSettingsGroupBy) Scan(ctx context.Context, v any) error {
-	query, err := gsgb.path(ctx)
-	if err != nil {
+	ctx = setContextOp(ctx, gsgb.build.ctx, "GroupBy")
+	if err := gsgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	gsgb.sql = query
-	return gsgb.sqlScan(ctx, v)
+	return scanWithInterceptors[*GroupSettingsQuery, *GroupSettingsGroupBy](ctx, gsgb.build, gsgb, gsgb.build.inters, v)
 }
 
-func (gsgb *GroupSettingsGroupBy) sqlScan(ctx context.Context, v any) error {
-	for _, f := range gsgb.fields {
-		if !groupsettings.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
-		}
+func (gsgb *GroupSettingsGroupBy) sqlScan(ctx context.Context, root *GroupSettingsQuery, v any) error {
+	selector := root.sqlQuery(ctx).Select()
+	aggregation := make([]string, 0, len(gsgb.fns))
+	for _, fn := range gsgb.fns {
+		aggregation = append(aggregation, fn(selector))
 	}
-	selector := gsgb.sqlQuery()
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(*gsgb.flds)+len(gsgb.fns))
+		for _, f := range *gsgb.flds {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	selector.GroupBy(selector.Columns(*gsgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := gsgb.driver.Query(ctx, query, args, rows); err != nil {
+	if err := gsgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-func (gsgb *GroupSettingsGroupBy) sqlQuery() *sql.Selector {
-	selector := gsgb.sql.Select()
-	aggregation := make([]string, 0, len(gsgb.fns))
-	for _, fn := range gsgb.fns {
-		aggregation = append(aggregation, fn(selector))
-	}
-	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(gsgb.fields)+len(gsgb.fns))
-		for _, f := range gsgb.fields {
-			columns = append(columns, selector.C(f))
-		}
-		columns = append(columns, aggregation...)
-		selector.Select(columns...)
-	}
-	return selector.GroupBy(selector.Columns(gsgb.fields...)...)
-}
-
 // GroupSettingsSelect is the builder for selecting fields of GroupSettings entities.
 type GroupSettingsSelect struct {
 	*GroupSettingsQuery
 	selector
-	// intermediate query (i.e. traversal path).
-	sql *sql.Selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
@@ -618,26 +598,27 @@ func (gss *GroupSettingsSelect) Aggregate(fns ...AggregateFunc) *GroupSettingsSe
 
 // Scan applies the selector query and scans the result into the given value.
 func (gss *GroupSettingsSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, gss.ctx, "Select")
 	if err := gss.prepareQuery(ctx); err != nil {
 		return err
 	}
-	gss.sql = gss.GroupSettingsQuery.sqlQuery(ctx)
-	return gss.sqlScan(ctx, v)
+	return scanWithInterceptors[*GroupSettingsQuery, *GroupSettingsSelect](ctx, gss.GroupSettingsQuery, gss, gss.inters, v)
 }
 
-func (gss *GroupSettingsSelect) sqlScan(ctx context.Context, v any) error {
+func (gss *GroupSettingsSelect) sqlScan(ctx context.Context, root *GroupSettingsQuery, v any) error {
+	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(gss.fns))
 	for _, fn := range gss.fns {
-		aggregation = append(aggregation, fn(gss.sql))
+		aggregation = append(aggregation, fn(selector))
 	}
 	switch n := len(*gss.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
-		gss.sql.Select(aggregation...)
+		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
-		gss.sql.AppendSelect(aggregation...)
+		selector.AppendSelect(aggregation...)
 	}
 	rows := &sql.Rows{}
-	query, args := gss.sql.Query()
+	query, args := selector.Query()
 	if err := gss.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

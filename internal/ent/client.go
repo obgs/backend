@@ -11,6 +11,10 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 
+	"entgo.io/ent"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
@@ -24,10 +28,6 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
-
-	"entgo.io/ent/dialect"
-	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -65,7 +65,7 @@ type Client struct {
 
 // NewClient creates a new client configured with the given options.
 func NewClient(opts ...Option) *Client {
-	cfg := config{log: log.Println, hooks: &hooks{}}
+	cfg := config{log: log.Println, hooks: &hooks{}, inters: &inters{}}
 	cfg.options(opts...)
 	client := &Client{config: cfg}
 	client.init()
@@ -87,6 +87,55 @@ func (c *Client) init() {
 	c.StatDescription = NewStatDescriptionClient(c.config)
 	c.Statistic = NewStatisticClient(c.config)
 	c.User = NewUserClient(c.config)
+}
+
+type (
+	// config is the configuration for the client and its builder.
+	config struct {
+		// driver used for executing database requests.
+		driver dialect.Driver
+		// debug enable a debug logging.
+		debug bool
+		// log used for logging on debug mode.
+		log func(...any)
+		// hooks to execute on mutations.
+		hooks *hooks
+		// interceptors to execute on queries.
+		inters *inters
+	}
+	// Option function to configure the client.
+	Option func(*config)
+)
+
+// options applies the options on the config object.
+func (c *config) options(opts ...Option) {
+	for _, opt := range opts {
+		opt(c)
+	}
+	if c.debug {
+		c.driver = dialect.Debug(c.driver, c.log)
+	}
+}
+
+// Debug enables debug logging on the ent.Driver.
+func Debug() Option {
+	return func(c *config) {
+		c.debug = true
+	}
+}
+
+// Log sets the logging function for debug mode.
+func Log(fn func(...any)) Option {
+	return func(c *config) {
+		c.log = fn
+	}
+}
+
+// Driver configures the client driver.
+func Driver(driver dialect.Driver) Option {
+	return func(c *config) {
+		c.driver = driver
+	}
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -193,19 +242,61 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Game.Use(hooks...)
-	c.GameFavorite.Use(hooks...)
-	c.Group.Use(hooks...)
-	c.GroupMembership.Use(hooks...)
-	c.GroupMembershipApplication.Use(hooks...)
-	c.GroupSettings.Use(hooks...)
-	c.Match.Use(hooks...)
-	c.Player.Use(hooks...)
-	c.PlayerSupervisionRequest.Use(hooks...)
-	c.PlayerSupervisionRequestApproval.Use(hooks...)
-	c.StatDescription.Use(hooks...)
-	c.Statistic.Use(hooks...)
-	c.User.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.Game, c.GameFavorite, c.Group, c.GroupMembership,
+		c.GroupMembershipApplication, c.GroupSettings, c.Match, c.Player,
+		c.PlayerSupervisionRequest, c.PlayerSupervisionRequestApproval,
+		c.StatDescription, c.Statistic, c.User,
+	} {
+		n.Use(hooks...)
+	}
+}
+
+// Intercept adds the query interceptors to all the entity clients.
+// In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
+func (c *Client) Intercept(interceptors ...Interceptor) {
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.Game, c.GameFavorite, c.Group, c.GroupMembership,
+		c.GroupMembershipApplication, c.GroupSettings, c.Match, c.Player,
+		c.PlayerSupervisionRequest, c.PlayerSupervisionRequestApproval,
+		c.StatDescription, c.Statistic, c.User,
+	} {
+		n.Intercept(interceptors...)
+	}
+}
+
+// Mutate implements the ent.Mutator interface.
+func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
+	switch m := m.(type) {
+	case *GameMutation:
+		return c.Game.mutate(ctx, m)
+	case *GameFavoriteMutation:
+		return c.GameFavorite.mutate(ctx, m)
+	case *GroupMutation:
+		return c.Group.mutate(ctx, m)
+	case *GroupMembershipMutation:
+		return c.GroupMembership.mutate(ctx, m)
+	case *GroupMembershipApplicationMutation:
+		return c.GroupMembershipApplication.mutate(ctx, m)
+	case *GroupSettingsMutation:
+		return c.GroupSettings.mutate(ctx, m)
+	case *MatchMutation:
+		return c.Match.mutate(ctx, m)
+	case *PlayerMutation:
+		return c.Player.mutate(ctx, m)
+	case *PlayerSupervisionRequestMutation:
+		return c.PlayerSupervisionRequest.mutate(ctx, m)
+	case *PlayerSupervisionRequestApprovalMutation:
+		return c.PlayerSupervisionRequestApproval.mutate(ctx, m)
+	case *StatDescriptionMutation:
+		return c.StatDescription.mutate(ctx, m)
+	case *StatisticMutation:
+		return c.Statistic.mutate(ctx, m)
+	case *UserMutation:
+		return c.User.mutate(ctx, m)
+	default:
+		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
 }
 
 // GameClient is a client for the Game schema.
@@ -222,6 +313,12 @@ func NewGameClient(c config) *GameClient {
 // A call to `Use(f, g, h)` equals to `game.Hooks(f(g(h())))`.
 func (c *GameClient) Use(hooks ...Hook) {
 	c.hooks.Game = append(c.hooks.Game, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `game.Intercept(f(g(h())))`.
+func (c *GameClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Game = append(c.inters.Game, interceptors...)
 }
 
 // Create returns a builder for creating a Game entity.
@@ -276,6 +373,8 @@ func (c *GameClient) DeleteOneID(id guidgql.GUID) *GameDeleteOne {
 func (c *GameClient) Query() *GameQuery {
 	return &GameQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeGame},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -295,7 +394,7 @@ func (c *GameClient) GetX(ctx context.Context, id guidgql.GUID) *Game {
 
 // QueryAuthor queries the author edge of a Game.
 func (c *GameClient) QueryAuthor(ga *Game) *UserQuery {
-	query := &UserQuery{config: c.config}
+	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := ga.ID
 		step := sqlgraph.NewStep(
@@ -311,7 +410,7 @@ func (c *GameClient) QueryAuthor(ga *Game) *UserQuery {
 
 // QueryFavorites queries the favorites edge of a Game.
 func (c *GameClient) QueryFavorites(ga *Game) *GameFavoriteQuery {
-	query := &GameFavoriteQuery{config: c.config}
+	query := (&GameFavoriteClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := ga.ID
 		step := sqlgraph.NewStep(
@@ -327,7 +426,7 @@ func (c *GameClient) QueryFavorites(ga *Game) *GameFavoriteQuery {
 
 // QueryStatDescriptions queries the stat_descriptions edge of a Game.
 func (c *GameClient) QueryStatDescriptions(ga *Game) *StatDescriptionQuery {
-	query := &StatDescriptionQuery{config: c.config}
+	query := (&StatDescriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := ga.ID
 		step := sqlgraph.NewStep(
@@ -343,7 +442,7 @@ func (c *GameClient) QueryStatDescriptions(ga *Game) *StatDescriptionQuery {
 
 // QueryMatches queries the matches edge of a Game.
 func (c *GameClient) QueryMatches(ga *Game) *MatchQuery {
-	query := &MatchQuery{config: c.config}
+	query := (&MatchClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := ga.ID
 		step := sqlgraph.NewStep(
@@ -362,6 +461,26 @@ func (c *GameClient) Hooks() []Hook {
 	return c.hooks.Game
 }
 
+// Interceptors returns the client interceptors.
+func (c *GameClient) Interceptors() []Interceptor {
+	return c.inters.Game
+}
+
+func (c *GameClient) mutate(ctx context.Context, m *GameMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GameCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GameUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GameUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GameDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Game mutation op: %q", m.Op())
+	}
+}
+
 // GameFavoriteClient is a client for the GameFavorite schema.
 type GameFavoriteClient struct {
 	config
@@ -376,6 +495,12 @@ func NewGameFavoriteClient(c config) *GameFavoriteClient {
 // A call to `Use(f, g, h)` equals to `gamefavorite.Hooks(f(g(h())))`.
 func (c *GameFavoriteClient) Use(hooks ...Hook) {
 	c.hooks.GameFavorite = append(c.hooks.GameFavorite, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `gamefavorite.Intercept(f(g(h())))`.
+func (c *GameFavoriteClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GameFavorite = append(c.inters.GameFavorite, interceptors...)
 }
 
 // Create returns a builder for creating a GameFavorite entity.
@@ -430,6 +555,8 @@ func (c *GameFavoriteClient) DeleteOneID(id guidgql.GUID) *GameFavoriteDeleteOne
 func (c *GameFavoriteClient) Query() *GameFavoriteQuery {
 	return &GameFavoriteQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeGameFavorite},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -449,7 +576,7 @@ func (c *GameFavoriteClient) GetX(ctx context.Context, id guidgql.GUID) *GameFav
 
 // QueryGame queries the game edge of a GameFavorite.
 func (c *GameFavoriteClient) QueryGame(gf *GameFavorite) *GameQuery {
-	query := &GameQuery{config: c.config}
+	query := (&GameClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gf.ID
 		step := sqlgraph.NewStep(
@@ -465,7 +592,7 @@ func (c *GameFavoriteClient) QueryGame(gf *GameFavorite) *GameQuery {
 
 // QueryUser queries the user edge of a GameFavorite.
 func (c *GameFavoriteClient) QueryUser(gf *GameFavorite) *UserQuery {
-	query := &UserQuery{config: c.config}
+	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gf.ID
 		step := sqlgraph.NewStep(
@@ -484,6 +611,26 @@ func (c *GameFavoriteClient) Hooks() []Hook {
 	return c.hooks.GameFavorite
 }
 
+// Interceptors returns the client interceptors.
+func (c *GameFavoriteClient) Interceptors() []Interceptor {
+	return c.inters.GameFavorite
+}
+
+func (c *GameFavoriteClient) mutate(ctx context.Context, m *GameFavoriteMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GameFavoriteCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GameFavoriteUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GameFavoriteUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GameFavoriteDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GameFavorite mutation op: %q", m.Op())
+	}
+}
+
 // GroupClient is a client for the Group schema.
 type GroupClient struct {
 	config
@@ -498,6 +645,12 @@ func NewGroupClient(c config) *GroupClient {
 // A call to `Use(f, g, h)` equals to `group.Hooks(f(g(h())))`.
 func (c *GroupClient) Use(hooks ...Hook) {
 	c.hooks.Group = append(c.hooks.Group, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `group.Intercept(f(g(h())))`.
+func (c *GroupClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Group = append(c.inters.Group, interceptors...)
 }
 
 // Create returns a builder for creating a Group entity.
@@ -552,6 +705,8 @@ func (c *GroupClient) DeleteOneID(id guidgql.GUID) *GroupDeleteOne {
 func (c *GroupClient) Query() *GroupQuery {
 	return &GroupQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeGroup},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -571,7 +726,7 @@ func (c *GroupClient) GetX(ctx context.Context, id guidgql.GUID) *Group {
 
 // QuerySettings queries the settings edge of a Group.
 func (c *GroupClient) QuerySettings(gr *Group) *GroupSettingsQuery {
-	query := &GroupSettingsQuery{config: c.config}
+	query := (&GroupSettingsClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
@@ -587,7 +742,7 @@ func (c *GroupClient) QuerySettings(gr *Group) *GroupSettingsQuery {
 
 // QueryMembers queries the members edge of a Group.
 func (c *GroupClient) QueryMembers(gr *Group) *GroupMembershipQuery {
-	query := &GroupMembershipQuery{config: c.config}
+	query := (&GroupMembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
@@ -603,7 +758,7 @@ func (c *GroupClient) QueryMembers(gr *Group) *GroupMembershipQuery {
 
 // QueryApplications queries the applications edge of a Group.
 func (c *GroupClient) QueryApplications(gr *Group) *GroupMembershipApplicationQuery {
-	query := &GroupMembershipApplicationQuery{config: c.config}
+	query := (&GroupMembershipApplicationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gr.ID
 		step := sqlgraph.NewStep(
@@ -622,6 +777,26 @@ func (c *GroupClient) Hooks() []Hook {
 	return c.hooks.Group
 }
 
+// Interceptors returns the client interceptors.
+func (c *GroupClient) Interceptors() []Interceptor {
+	return c.inters.Group
+}
+
+func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GroupCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GroupUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Group mutation op: %q", m.Op())
+	}
+}
+
 // GroupMembershipClient is a client for the GroupMembership schema.
 type GroupMembershipClient struct {
 	config
@@ -636,6 +811,12 @@ func NewGroupMembershipClient(c config) *GroupMembershipClient {
 // A call to `Use(f, g, h)` equals to `groupmembership.Hooks(f(g(h())))`.
 func (c *GroupMembershipClient) Use(hooks ...Hook) {
 	c.hooks.GroupMembership = append(c.hooks.GroupMembership, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `groupmembership.Intercept(f(g(h())))`.
+func (c *GroupMembershipClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GroupMembership = append(c.inters.GroupMembership, interceptors...)
 }
 
 // Create returns a builder for creating a GroupMembership entity.
@@ -690,6 +871,8 @@ func (c *GroupMembershipClient) DeleteOneID(id guidgql.GUID) *GroupMembershipDel
 func (c *GroupMembershipClient) Query() *GroupMembershipQuery {
 	return &GroupMembershipQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeGroupMembership},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -709,7 +892,7 @@ func (c *GroupMembershipClient) GetX(ctx context.Context, id guidgql.GUID) *Grou
 
 // QueryGroup queries the group edge of a GroupMembership.
 func (c *GroupMembershipClient) QueryGroup(gm *GroupMembership) *GroupQuery {
-	query := &GroupQuery{config: c.config}
+	query := (&GroupClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gm.ID
 		step := sqlgraph.NewStep(
@@ -725,7 +908,7 @@ func (c *GroupMembershipClient) QueryGroup(gm *GroupMembership) *GroupQuery {
 
 // QueryUser queries the user edge of a GroupMembership.
 func (c *GroupMembershipClient) QueryUser(gm *GroupMembership) *UserQuery {
-	query := &UserQuery{config: c.config}
+	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gm.ID
 		step := sqlgraph.NewStep(
@@ -744,6 +927,26 @@ func (c *GroupMembershipClient) Hooks() []Hook {
 	return c.hooks.GroupMembership
 }
 
+// Interceptors returns the client interceptors.
+func (c *GroupMembershipClient) Interceptors() []Interceptor {
+	return c.inters.GroupMembership
+}
+
+func (c *GroupMembershipClient) mutate(ctx context.Context, m *GroupMembershipMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GroupMembershipCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GroupMembershipUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GroupMembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GroupMembershipDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GroupMembership mutation op: %q", m.Op())
+	}
+}
+
 // GroupMembershipApplicationClient is a client for the GroupMembershipApplication schema.
 type GroupMembershipApplicationClient struct {
 	config
@@ -758,6 +961,12 @@ func NewGroupMembershipApplicationClient(c config) *GroupMembershipApplicationCl
 // A call to `Use(f, g, h)` equals to `groupmembershipapplication.Hooks(f(g(h())))`.
 func (c *GroupMembershipApplicationClient) Use(hooks ...Hook) {
 	c.hooks.GroupMembershipApplication = append(c.hooks.GroupMembershipApplication, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `groupmembershipapplication.Intercept(f(g(h())))`.
+func (c *GroupMembershipApplicationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GroupMembershipApplication = append(c.inters.GroupMembershipApplication, interceptors...)
 }
 
 // Create returns a builder for creating a GroupMembershipApplication entity.
@@ -812,6 +1021,8 @@ func (c *GroupMembershipApplicationClient) DeleteOneID(id guidgql.GUID) *GroupMe
 func (c *GroupMembershipApplicationClient) Query() *GroupMembershipApplicationQuery {
 	return &GroupMembershipApplicationQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeGroupMembershipApplication},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -831,7 +1042,7 @@ func (c *GroupMembershipApplicationClient) GetX(ctx context.Context, id guidgql.
 
 // QueryUser queries the user edge of a GroupMembershipApplication.
 func (c *GroupMembershipApplicationClient) QueryUser(gma *GroupMembershipApplication) *UserQuery {
-	query := &UserQuery{config: c.config}
+	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gma.ID
 		step := sqlgraph.NewStep(
@@ -847,7 +1058,7 @@ func (c *GroupMembershipApplicationClient) QueryUser(gma *GroupMembershipApplica
 
 // QueryGroup queries the group edge of a GroupMembershipApplication.
 func (c *GroupMembershipApplicationClient) QueryGroup(gma *GroupMembershipApplication) *GroupQuery {
-	query := &GroupQuery{config: c.config}
+	query := (&GroupClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gma.ID
 		step := sqlgraph.NewStep(
@@ -866,6 +1077,26 @@ func (c *GroupMembershipApplicationClient) Hooks() []Hook {
 	return c.hooks.GroupMembershipApplication
 }
 
+// Interceptors returns the client interceptors.
+func (c *GroupMembershipApplicationClient) Interceptors() []Interceptor {
+	return c.inters.GroupMembershipApplication
+}
+
+func (c *GroupMembershipApplicationClient) mutate(ctx context.Context, m *GroupMembershipApplicationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GroupMembershipApplicationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GroupMembershipApplicationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GroupMembershipApplicationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GroupMembershipApplicationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GroupMembershipApplication mutation op: %q", m.Op())
+	}
+}
+
 // GroupSettingsClient is a client for the GroupSettings schema.
 type GroupSettingsClient struct {
 	config
@@ -880,6 +1111,12 @@ func NewGroupSettingsClient(c config) *GroupSettingsClient {
 // A call to `Use(f, g, h)` equals to `groupsettings.Hooks(f(g(h())))`.
 func (c *GroupSettingsClient) Use(hooks ...Hook) {
 	c.hooks.GroupSettings = append(c.hooks.GroupSettings, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `groupsettings.Intercept(f(g(h())))`.
+func (c *GroupSettingsClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GroupSettings = append(c.inters.GroupSettings, interceptors...)
 }
 
 // Create returns a builder for creating a GroupSettings entity.
@@ -934,6 +1171,8 @@ func (c *GroupSettingsClient) DeleteOneID(id guidgql.GUID) *GroupSettingsDeleteO
 func (c *GroupSettingsClient) Query() *GroupSettingsQuery {
 	return &GroupSettingsQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeGroupSettings},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -953,7 +1192,7 @@ func (c *GroupSettingsClient) GetX(ctx context.Context, id guidgql.GUID) *GroupS
 
 // QueryGroup queries the group edge of a GroupSettings.
 func (c *GroupSettingsClient) QueryGroup(gs *GroupSettings) *GroupQuery {
-	query := &GroupQuery{config: c.config}
+	query := (&GroupClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := gs.ID
 		step := sqlgraph.NewStep(
@@ -972,6 +1211,26 @@ func (c *GroupSettingsClient) Hooks() []Hook {
 	return c.hooks.GroupSettings
 }
 
+// Interceptors returns the client interceptors.
+func (c *GroupSettingsClient) Interceptors() []Interceptor {
+	return c.inters.GroupSettings
+}
+
+func (c *GroupSettingsClient) mutate(ctx context.Context, m *GroupSettingsMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GroupSettingsCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GroupSettingsUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GroupSettingsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GroupSettingsDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GroupSettings mutation op: %q", m.Op())
+	}
+}
+
 // MatchClient is a client for the Match schema.
 type MatchClient struct {
 	config
@@ -986,6 +1245,12 @@ func NewMatchClient(c config) *MatchClient {
 // A call to `Use(f, g, h)` equals to `match.Hooks(f(g(h())))`.
 func (c *MatchClient) Use(hooks ...Hook) {
 	c.hooks.Match = append(c.hooks.Match, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `match.Intercept(f(g(h())))`.
+func (c *MatchClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Match = append(c.inters.Match, interceptors...)
 }
 
 // Create returns a builder for creating a Match entity.
@@ -1040,6 +1305,8 @@ func (c *MatchClient) DeleteOneID(id guidgql.GUID) *MatchDeleteOne {
 func (c *MatchClient) Query() *MatchQuery {
 	return &MatchQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeMatch},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -1059,7 +1326,7 @@ func (c *MatchClient) GetX(ctx context.Context, id guidgql.GUID) *Match {
 
 // QueryGame queries the game edge of a Match.
 func (c *MatchClient) QueryGame(m *Match) *GameQuery {
-	query := &GameQuery{config: c.config}
+	query := (&GameClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := m.ID
 		step := sqlgraph.NewStep(
@@ -1075,7 +1342,7 @@ func (c *MatchClient) QueryGame(m *Match) *GameQuery {
 
 // QueryPlayers queries the players edge of a Match.
 func (c *MatchClient) QueryPlayers(m *Match) *PlayerQuery {
-	query := &PlayerQuery{config: c.config}
+	query := (&PlayerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := m.ID
 		step := sqlgraph.NewStep(
@@ -1091,7 +1358,7 @@ func (c *MatchClient) QueryPlayers(m *Match) *PlayerQuery {
 
 // QueryStats queries the stats edge of a Match.
 func (c *MatchClient) QueryStats(m *Match) *StatisticQuery {
-	query := &StatisticQuery{config: c.config}
+	query := (&StatisticClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := m.ID
 		step := sqlgraph.NewStep(
@@ -1110,6 +1377,26 @@ func (c *MatchClient) Hooks() []Hook {
 	return c.hooks.Match
 }
 
+// Interceptors returns the client interceptors.
+func (c *MatchClient) Interceptors() []Interceptor {
+	return c.inters.Match
+}
+
+func (c *MatchClient) mutate(ctx context.Context, m *MatchMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MatchCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MatchUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MatchDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Match mutation op: %q", m.Op())
+	}
+}
+
 // PlayerClient is a client for the Player schema.
 type PlayerClient struct {
 	config
@@ -1124,6 +1411,12 @@ func NewPlayerClient(c config) *PlayerClient {
 // A call to `Use(f, g, h)` equals to `player.Hooks(f(g(h())))`.
 func (c *PlayerClient) Use(hooks ...Hook) {
 	c.hooks.Player = append(c.hooks.Player, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `player.Intercept(f(g(h())))`.
+func (c *PlayerClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Player = append(c.inters.Player, interceptors...)
 }
 
 // Create returns a builder for creating a Player entity.
@@ -1178,6 +1471,8 @@ func (c *PlayerClient) DeleteOneID(id guidgql.GUID) *PlayerDeleteOne {
 func (c *PlayerClient) Query() *PlayerQuery {
 	return &PlayerQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypePlayer},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -1197,7 +1492,7 @@ func (c *PlayerClient) GetX(ctx context.Context, id guidgql.GUID) *Player {
 
 // QueryOwner queries the owner edge of a Player.
 func (c *PlayerClient) QueryOwner(pl *Player) *UserQuery {
-	query := &UserQuery{config: c.config}
+	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
@@ -1213,7 +1508,7 @@ func (c *PlayerClient) QueryOwner(pl *Player) *UserQuery {
 
 // QuerySupervisors queries the supervisors edge of a Player.
 func (c *PlayerClient) QuerySupervisors(pl *Player) *UserQuery {
-	query := &UserQuery{config: c.config}
+	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
@@ -1229,7 +1524,7 @@ func (c *PlayerClient) QuerySupervisors(pl *Player) *UserQuery {
 
 // QuerySupervisionRequests queries the supervision_requests edge of a Player.
 func (c *PlayerClient) QuerySupervisionRequests(pl *Player) *PlayerSupervisionRequestQuery {
-	query := &PlayerSupervisionRequestQuery{config: c.config}
+	query := (&PlayerSupervisionRequestClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
@@ -1245,7 +1540,7 @@ func (c *PlayerClient) QuerySupervisionRequests(pl *Player) *PlayerSupervisionRe
 
 // QueryMatches queries the matches edge of a Player.
 func (c *PlayerClient) QueryMatches(pl *Player) *MatchQuery {
-	query := &MatchQuery{config: c.config}
+	query := (&MatchClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
@@ -1261,7 +1556,7 @@ func (c *PlayerClient) QueryMatches(pl *Player) *MatchQuery {
 
 // QueryStats queries the stats edge of a Player.
 func (c *PlayerClient) QueryStats(pl *Player) *StatisticQuery {
-	query := &StatisticQuery{config: c.config}
+	query := (&StatisticClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
@@ -1280,6 +1575,26 @@ func (c *PlayerClient) Hooks() []Hook {
 	return c.hooks.Player
 }
 
+// Interceptors returns the client interceptors.
+func (c *PlayerClient) Interceptors() []Interceptor {
+	return c.inters.Player
+}
+
+func (c *PlayerClient) mutate(ctx context.Context, m *PlayerMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PlayerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PlayerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PlayerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PlayerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Player mutation op: %q", m.Op())
+	}
+}
+
 // PlayerSupervisionRequestClient is a client for the PlayerSupervisionRequest schema.
 type PlayerSupervisionRequestClient struct {
 	config
@@ -1294,6 +1609,12 @@ func NewPlayerSupervisionRequestClient(c config) *PlayerSupervisionRequestClient
 // A call to `Use(f, g, h)` equals to `playersupervisionrequest.Hooks(f(g(h())))`.
 func (c *PlayerSupervisionRequestClient) Use(hooks ...Hook) {
 	c.hooks.PlayerSupervisionRequest = append(c.hooks.PlayerSupervisionRequest, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `playersupervisionrequest.Intercept(f(g(h())))`.
+func (c *PlayerSupervisionRequestClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PlayerSupervisionRequest = append(c.inters.PlayerSupervisionRequest, interceptors...)
 }
 
 // Create returns a builder for creating a PlayerSupervisionRequest entity.
@@ -1348,6 +1669,8 @@ func (c *PlayerSupervisionRequestClient) DeleteOneID(id guidgql.GUID) *PlayerSup
 func (c *PlayerSupervisionRequestClient) Query() *PlayerSupervisionRequestQuery {
 	return &PlayerSupervisionRequestQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypePlayerSupervisionRequest},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -1367,7 +1690,7 @@ func (c *PlayerSupervisionRequestClient) GetX(ctx context.Context, id guidgql.GU
 
 // QuerySender queries the sender edge of a PlayerSupervisionRequest.
 func (c *PlayerSupervisionRequestClient) QuerySender(psr *PlayerSupervisionRequest) *UserQuery {
-	query := &UserQuery{config: c.config}
+	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psr.ID
 		step := sqlgraph.NewStep(
@@ -1383,7 +1706,7 @@ func (c *PlayerSupervisionRequestClient) QuerySender(psr *PlayerSupervisionReque
 
 // QueryPlayer queries the player edge of a PlayerSupervisionRequest.
 func (c *PlayerSupervisionRequestClient) QueryPlayer(psr *PlayerSupervisionRequest) *PlayerQuery {
-	query := &PlayerQuery{config: c.config}
+	query := (&PlayerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psr.ID
 		step := sqlgraph.NewStep(
@@ -1399,7 +1722,7 @@ func (c *PlayerSupervisionRequestClient) QueryPlayer(psr *PlayerSupervisionReque
 
 // QueryApprovals queries the approvals edge of a PlayerSupervisionRequest.
 func (c *PlayerSupervisionRequestClient) QueryApprovals(psr *PlayerSupervisionRequest) *PlayerSupervisionRequestApprovalQuery {
-	query := &PlayerSupervisionRequestApprovalQuery{config: c.config}
+	query := (&PlayerSupervisionRequestApprovalClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psr.ID
 		step := sqlgraph.NewStep(
@@ -1418,6 +1741,26 @@ func (c *PlayerSupervisionRequestClient) Hooks() []Hook {
 	return c.hooks.PlayerSupervisionRequest
 }
 
+// Interceptors returns the client interceptors.
+func (c *PlayerSupervisionRequestClient) Interceptors() []Interceptor {
+	return c.inters.PlayerSupervisionRequest
+}
+
+func (c *PlayerSupervisionRequestClient) mutate(ctx context.Context, m *PlayerSupervisionRequestMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PlayerSupervisionRequestCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PlayerSupervisionRequestUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PlayerSupervisionRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PlayerSupervisionRequestDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PlayerSupervisionRequest mutation op: %q", m.Op())
+	}
+}
+
 // PlayerSupervisionRequestApprovalClient is a client for the PlayerSupervisionRequestApproval schema.
 type PlayerSupervisionRequestApprovalClient struct {
 	config
@@ -1432,6 +1775,12 @@ func NewPlayerSupervisionRequestApprovalClient(c config) *PlayerSupervisionReque
 // A call to `Use(f, g, h)` equals to `playersupervisionrequestapproval.Hooks(f(g(h())))`.
 func (c *PlayerSupervisionRequestApprovalClient) Use(hooks ...Hook) {
 	c.hooks.PlayerSupervisionRequestApproval = append(c.hooks.PlayerSupervisionRequestApproval, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `playersupervisionrequestapproval.Intercept(f(g(h())))`.
+func (c *PlayerSupervisionRequestApprovalClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PlayerSupervisionRequestApproval = append(c.inters.PlayerSupervisionRequestApproval, interceptors...)
 }
 
 // Create returns a builder for creating a PlayerSupervisionRequestApproval entity.
@@ -1486,6 +1835,8 @@ func (c *PlayerSupervisionRequestApprovalClient) DeleteOneID(id guidgql.GUID) *P
 func (c *PlayerSupervisionRequestApprovalClient) Query() *PlayerSupervisionRequestApprovalQuery {
 	return &PlayerSupervisionRequestApprovalQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypePlayerSupervisionRequestApproval},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -1505,7 +1856,7 @@ func (c *PlayerSupervisionRequestApprovalClient) GetX(ctx context.Context, id gu
 
 // QueryApprover queries the approver edge of a PlayerSupervisionRequestApproval.
 func (c *PlayerSupervisionRequestApprovalClient) QueryApprover(psra *PlayerSupervisionRequestApproval) *UserQuery {
-	query := &UserQuery{config: c.config}
+	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psra.ID
 		step := sqlgraph.NewStep(
@@ -1521,7 +1872,7 @@ func (c *PlayerSupervisionRequestApprovalClient) QueryApprover(psra *PlayerSuper
 
 // QuerySupervisionRequest queries the supervision_request edge of a PlayerSupervisionRequestApproval.
 func (c *PlayerSupervisionRequestApprovalClient) QuerySupervisionRequest(psra *PlayerSupervisionRequestApproval) *PlayerSupervisionRequestQuery {
-	query := &PlayerSupervisionRequestQuery{config: c.config}
+	query := (&PlayerSupervisionRequestClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := psra.ID
 		step := sqlgraph.NewStep(
@@ -1540,6 +1891,26 @@ func (c *PlayerSupervisionRequestApprovalClient) Hooks() []Hook {
 	return c.hooks.PlayerSupervisionRequestApproval
 }
 
+// Interceptors returns the client interceptors.
+func (c *PlayerSupervisionRequestApprovalClient) Interceptors() []Interceptor {
+	return c.inters.PlayerSupervisionRequestApproval
+}
+
+func (c *PlayerSupervisionRequestApprovalClient) mutate(ctx context.Context, m *PlayerSupervisionRequestApprovalMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PlayerSupervisionRequestApprovalCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PlayerSupervisionRequestApprovalUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PlayerSupervisionRequestApprovalUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PlayerSupervisionRequestApprovalDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PlayerSupervisionRequestApproval mutation op: %q", m.Op())
+	}
+}
+
 // StatDescriptionClient is a client for the StatDescription schema.
 type StatDescriptionClient struct {
 	config
@@ -1554,6 +1925,12 @@ func NewStatDescriptionClient(c config) *StatDescriptionClient {
 // A call to `Use(f, g, h)` equals to `statdescription.Hooks(f(g(h())))`.
 func (c *StatDescriptionClient) Use(hooks ...Hook) {
 	c.hooks.StatDescription = append(c.hooks.StatDescription, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `statdescription.Intercept(f(g(h())))`.
+func (c *StatDescriptionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.StatDescription = append(c.inters.StatDescription, interceptors...)
 }
 
 // Create returns a builder for creating a StatDescription entity.
@@ -1608,6 +1985,8 @@ func (c *StatDescriptionClient) DeleteOneID(id guidgql.GUID) *StatDescriptionDel
 func (c *StatDescriptionClient) Query() *StatDescriptionQuery {
 	return &StatDescriptionQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeStatDescription},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -1627,7 +2006,7 @@ func (c *StatDescriptionClient) GetX(ctx context.Context, id guidgql.GUID) *Stat
 
 // QueryGame queries the game edge of a StatDescription.
 func (c *StatDescriptionClient) QueryGame(sd *StatDescription) *GameQuery {
-	query := &GameQuery{config: c.config}
+	query := (&GameClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := sd.ID
 		step := sqlgraph.NewStep(
@@ -1643,7 +2022,7 @@ func (c *StatDescriptionClient) QueryGame(sd *StatDescription) *GameQuery {
 
 // QueryStats queries the stats edge of a StatDescription.
 func (c *StatDescriptionClient) QueryStats(sd *StatDescription) *StatisticQuery {
-	query := &StatisticQuery{config: c.config}
+	query := (&StatisticClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := sd.ID
 		step := sqlgraph.NewStep(
@@ -1662,6 +2041,26 @@ func (c *StatDescriptionClient) Hooks() []Hook {
 	return c.hooks.StatDescription
 }
 
+// Interceptors returns the client interceptors.
+func (c *StatDescriptionClient) Interceptors() []Interceptor {
+	return c.inters.StatDescription
+}
+
+func (c *StatDescriptionClient) mutate(ctx context.Context, m *StatDescriptionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&StatDescriptionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&StatDescriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&StatDescriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&StatDescriptionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown StatDescription mutation op: %q", m.Op())
+	}
+}
+
 // StatisticClient is a client for the Statistic schema.
 type StatisticClient struct {
 	config
@@ -1676,6 +2075,12 @@ func NewStatisticClient(c config) *StatisticClient {
 // A call to `Use(f, g, h)` equals to `statistic.Hooks(f(g(h())))`.
 func (c *StatisticClient) Use(hooks ...Hook) {
 	c.hooks.Statistic = append(c.hooks.Statistic, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `statistic.Intercept(f(g(h())))`.
+func (c *StatisticClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Statistic = append(c.inters.Statistic, interceptors...)
 }
 
 // Create returns a builder for creating a Statistic entity.
@@ -1730,6 +2135,8 @@ func (c *StatisticClient) DeleteOneID(id guidgql.GUID) *StatisticDeleteOne {
 func (c *StatisticClient) Query() *StatisticQuery {
 	return &StatisticQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeStatistic},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -1749,7 +2156,7 @@ func (c *StatisticClient) GetX(ctx context.Context, id guidgql.GUID) *Statistic 
 
 // QueryMatch queries the match edge of a Statistic.
 func (c *StatisticClient) QueryMatch(s *Statistic) *MatchQuery {
-	query := &MatchQuery{config: c.config}
+	query := (&MatchClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := s.ID
 		step := sqlgraph.NewStep(
@@ -1765,7 +2172,7 @@ func (c *StatisticClient) QueryMatch(s *Statistic) *MatchQuery {
 
 // QueryStatDescription queries the stat_description edge of a Statistic.
 func (c *StatisticClient) QueryStatDescription(s *Statistic) *StatDescriptionQuery {
-	query := &StatDescriptionQuery{config: c.config}
+	query := (&StatDescriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := s.ID
 		step := sqlgraph.NewStep(
@@ -1781,7 +2188,7 @@ func (c *StatisticClient) QueryStatDescription(s *Statistic) *StatDescriptionQue
 
 // QueryPlayer queries the player edge of a Statistic.
 func (c *StatisticClient) QueryPlayer(s *Statistic) *PlayerQuery {
-	query := &PlayerQuery{config: c.config}
+	query := (&PlayerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := s.ID
 		step := sqlgraph.NewStep(
@@ -1800,6 +2207,26 @@ func (c *StatisticClient) Hooks() []Hook {
 	return c.hooks.Statistic
 }
 
+// Interceptors returns the client interceptors.
+func (c *StatisticClient) Interceptors() []Interceptor {
+	return c.inters.Statistic
+}
+
+func (c *StatisticClient) mutate(ctx context.Context, m *StatisticMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&StatisticCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&StatisticUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&StatisticUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&StatisticDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Statistic mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -1814,6 +2241,12 @@ func NewUserClient(c config) *UserClient {
 // A call to `Use(f, g, h)` equals to `user.Hooks(f(g(h())))`.
 func (c *UserClient) Use(hooks ...Hook) {
 	c.hooks.User = append(c.hooks.User, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `user.Intercept(f(g(h())))`.
+func (c *UserClient) Intercept(interceptors ...Interceptor) {
+	c.inters.User = append(c.inters.User, interceptors...)
 }
 
 // Create returns a builder for creating a User entity.
@@ -1868,6 +2301,8 @@ func (c *UserClient) DeleteOneID(id guidgql.GUID) *UserDeleteOne {
 func (c *UserClient) Query() *UserQuery {
 	return &UserQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeUser},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -1887,7 +2322,7 @@ func (c *UserClient) GetX(ctx context.Context, id guidgql.GUID) *User {
 
 // QueryPlayers queries the players edge of a User.
 func (c *UserClient) QueryPlayers(u *User) *PlayerQuery {
-	query := &PlayerQuery{config: c.config}
+	query := (&PlayerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
@@ -1903,7 +2338,7 @@ func (c *UserClient) QueryPlayers(u *User) *PlayerQuery {
 
 // QueryMainPlayer queries the main_player edge of a User.
 func (c *UserClient) QueryMainPlayer(u *User) *PlayerQuery {
-	query := &PlayerQuery{config: c.config}
+	query := (&PlayerClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
@@ -1919,7 +2354,7 @@ func (c *UserClient) QueryMainPlayer(u *User) *PlayerQuery {
 
 // QuerySentSupervisionRequests queries the sent_supervision_requests edge of a User.
 func (c *UserClient) QuerySentSupervisionRequests(u *User) *PlayerSupervisionRequestQuery {
-	query := &PlayerSupervisionRequestQuery{config: c.config}
+	query := (&PlayerSupervisionRequestClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
@@ -1935,7 +2370,7 @@ func (c *UserClient) QuerySentSupervisionRequests(u *User) *PlayerSupervisionReq
 
 // QuerySupervisionRequestApprovals queries the supervision_request_approvals edge of a User.
 func (c *UserClient) QuerySupervisionRequestApprovals(u *User) *PlayerSupervisionRequestApprovalQuery {
-	query := &PlayerSupervisionRequestApprovalQuery{config: c.config}
+	query := (&PlayerSupervisionRequestApprovalClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
@@ -1951,7 +2386,7 @@ func (c *UserClient) QuerySupervisionRequestApprovals(u *User) *PlayerSupervisio
 
 // QueryGroupMemberships queries the group_memberships edge of a User.
 func (c *UserClient) QueryGroupMemberships(u *User) *GroupMembershipQuery {
-	query := &GroupMembershipQuery{config: c.config}
+	query := (&GroupMembershipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
@@ -1967,7 +2402,7 @@ func (c *UserClient) QueryGroupMemberships(u *User) *GroupMembershipQuery {
 
 // QueryGroupMembershipApplications queries the group_membership_applications edge of a User.
 func (c *UserClient) QueryGroupMembershipApplications(u *User) *GroupMembershipApplicationQuery {
-	query := &GroupMembershipApplicationQuery{config: c.config}
+	query := (&GroupMembershipApplicationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
@@ -1983,7 +2418,7 @@ func (c *UserClient) QueryGroupMembershipApplications(u *User) *GroupMembershipA
 
 // QueryGames queries the games edge of a User.
 func (c *UserClient) QueryGames(u *User) *GameQuery {
-	query := &GameQuery{config: c.config}
+	query := (&GameClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
@@ -1999,7 +2434,7 @@ func (c *UserClient) QueryGames(u *User) *GameQuery {
 
 // QueryFavoriteGames queries the favorite_games edge of a User.
 func (c *UserClient) QueryFavoriteGames(u *User) *GameFavoriteQuery {
-	query := &GameFavoriteQuery{config: c.config}
+	query := (&GameFavoriteClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
@@ -2017,3 +2452,38 @@ func (c *UserClient) QueryFavoriteGames(u *User) *GameFavoriteQuery {
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
 }
+
+// Interceptors returns the client interceptors.
+func (c *UserClient) Interceptors() []Interceptor {
+	return c.inters.User
+}
+
+func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown User mutation op: %q", m.Op())
+	}
+}
+
+// hooks and interceptors per client, for fast access.
+type (
+	hooks struct {
+		Game, GameFavorite, Group, GroupMembership, GroupMembershipApplication,
+		GroupSettings, Match, Player, PlayerSupervisionRequest,
+		PlayerSupervisionRequestApproval, StatDescription, Statistic, User []ent.Hook
+	}
+	inters struct {
+		Game, GameFavorite, Group, GroupMembership, GroupMembershipApplication,
+		GroupSettings, Match, Player, PlayerSupervisionRequest,
+		PlayerSupervisionRequestApproval, StatDescription, Statistic,
+		User []ent.Interceptor
+	}
+)

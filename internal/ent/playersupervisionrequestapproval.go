@@ -128,19 +128,19 @@ func (psra *PlayerSupervisionRequestApproval) assignValues(columns []string, val
 
 // QueryApprover queries the "approver" edge of the PlayerSupervisionRequestApproval entity.
 func (psra *PlayerSupervisionRequestApproval) QueryApprover() *UserQuery {
-	return (&PlayerSupervisionRequestApprovalClient{config: psra.config}).QueryApprover(psra)
+	return NewPlayerSupervisionRequestApprovalClient(psra.config).QueryApprover(psra)
 }
 
 // QuerySupervisionRequest queries the "supervision_request" edge of the PlayerSupervisionRequestApproval entity.
 func (psra *PlayerSupervisionRequestApproval) QuerySupervisionRequest() *PlayerSupervisionRequestQuery {
-	return (&PlayerSupervisionRequestApprovalClient{config: psra.config}).QuerySupervisionRequest(psra)
+	return NewPlayerSupervisionRequestApprovalClient(psra.config).QuerySupervisionRequest(psra)
 }
 
 // Update returns a builder for updating this PlayerSupervisionRequestApproval.
 // Note that you need to call PlayerSupervisionRequestApproval.Unwrap() before calling this method if this PlayerSupervisionRequestApproval
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (psra *PlayerSupervisionRequestApproval) Update() *PlayerSupervisionRequestApprovalUpdateOne {
-	return (&PlayerSupervisionRequestApprovalClient{config: psra.config}).UpdateOne(psra)
+	return NewPlayerSupervisionRequestApprovalClient(psra.config).UpdateOne(psra)
 }
 
 // Unwrap unwraps the PlayerSupervisionRequestApproval entity that was returned from a transaction after it was closed,
@@ -169,9 +169,3 @@ func (psra *PlayerSupervisionRequestApproval) String() string {
 
 // PlayerSupervisionRequestApprovals is a parsable slice of PlayerSupervisionRequestApproval.
 type PlayerSupervisionRequestApprovals []*PlayerSupervisionRequestApproval
-
-func (psra PlayerSupervisionRequestApprovals) config(cfg config) {
-	for _i := range psra {
-		psra[_i].config = cfg
-	}
-}

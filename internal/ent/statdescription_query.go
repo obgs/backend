@@ -21,11 +21,9 @@ import (
 // StatDescriptionQuery is the builder for querying StatDescription entities.
 type StatDescriptionQuery struct {
 	config
-	limit          *int
-	offset         *int
-	unique         *bool
+	ctx            *QueryContext
 	order          []OrderFunc
-	fields         []string
+	inters         []Interceptor
 	predicates     []predicate.StatDescription
 	withGame       *GameQuery
 	withStats      *StatisticQuery
@@ -44,26 +42,26 @@ func (sdq *StatDescriptionQuery) Where(ps ...predicate.StatDescription) *StatDes
 	return sdq
 }
 
-// Limit adds a limit step to the query.
+// Limit the number of records to be returned by this query.
 func (sdq *StatDescriptionQuery) Limit(limit int) *StatDescriptionQuery {
-	sdq.limit = &limit
+	sdq.ctx.Limit = &limit
 	return sdq
 }
 
-// Offset adds an offset step to the query.
+// Offset to start from.
 func (sdq *StatDescriptionQuery) Offset(offset int) *StatDescriptionQuery {
-	sdq.offset = &offset
+	sdq.ctx.Offset = &offset
 	return sdq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (sdq *StatDescriptionQuery) Unique(unique bool) *StatDescriptionQuery {
-	sdq.unique = &unique
+	sdq.ctx.Unique = &unique
 	return sdq
 }
 
-// Order adds an order step to the query.
+// Order specifies how the records should be ordered.
 func (sdq *StatDescriptionQuery) Order(o ...OrderFunc) *StatDescriptionQuery {
 	sdq.order = append(sdq.order, o...)
 	return sdq
@@ -71,7 +69,7 @@ func (sdq *StatDescriptionQuery) Order(o ...OrderFunc) *StatDescriptionQuery {
 
 // QueryGame chains the current query on the "game" edge.
 func (sdq *StatDescriptionQuery) QueryGame() *GameQuery {
-	query := &GameQuery{config: sdq.config}
+	query := (&GameClient{config: sdq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := sdq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -93,7 +91,7 @@ func (sdq *StatDescriptionQuery) QueryGame() *GameQuery {
 
 // QueryStats chains the current query on the "stats" edge.
 func (sdq *StatDescriptionQuery) QueryStats() *StatisticQuery {
-	query := &StatisticQuery{config: sdq.config}
+	query := (&StatisticClient{config: sdq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := sdq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -116,7 +114,7 @@ func (sdq *StatDescriptionQuery) QueryStats() *StatisticQuery {
 // First returns the first StatDescription entity from the query.
 // Returns a *NotFoundError when no StatDescription was found.
 func (sdq *StatDescriptionQuery) First(ctx context.Context) (*StatDescription, error) {
-	nodes, err := sdq.Limit(1).All(ctx)
+	nodes, err := sdq.Limit(1).All(setContextOp(ctx, sdq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +137,7 @@ func (sdq *StatDescriptionQuery) FirstX(ctx context.Context) *StatDescription {
 // Returns a *NotFoundError when no StatDescription ID was found.
 func (sdq *StatDescriptionQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = sdq.Limit(1).IDs(ctx); err != nil {
+	if ids, err = sdq.Limit(1).IDs(setContextOp(ctx, sdq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -162,7 +160,7 @@ func (sdq *StatDescriptionQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 // Returns a *NotSingularError when more than one StatDescription entity is found.
 // Returns a *NotFoundError when no StatDescription entities are found.
 func (sdq *StatDescriptionQuery) Only(ctx context.Context) (*StatDescription, error) {
-	nodes, err := sdq.Limit(2).All(ctx)
+	nodes, err := sdq.Limit(2).All(setContextOp(ctx, sdq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +188,7 @@ func (sdq *StatDescriptionQuery) OnlyX(ctx context.Context) *StatDescription {
 // Returns a *NotFoundError when no entities are found.
 func (sdq *StatDescriptionQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = sdq.Limit(2).IDs(ctx); err != nil {
+	if ids, err = sdq.Limit(2).IDs(setContextOp(ctx, sdq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -215,10 +213,12 @@ func (sdq *StatDescriptionQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 
 // All executes the query and returns a list of StatDescriptions.
 func (sdq *StatDescriptionQuery) All(ctx context.Context) ([]*StatDescription, error) {
+	ctx = setContextOp(ctx, sdq.ctx, "All")
 	if err := sdq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	return sdq.sqlAll(ctx)
+	qr := querierAll[[]*StatDescription, *StatDescriptionQuery]()
+	return withInterceptors[[]*StatDescription](ctx, sdq, qr, sdq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
@@ -231,9 +231,12 @@ func (sdq *StatDescriptionQuery) AllX(ctx context.Context) []*StatDescription {
 }
 
 // IDs executes the query and returns a list of StatDescription IDs.
-func (sdq *StatDescriptionQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
-	var ids []guidgql.GUID
-	if err := sdq.Select(statdescription.FieldID).Scan(ctx, &ids); err != nil {
+func (sdq *StatDescriptionQuery) IDs(ctx context.Context) (ids []guidgql.GUID, err error) {
+	if sdq.ctx.Unique == nil && sdq.path != nil {
+		sdq.Unique(true)
+	}
+	ctx = setContextOp(ctx, sdq.ctx, "IDs")
+	if err = sdq.Select(statdescription.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -250,10 +253,11 @@ func (sdq *StatDescriptionQuery) IDsX(ctx context.Context) []guidgql.GUID {
 
 // Count returns the count of the given query.
 func (sdq *StatDescriptionQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, sdq.ctx, "Count")
 	if err := sdq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return sdq.sqlCount(ctx)
+	return withInterceptors[int](ctx, sdq, querierCount[*StatDescriptionQuery](), sdq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
@@ -267,10 +271,15 @@ func (sdq *StatDescriptionQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (sdq *StatDescriptionQuery) Exist(ctx context.Context) (bool, error) {
-	if err := sdq.prepareQuery(ctx); err != nil {
-		return false, err
+	ctx = setContextOp(ctx, sdq.ctx, "Exist")
+	switch _, err := sdq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return sdq.sqlExist(ctx)
 }
 
 // ExistX is like Exist, but panics if an error occurs.
@@ -290,23 +299,22 @@ func (sdq *StatDescriptionQuery) Clone() *StatDescriptionQuery {
 	}
 	return &StatDescriptionQuery{
 		config:     sdq.config,
-		limit:      sdq.limit,
-		offset:     sdq.offset,
+		ctx:        sdq.ctx.Clone(),
 		order:      append([]OrderFunc{}, sdq.order...),
+		inters:     append([]Interceptor{}, sdq.inters...),
 		predicates: append([]predicate.StatDescription{}, sdq.predicates...),
 		withGame:   sdq.withGame.Clone(),
 		withStats:  sdq.withStats.Clone(),
 		// clone intermediate query.
-		sql:    sdq.sql.Clone(),
-		path:   sdq.path,
-		unique: sdq.unique,
+		sql:  sdq.sql.Clone(),
+		path: sdq.path,
 	}
 }
 
 // WithGame tells the query-builder to eager-load the nodes that are connected to
 // the "game" edge. The optional arguments are used to configure the query builder of the edge.
 func (sdq *StatDescriptionQuery) WithGame(opts ...func(*GameQuery)) *StatDescriptionQuery {
-	query := &GameQuery{config: sdq.config}
+	query := (&GameClient{config: sdq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -317,7 +325,7 @@ func (sdq *StatDescriptionQuery) WithGame(opts ...func(*GameQuery)) *StatDescrip
 // WithStats tells the query-builder to eager-load the nodes that are connected to
 // the "stats" edge. The optional arguments are used to configure the query builder of the edge.
 func (sdq *StatDescriptionQuery) WithStats(opts ...func(*StatisticQuery)) *StatDescriptionQuery {
-	query := &StatisticQuery{config: sdq.config}
+	query := (&StatisticClient{config: sdq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -340,16 +348,11 @@ func (sdq *StatDescriptionQuery) WithStats(opts ...func(*StatisticQuery)) *StatD
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (sdq *StatDescriptionQuery) GroupBy(field string, fields ...string) *StatDescriptionGroupBy {
-	grbuild := &StatDescriptionGroupBy{config: sdq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := sdq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return sdq.sqlQuery(ctx), nil
-	}
+	sdq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &StatDescriptionGroupBy{build: sdq}
+	grbuild.flds = &sdq.ctx.Fields
 	grbuild.label = statdescription.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	grbuild.scan = grbuild.Scan
 	return grbuild
 }
 
@@ -366,11 +369,11 @@ func (sdq *StatDescriptionQuery) GroupBy(field string, fields ...string) *StatDe
 //		Select(statdescription.FieldType).
 //		Scan(ctx, &v)
 func (sdq *StatDescriptionQuery) Select(fields ...string) *StatDescriptionSelect {
-	sdq.fields = append(sdq.fields, fields...)
-	selbuild := &StatDescriptionSelect{StatDescriptionQuery: sdq}
-	selbuild.label = statdescription.Label
-	selbuild.flds, selbuild.scan = &sdq.fields, selbuild.Scan
-	return selbuild
+	sdq.ctx.Fields = append(sdq.ctx.Fields, fields...)
+	sbuild := &StatDescriptionSelect{StatDescriptionQuery: sdq}
+	sbuild.label = statdescription.Label
+	sbuild.flds, sbuild.scan = &sdq.ctx.Fields, sbuild.Scan
+	return sbuild
 }
 
 // Aggregate returns a StatDescriptionSelect configured with the given aggregations.
@@ -379,7 +382,17 @@ func (sdq *StatDescriptionQuery) Aggregate(fns ...AggregateFunc) *StatDescriptio
 }
 
 func (sdq *StatDescriptionQuery) prepareQuery(ctx context.Context) error {
-	for _, f := range sdq.fields {
+	for _, inter := range sdq.inters {
+		if inter == nil {
+			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
+		}
+		if trv, ok := inter.(Traverser); ok {
+			if err := trv.Traverse(ctx, sdq); err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range sdq.ctx.Fields {
 		if !statdescription.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -483,27 +496,30 @@ func (sdq *StatDescriptionQuery) loadGame(ctx context.Context, query *GameQuery,
 	if err := query.prepareQuery(ctx); err != nil {
 		return err
 	}
-	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-		assign := spec.Assign
-		values := spec.ScanValues
-		spec.ScanValues = func(columns []string) ([]any, error) {
-			values, err := values(columns[1:])
-			if err != nil {
-				return nil, err
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(guidgql.GUID)}, values...), nil
 			}
-			return append([]any{new(guidgql.GUID)}, values...), nil
-		}
-		spec.Assign = func(columns []string, values []any) error {
-			outValue := *values[0].(*guidgql.GUID)
-			inValue := *values[1].(*guidgql.GUID)
-			if nids[inValue] == nil {
-				nids[inValue] = map[*StatDescription]struct{}{byID[outValue]: {}}
-				return assign(columns[1:], values[1:])
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*guidgql.GUID)
+				inValue := *values[1].(*guidgql.GUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*StatDescription]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
 			}
-			nids[inValue][byID[outValue]] = struct{}{}
-			return nil
-		}
+		})
 	})
+	neighbors, err := withInterceptors[[]*Game](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
@@ -555,41 +571,22 @@ func (sdq *StatDescriptionQuery) sqlCount(ctx context.Context) (int, error) {
 	if len(sdq.modifiers) > 0 {
 		_spec.Modifiers = sdq.modifiers
 	}
-	_spec.Node.Columns = sdq.fields
-	if len(sdq.fields) > 0 {
-		_spec.Unique = sdq.unique != nil && *sdq.unique
+	_spec.Node.Columns = sdq.ctx.Fields
+	if len(sdq.ctx.Fields) > 0 {
+		_spec.Unique = sdq.ctx.Unique != nil && *sdq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, sdq.driver, _spec)
 }
 
-func (sdq *StatDescriptionQuery) sqlExist(ctx context.Context) (bool, error) {
-	switch _, err := sdq.FirstID(ctx); {
-	case IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("ent: check existence: %w", err)
-	default:
-		return true, nil
-	}
-}
-
 func (sdq *StatDescriptionQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   statdescription.Table,
-			Columns: statdescription.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: statdescription.FieldID,
-			},
-		},
-		From:   sdq.sql,
-		Unique: true,
-	}
-	if unique := sdq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(statdescription.Table, statdescription.Columns, sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString))
+	_spec.From = sdq.sql
+	if unique := sdq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if sdq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := sdq.fields; len(fields) > 0 {
+	if fields := sdq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, statdescription.FieldID)
 		for i := range fields {
@@ -605,10 +602,10 @@ func (sdq *StatDescriptionQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := sdq.limit; limit != nil {
+	if limit := sdq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := sdq.offset; offset != nil {
+	if offset := sdq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := sdq.order; len(ps) > 0 {
@@ -624,7 +621,7 @@ func (sdq *StatDescriptionQuery) querySpec() *sqlgraph.QuerySpec {
 func (sdq *StatDescriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(sdq.driver.Dialect())
 	t1 := builder.Table(statdescription.Table)
-	columns := sdq.fields
+	columns := sdq.ctx.Fields
 	if len(columns) == 0 {
 		columns = statdescription.Columns
 	}
@@ -633,7 +630,7 @@ func (sdq *StatDescriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector = sdq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if sdq.unique != nil && *sdq.unique {
+	if sdq.ctx.Unique != nil && *sdq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range sdq.predicates {
@@ -642,12 +639,12 @@ func (sdq *StatDescriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	for _, p := range sdq.order {
 		p(selector)
 	}
-	if offset := sdq.offset; offset != nil {
+	if offset := sdq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := sdq.limit; limit != nil {
+	if limit := sdq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -656,7 +653,7 @@ func (sdq *StatDescriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // WithNamedGame tells the query-builder to eager-load the nodes that are connected to the "game"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (sdq *StatDescriptionQuery) WithNamedGame(name string, opts ...func(*GameQuery)) *StatDescriptionQuery {
-	query := &GameQuery{config: sdq.config}
+	query := (&GameClient{config: sdq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -670,7 +667,7 @@ func (sdq *StatDescriptionQuery) WithNamedGame(name string, opts ...func(*GameQu
 // WithNamedStats tells the query-builder to eager-load the nodes that are connected to the "stats"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (sdq *StatDescriptionQuery) WithNamedStats(name string, opts ...func(*StatisticQuery)) *StatDescriptionQuery {
-	query := &StatisticQuery{config: sdq.config}
+	query := (&StatisticClient{config: sdq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -683,13 +680,8 @@ func (sdq *StatDescriptionQuery) WithNamedStats(name string, opts ...func(*Stati
 
 // StatDescriptionGroupBy is the group-by builder for StatDescription entities.
 type StatDescriptionGroupBy struct {
-	config
 	selector
-	fields []string
-	fns    []AggregateFunc
-	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	build *StatDescriptionQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
@@ -698,58 +690,46 @@ func (sdgb *StatDescriptionGroupBy) Aggregate(fns ...AggregateFunc) *StatDescrip
 	return sdgb
 }
 
-// Scan applies the group-by query and scans the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (sdgb *StatDescriptionGroupBy) Scan(ctx context.Context, v any) error {
-	query, err := sdgb.path(ctx)
-	if err != nil {
+	ctx = setContextOp(ctx, sdgb.build.ctx, "GroupBy")
+	if err := sdgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	sdgb.sql = query
-	return sdgb.sqlScan(ctx, v)
+	return scanWithInterceptors[*StatDescriptionQuery, *StatDescriptionGroupBy](ctx, sdgb.build, sdgb, sdgb.build.inters, v)
 }
 
-func (sdgb *StatDescriptionGroupBy) sqlScan(ctx context.Context, v any) error {
-	for _, f := range sdgb.fields {
-		if !statdescription.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
-		}
+func (sdgb *StatDescriptionGroupBy) sqlScan(ctx context.Context, root *StatDescriptionQuery, v any) error {
+	selector := root.sqlQuery(ctx).Select()
+	aggregation := make([]string, 0, len(sdgb.fns))
+	for _, fn := range sdgb.fns {
+		aggregation = append(aggregation, fn(selector))
 	}
-	selector := sdgb.sqlQuery()
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(*sdgb.flds)+len(sdgb.fns))
+		for _, f := range *sdgb.flds {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	selector.GroupBy(selector.Columns(*sdgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := sdgb.driver.Query(ctx, query, args, rows); err != nil {
+	if err := sdgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-func (sdgb *StatDescriptionGroupBy) sqlQuery() *sql.Selector {
-	selector := sdgb.sql.Select()
-	aggregation := make([]string, 0, len(sdgb.fns))
-	for _, fn := range sdgb.fns {
-		aggregation = append(aggregation, fn(selector))
-	}
-	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(sdgb.fields)+len(sdgb.fns))
-		for _, f := range sdgb.fields {
-			columns = append(columns, selector.C(f))
-		}
-		columns = append(columns, aggregation...)
-		selector.Select(columns...)
-	}
-	return selector.GroupBy(selector.Columns(sdgb.fields...)...)
-}
-
 // StatDescriptionSelect is the builder for selecting fields of StatDescription entities.
 type StatDescriptionSelect struct {
 	*StatDescriptionQuery
 	selector
-	// intermediate query (i.e. traversal path).
-	sql *sql.Selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
@@ -760,26 +740,27 @@ func (sds *StatDescriptionSelect) Aggregate(fns ...AggregateFunc) *StatDescripti
 
 // Scan applies the selector query and scans the result into the given value.
 func (sds *StatDescriptionSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, sds.ctx, "Select")
 	if err := sds.prepareQuery(ctx); err != nil {
 		return err
 	}
-	sds.sql = sds.StatDescriptionQuery.sqlQuery(ctx)
-	return sds.sqlScan(ctx, v)
+	return scanWithInterceptors[*StatDescriptionQuery, *StatDescriptionSelect](ctx, sds.StatDescriptionQuery, sds, sds.inters, v)
 }
 
-func (sds *StatDescriptionSelect) sqlScan(ctx context.Context, v any) error {
+func (sds *StatDescriptionSelect) sqlScan(ctx context.Context, root *StatDescriptionQuery, v any) error {
+	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(sds.fns))
 	for _, fn := range sds.fns {
-		aggregation = append(aggregation, fn(sds.sql))
+		aggregation = append(aggregation, fn(selector))
 	}
 	switch n := len(*sds.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
-		sds.sql.Select(aggregation...)
+		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
-		sds.sql.AppendSelect(aggregation...)
+		selector.AppendSelect(aggregation...)
 	}
 	rows := &sql.Rows{}
-	query, args := sds.sql.Query()
+	query, args := selector.Query()
 	if err := sds.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

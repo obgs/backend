@@ -91,40 +91,7 @@ func (psrau *PlayerSupervisionRequestApprovalUpdate) ClearSupervisionRequest() *
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (psrau *PlayerSupervisionRequestApprovalUpdate) Save(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(psrau.hooks) == 0 {
-		if err = psrau.check(); err != nil {
-			return 0, err
-		}
-		affected, err = psrau.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*PlayerSupervisionRequestApprovalMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = psrau.check(); err != nil {
-				return 0, err
-			}
-			psrau.mutation = mutation
-			affected, err = psrau.sqlSave(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(psrau.hooks) - 1; i >= 0; i-- {
-			if psrau.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = psrau.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, psrau.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, PlayerSupervisionRequestApprovalMutation](ctx, psrau.sqlSave, psrau.mutation, psrau.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -161,16 +128,10 @@ func (psrau *PlayerSupervisionRequestApprovalUpdate) check() error {
 }
 
 func (psrau *PlayerSupervisionRequestApprovalUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   playersupervisionrequestapproval.Table,
-			Columns: playersupervisionrequestapproval.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: playersupervisionrequestapproval.FieldID,
-			},
-		},
+	if err := psrau.check(); err != nil {
+		return n, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.Columns, sqlgraph.NewFieldSpec(playersupervisionrequestapproval.FieldID, field.TypeString))
 	if ps := psrau.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -192,10 +153,7 @@ func (psrau *PlayerSupervisionRequestApprovalUpdate) sqlSave(ctx context.Context
 			Columns: []string{playersupervisionrequestapproval.ApproverColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -208,10 +166,7 @@ func (psrau *PlayerSupervisionRequestApprovalUpdate) sqlSave(ctx context.Context
 			Columns: []string{playersupervisionrequestapproval.ApproverColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -227,10 +182,7 @@ func (psrau *PlayerSupervisionRequestApprovalUpdate) sqlSave(ctx context.Context
 			Columns: []string{playersupervisionrequestapproval.SupervisionRequestColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -243,10 +195,7 @@ func (psrau *PlayerSupervisionRequestApprovalUpdate) sqlSave(ctx context.Context
 			Columns: []string{playersupervisionrequestapproval.SupervisionRequestColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -262,6 +211,7 @@ func (psrau *PlayerSupervisionRequestApprovalUpdate) sqlSave(ctx context.Context
 		}
 		return 0, err
 	}
+	psrau.mutation.done = true
 	return n, nil
 }
 
@@ -332,6 +282,12 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) ClearSupervisionRequest
 	return psrauo
 }
 
+// Where appends a list predicates to the PlayerSupervisionRequestApprovalUpdate builder.
+func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) Where(ps ...predicate.PlayerSupervisionRequestApproval) *PlayerSupervisionRequestApprovalUpdateOne {
+	psrauo.mutation.Where(ps...)
+	return psrauo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) Select(field string, fields ...string) *PlayerSupervisionRequestApprovalUpdateOne {
@@ -341,46 +297,7 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) Select(field string, fi
 
 // Save executes the query and returns the updated PlayerSupervisionRequestApproval entity.
 func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) Save(ctx context.Context) (*PlayerSupervisionRequestApproval, error) {
-	var (
-		err  error
-		node *PlayerSupervisionRequestApproval
-	)
-	if len(psrauo.hooks) == 0 {
-		if err = psrauo.check(); err != nil {
-			return nil, err
-		}
-		node, err = psrauo.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*PlayerSupervisionRequestApprovalMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = psrauo.check(); err != nil {
-				return nil, err
-			}
-			psrauo.mutation = mutation
-			node, err = psrauo.sqlSave(ctx)
-			mutation.done = true
-			return node, err
-		})
-		for i := len(psrauo.hooks) - 1; i >= 0; i-- {
-			if psrauo.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = psrauo.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, psrauo.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*PlayerSupervisionRequestApproval)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from PlayerSupervisionRequestApprovalMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*PlayerSupervisionRequestApproval, PlayerSupervisionRequestApprovalMutation](ctx, psrauo.sqlSave, psrauo.mutation, psrauo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -417,16 +334,10 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) check() error {
 }
 
 func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) sqlSave(ctx context.Context) (_node *PlayerSupervisionRequestApproval, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   playersupervisionrequestapproval.Table,
-			Columns: playersupervisionrequestapproval.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: playersupervisionrequestapproval.FieldID,
-			},
-		},
+	if err := psrauo.check(); err != nil {
+		return _node, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.Columns, sqlgraph.NewFieldSpec(playersupervisionrequestapproval.FieldID, field.TypeString))
 	id, ok := psrauo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PlayerSupervisionRequestApproval.id" for update`)}
@@ -465,10 +376,7 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) sqlSave(ctx context.Con
 			Columns: []string{playersupervisionrequestapproval.ApproverColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -481,10 +389,7 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) sqlSave(ctx context.Con
 			Columns: []string{playersupervisionrequestapproval.ApproverColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -500,10 +405,7 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) sqlSave(ctx context.Con
 			Columns: []string{playersupervisionrequestapproval.SupervisionRequestColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -516,10 +418,7 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) sqlSave(ctx context.Con
 			Columns: []string{playersupervisionrequestapproval.SupervisionRequestColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -538,5 +437,6 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) sqlSave(ctx context.Con
 		}
 		return nil, err
 	}
+	psrauo.mutation.done = true
 	return _node, nil
 }

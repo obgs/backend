@@ -98,50 +98,8 @@ func (psrc *PlayerSupervisionRequestCreate) Mutation() *PlayerSupervisionRequest
 
 // Save creates the PlayerSupervisionRequest in the database.
 func (psrc *PlayerSupervisionRequestCreate) Save(ctx context.Context) (*PlayerSupervisionRequest, error) {
-	var (
-		err  error
-		node *PlayerSupervisionRequest
-	)
 	psrc.defaults()
-	if len(psrc.hooks) == 0 {
-		if err = psrc.check(); err != nil {
-			return nil, err
-		}
-		node, err = psrc.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*PlayerSupervisionRequestMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = psrc.check(); err != nil {
-				return nil, err
-			}
-			psrc.mutation = mutation
-			if node, err = psrc.sqlSave(ctx); err != nil {
-				return nil, err
-			}
-			mutation.id = &node.ID
-			mutation.done = true
-			return node, err
-		})
-		for i := len(psrc.hooks) - 1; i >= 0; i-- {
-			if psrc.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = psrc.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, psrc.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*PlayerSupervisionRequest)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from PlayerSupervisionRequestMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*PlayerSupervisionRequest, PlayerSupervisionRequestMutation](ctx, psrc.sqlSave, psrc.mutation, psrc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -186,6 +144,9 @@ func (psrc *PlayerSupervisionRequestCreate) check() error {
 }
 
 func (psrc *PlayerSupervisionRequestCreate) sqlSave(ctx context.Context) (*PlayerSupervisionRequest, error) {
+	if err := psrc.check(); err != nil {
+		return nil, err
+	}
 	_node, _spec := psrc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, psrc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -200,19 +161,15 @@ func (psrc *PlayerSupervisionRequestCreate) sqlSave(ctx context.Context) (*Playe
 			return nil, err
 		}
 	}
+	psrc.mutation.id = &_node.ID
+	psrc.mutation.done = true
 	return _node, nil
 }
 
 func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequest, *sqlgraph.CreateSpec) {
 	var (
 		_node = &PlayerSupervisionRequest{config: psrc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: playersupervisionrequest.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: playersupervisionrequest.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(playersupervisionrequest.Table, sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString))
 	)
 	_spec.OnConflict = psrc.conflict
 	if id, ok := psrc.mutation.ID(); ok {
@@ -231,10 +188,7 @@ func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequ
 			Columns: []string{playersupervisionrequest.SenderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -251,10 +205,7 @@ func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequ
 			Columns: []string{playersupervisionrequest.PlayerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: player.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -271,10 +222,7 @@ func (psrc *PlayerSupervisionRequestCreate) createSpec() (*PlayerSupervisionRequ
 			Columns: []string{playersupervisionrequest.ApprovalsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequestapproval.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequestapproval.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -132,24 +132,24 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 
 // QuerySettings queries the "settings" edge of the Group entity.
 func (gr *Group) QuerySettings() *GroupSettingsQuery {
-	return (&GroupClient{config: gr.config}).QuerySettings(gr)
+	return NewGroupClient(gr.config).QuerySettings(gr)
 }
 
 // QueryMembers queries the "members" edge of the Group entity.
 func (gr *Group) QueryMembers() *GroupMembershipQuery {
-	return (&GroupClient{config: gr.config}).QueryMembers(gr)
+	return NewGroupClient(gr.config).QueryMembers(gr)
 }
 
 // QueryApplications queries the "applications" edge of the Group entity.
 func (gr *Group) QueryApplications() *GroupMembershipApplicationQuery {
-	return (&GroupClient{config: gr.config}).QueryApplications(gr)
+	return NewGroupClient(gr.config).QueryApplications(gr)
 }
 
 // Update returns a builder for updating this Group.
 // Note that you need to call Group.Unwrap() before calling this method if this Group
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (gr *Group) Update() *GroupUpdateOne {
-	return (&GroupClient{config: gr.config}).UpdateOne(gr)
+	return NewGroupClient(gr.config).UpdateOne(gr)
 }
 
 // Unwrap unwraps the Group entity that was returned from a transaction after it was closed,
@@ -230,9 +230,3 @@ func (gr *Group) appendNamedApplications(name string, edges ...*GroupMembershipA
 
 // Groups is a parsable slice of Group.
 type Groups []*Group
-
-func (gr Groups) config(cfg config) {
-	for _i := range gr {
-		gr[_i].config = cfg
-	}
-}

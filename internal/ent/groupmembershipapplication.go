@@ -127,19 +127,19 @@ func (gma *GroupMembershipApplication) assignValues(columns []string, values []a
 
 // QueryUser queries the "user" edge of the GroupMembershipApplication entity.
 func (gma *GroupMembershipApplication) QueryUser() *UserQuery {
-	return (&GroupMembershipApplicationClient{config: gma.config}).QueryUser(gma)
+	return NewGroupMembershipApplicationClient(gma.config).QueryUser(gma)
 }
 
 // QueryGroup queries the "group" edge of the GroupMembershipApplication entity.
 func (gma *GroupMembershipApplication) QueryGroup() *GroupQuery {
-	return (&GroupMembershipApplicationClient{config: gma.config}).QueryGroup(gma)
+	return NewGroupMembershipApplicationClient(gma.config).QueryGroup(gma)
 }
 
 // Update returns a builder for updating this GroupMembershipApplication.
 // Note that you need to call GroupMembershipApplication.Unwrap() before calling this method if this GroupMembershipApplication
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (gma *GroupMembershipApplication) Update() *GroupMembershipApplicationUpdateOne {
-	return (&GroupMembershipApplicationClient{config: gma.config}).UpdateOne(gma)
+	return NewGroupMembershipApplicationClient(gma.config).UpdateOne(gma)
 }
 
 // Unwrap unwraps the GroupMembershipApplication entity that was returned from a transaction after it was closed,
@@ -166,9 +166,3 @@ func (gma *GroupMembershipApplication) String() string {
 
 // GroupMembershipApplications is a parsable slice of GroupMembershipApplication.
 type GroupMembershipApplications []*GroupMembershipApplication
-
-func (gma GroupMembershipApplications) config(cfg config) {
-	for _i := range gma {
-		gma[_i].config = cfg
-	}
-}

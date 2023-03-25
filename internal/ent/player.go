@@ -150,34 +150,34 @@ func (pl *Player) assignValues(columns []string, values []any) error {
 
 // QueryOwner queries the "owner" edge of the Player entity.
 func (pl *Player) QueryOwner() *UserQuery {
-	return (&PlayerClient{config: pl.config}).QueryOwner(pl)
+	return NewPlayerClient(pl.config).QueryOwner(pl)
 }
 
 // QuerySupervisors queries the "supervisors" edge of the Player entity.
 func (pl *Player) QuerySupervisors() *UserQuery {
-	return (&PlayerClient{config: pl.config}).QuerySupervisors(pl)
+	return NewPlayerClient(pl.config).QuerySupervisors(pl)
 }
 
 // QuerySupervisionRequests queries the "supervision_requests" edge of the Player entity.
 func (pl *Player) QuerySupervisionRequests() *PlayerSupervisionRequestQuery {
-	return (&PlayerClient{config: pl.config}).QuerySupervisionRequests(pl)
+	return NewPlayerClient(pl.config).QuerySupervisionRequests(pl)
 }
 
 // QueryMatches queries the "matches" edge of the Player entity.
 func (pl *Player) QueryMatches() *MatchQuery {
-	return (&PlayerClient{config: pl.config}).QueryMatches(pl)
+	return NewPlayerClient(pl.config).QueryMatches(pl)
 }
 
 // QueryStats queries the "stats" edge of the Player entity.
 func (pl *Player) QueryStats() *StatisticQuery {
-	return (&PlayerClient{config: pl.config}).QueryStats(pl)
+	return NewPlayerClient(pl.config).QueryStats(pl)
 }
 
 // Update returns a builder for updating this Player.
 // Note that you need to call Player.Unwrap() before calling this method if this Player
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (pl *Player) Update() *PlayerUpdateOne {
-	return (&PlayerClient{config: pl.config}).UpdateOne(pl)
+	return NewPlayerClient(pl.config).UpdateOne(pl)
 }
 
 // Unwrap unwraps the Player entity that was returned from a transaction after it was closed,
@@ -300,9 +300,3 @@ func (pl *Player) appendNamedStats(name string, edges ...*Statistic) {
 
 // Players is a parsable slice of Player.
 type Players []*Player
-
-func (pl Players) config(cfg config) {
-	for _i := range pl {
-		pl[_i].config = cfg
-	}
-}

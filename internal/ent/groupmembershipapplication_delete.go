@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"fmt"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -28,34 +27,7 @@ func (gmad *GroupMembershipApplicationDelete) Where(ps ...predicate.GroupMembers
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (gmad *GroupMembershipApplicationDelete) Exec(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(gmad.hooks) == 0 {
-		affected, err = gmad.sqlExec(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GroupMembershipApplicationMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			gmad.mutation = mutation
-			affected, err = gmad.sqlExec(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(gmad.hooks) - 1; i >= 0; i-- {
-			if gmad.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gmad.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, gmad.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, GroupMembershipApplicationMutation](ctx, gmad.sqlExec, gmad.mutation, gmad.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
@@ -68,15 +40,7 @@ func (gmad *GroupMembershipApplicationDelete) ExecX(ctx context.Context) int {
 }
 
 func (gmad *GroupMembershipApplicationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := &sqlgraph.DeleteSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table: groupmembershipapplication.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupmembershipapplication.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewDeleteSpec(groupmembershipapplication.Table, sqlgraph.NewFieldSpec(groupmembershipapplication.FieldID, field.TypeString))
 	if ps := gmad.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -88,12 +52,19 @@ func (gmad *GroupMembershipApplicationDelete) sqlExec(ctx context.Context) (int,
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
+	gmad.mutation.done = true
 	return affected, err
 }
 
 // GroupMembershipApplicationDeleteOne is the builder for deleting a single GroupMembershipApplication entity.
 type GroupMembershipApplicationDeleteOne struct {
 	gmad *GroupMembershipApplicationDelete
+}
+
+// Where appends a list predicates to the GroupMembershipApplicationDelete builder.
+func (gmado *GroupMembershipApplicationDeleteOne) Where(ps ...predicate.GroupMembershipApplication) *GroupMembershipApplicationDeleteOne {
+	gmado.gmad.mutation.Where(ps...)
+	return gmado
 }
 
 // Exec executes the deletion query.
@@ -111,5 +82,7 @@ func (gmado *GroupMembershipApplicationDeleteOne) Exec(ctx context.Context) erro
 
 // ExecX is like Exec, but panics if an error occurs.
 func (gmado *GroupMembershipApplicationDeleteOne) ExecX(ctx context.Context) {
-	gmado.gmad.ExecX(ctx)
+	if err := gmado.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

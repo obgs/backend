@@ -11,193 +11,127 @@ import (
 
 // ID filters vertices based on their ID field.
 func ID(id guidgql.GUID) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
 func IDEQ(id guidgql.GUID) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
 func IDNEQ(id guidgql.GUID) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.In(s.C(FieldID), v...))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.NotIn(s.C(FieldID), v...))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
 func IDGT(id guidgql.GUID) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
 func IDGTE(id guidgql.GUID) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
 func IDLT(id guidgql.GUID) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
 func IDLTE(id guidgql.GUID) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldLTE(FieldID, id))
 }
 
 // Message applies equality check predicate on the "message" field. It's identical to MessageEQ.
 func Message(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldEQ(FieldMessage, v))
 }
 
 // MessageEQ applies the EQ predicate on the "message" field.
 func MessageEQ(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldEQ(FieldMessage, v))
 }
 
 // MessageNEQ applies the NEQ predicate on the "message" field.
 func MessageNEQ(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldNEQ(FieldMessage, v))
 }
 
 // MessageIn applies the In predicate on the "message" field.
 func MessageIn(vs ...string) predicate.PlayerSupervisionRequest {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldMessage), v...))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldIn(FieldMessage, vs...))
 }
 
 // MessageNotIn applies the NotIn predicate on the "message" field.
 func MessageNotIn(vs ...string) predicate.PlayerSupervisionRequest {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldMessage), v...))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldNotIn(FieldMessage, vs...))
 }
 
 // MessageGT applies the GT predicate on the "message" field.
 func MessageGT(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldGT(FieldMessage, v))
 }
 
 // MessageGTE applies the GTE predicate on the "message" field.
 func MessageGTE(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldGTE(FieldMessage, v))
 }
 
 // MessageLT applies the LT predicate on the "message" field.
 func MessageLT(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldLT(FieldMessage, v))
 }
 
 // MessageLTE applies the LTE predicate on the "message" field.
 func MessageLTE(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldLTE(FieldMessage, v))
 }
 
 // MessageContains applies the Contains predicate on the "message" field.
 func MessageContains(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldContains(FieldMessage, v))
 }
 
 // MessageHasPrefix applies the HasPrefix predicate on the "message" field.
 func MessageHasPrefix(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldHasPrefix(FieldMessage, v))
 }
 
 // MessageHasSuffix applies the HasSuffix predicate on the "message" field.
 func MessageHasSuffix(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldHasSuffix(FieldMessage, v))
 }
 
 // MessageIsNil applies the IsNil predicate on the "message" field.
 func MessageIsNil() predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.IsNull(s.C(FieldMessage)))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldIsNull(FieldMessage))
 }
 
 // MessageNotNil applies the NotNil predicate on the "message" field.
 func MessageNotNil() predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.NotNull(s.C(FieldMessage)))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldNotNull(FieldMessage))
 }
 
 // MessageEqualFold applies the EqualFold predicate on the "message" field.
 func MessageEqualFold(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldEqualFold(FieldMessage, v))
 }
 
 // MessageContainsFold applies the ContainsFold predicate on the "message" field.
 func MessageContainsFold(v string) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldMessage), v))
-	})
+	return predicate.PlayerSupervisionRequest(sql.FieldContainsFold(FieldMessage, v))
 }
 
 // HasSender applies the HasEdge predicate on the "sender" edge.
@@ -205,7 +139,6 @@ func HasSender() predicate.PlayerSupervisionRequest {
 	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SenderTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, SenderTable, SenderColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -233,7 +166,6 @@ func HasPlayer() predicate.PlayerSupervisionRequest {
 	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(PlayerTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, PlayerTable, PlayerColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -261,7 +193,6 @@ func HasApprovals() predicate.PlayerSupervisionRequest {
 	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ApprovalsTable, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, ApprovalsTable, ApprovalsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

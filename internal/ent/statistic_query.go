@@ -21,11 +21,9 @@ import (
 // StatisticQuery is the builder for querying Statistic entities.
 type StatisticQuery struct {
 	config
-	limit               *int
-	offset              *int
-	unique              *bool
+	ctx                 *QueryContext
 	order               []OrderFunc
-	fields              []string
+	inters              []Interceptor
 	predicates          []predicate.Statistic
 	withMatch           *MatchQuery
 	withStatDescription *StatDescriptionQuery
@@ -44,26 +42,26 @@ func (sq *StatisticQuery) Where(ps ...predicate.Statistic) *StatisticQuery {
 	return sq
 }
 
-// Limit adds a limit step to the query.
+// Limit the number of records to be returned by this query.
 func (sq *StatisticQuery) Limit(limit int) *StatisticQuery {
-	sq.limit = &limit
+	sq.ctx.Limit = &limit
 	return sq
 }
 
-// Offset adds an offset step to the query.
+// Offset to start from.
 func (sq *StatisticQuery) Offset(offset int) *StatisticQuery {
-	sq.offset = &offset
+	sq.ctx.Offset = &offset
 	return sq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (sq *StatisticQuery) Unique(unique bool) *StatisticQuery {
-	sq.unique = &unique
+	sq.ctx.Unique = &unique
 	return sq
 }
 
-// Order adds an order step to the query.
+// Order specifies how the records should be ordered.
 func (sq *StatisticQuery) Order(o ...OrderFunc) *StatisticQuery {
 	sq.order = append(sq.order, o...)
 	return sq
@@ -71,7 +69,7 @@ func (sq *StatisticQuery) Order(o ...OrderFunc) *StatisticQuery {
 
 // QueryMatch chains the current query on the "match" edge.
 func (sq *StatisticQuery) QueryMatch() *MatchQuery {
-	query := &MatchQuery{config: sq.config}
+	query := (&MatchClient{config: sq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := sq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -93,7 +91,7 @@ func (sq *StatisticQuery) QueryMatch() *MatchQuery {
 
 // QueryStatDescription chains the current query on the "stat_description" edge.
 func (sq *StatisticQuery) QueryStatDescription() *StatDescriptionQuery {
-	query := &StatDescriptionQuery{config: sq.config}
+	query := (&StatDescriptionClient{config: sq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := sq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -115,7 +113,7 @@ func (sq *StatisticQuery) QueryStatDescription() *StatDescriptionQuery {
 
 // QueryPlayer chains the current query on the "player" edge.
 func (sq *StatisticQuery) QueryPlayer() *PlayerQuery {
-	query := &PlayerQuery{config: sq.config}
+	query := (&PlayerClient{config: sq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := sq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -138,7 +136,7 @@ func (sq *StatisticQuery) QueryPlayer() *PlayerQuery {
 // First returns the first Statistic entity from the query.
 // Returns a *NotFoundError when no Statistic was found.
 func (sq *StatisticQuery) First(ctx context.Context) (*Statistic, error) {
-	nodes, err := sq.Limit(1).All(ctx)
+	nodes, err := sq.Limit(1).All(setContextOp(ctx, sq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +159,7 @@ func (sq *StatisticQuery) FirstX(ctx context.Context) *Statistic {
 // Returns a *NotFoundError when no Statistic ID was found.
 func (sq *StatisticQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = sq.Limit(1).IDs(ctx); err != nil {
+	if ids, err = sq.Limit(1).IDs(setContextOp(ctx, sq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -184,7 +182,7 @@ func (sq *StatisticQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 // Returns a *NotSingularError when more than one Statistic entity is found.
 // Returns a *NotFoundError when no Statistic entities are found.
 func (sq *StatisticQuery) Only(ctx context.Context) (*Statistic, error) {
-	nodes, err := sq.Limit(2).All(ctx)
+	nodes, err := sq.Limit(2).All(setContextOp(ctx, sq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +210,7 @@ func (sq *StatisticQuery) OnlyX(ctx context.Context) *Statistic {
 // Returns a *NotFoundError when no entities are found.
 func (sq *StatisticQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = sq.Limit(2).IDs(ctx); err != nil {
+	if ids, err = sq.Limit(2).IDs(setContextOp(ctx, sq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -237,10 +235,12 @@ func (sq *StatisticQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 
 // All executes the query and returns a list of Statistics.
 func (sq *StatisticQuery) All(ctx context.Context) ([]*Statistic, error) {
+	ctx = setContextOp(ctx, sq.ctx, "All")
 	if err := sq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	return sq.sqlAll(ctx)
+	qr := querierAll[[]*Statistic, *StatisticQuery]()
+	return withInterceptors[[]*Statistic](ctx, sq, qr, sq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
@@ -253,9 +253,12 @@ func (sq *StatisticQuery) AllX(ctx context.Context) []*Statistic {
 }
 
 // IDs executes the query and returns a list of Statistic IDs.
-func (sq *StatisticQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
-	var ids []guidgql.GUID
-	if err := sq.Select(statistic.FieldID).Scan(ctx, &ids); err != nil {
+func (sq *StatisticQuery) IDs(ctx context.Context) (ids []guidgql.GUID, err error) {
+	if sq.ctx.Unique == nil && sq.path != nil {
+		sq.Unique(true)
+	}
+	ctx = setContextOp(ctx, sq.ctx, "IDs")
+	if err = sq.Select(statistic.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -272,10 +275,11 @@ func (sq *StatisticQuery) IDsX(ctx context.Context) []guidgql.GUID {
 
 // Count returns the count of the given query.
 func (sq *StatisticQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, sq.ctx, "Count")
 	if err := sq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return sq.sqlCount(ctx)
+	return withInterceptors[int](ctx, sq, querierCount[*StatisticQuery](), sq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
@@ -289,10 +293,15 @@ func (sq *StatisticQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (sq *StatisticQuery) Exist(ctx context.Context) (bool, error) {
-	if err := sq.prepareQuery(ctx); err != nil {
-		return false, err
+	ctx = setContextOp(ctx, sq.ctx, "Exist")
+	switch _, err := sq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return sq.sqlExist(ctx)
 }
 
 // ExistX is like Exist, but panics if an error occurs.
@@ -312,24 +321,23 @@ func (sq *StatisticQuery) Clone() *StatisticQuery {
 	}
 	return &StatisticQuery{
 		config:              sq.config,
-		limit:               sq.limit,
-		offset:              sq.offset,
+		ctx:                 sq.ctx.Clone(),
 		order:               append([]OrderFunc{}, sq.order...),
+		inters:              append([]Interceptor{}, sq.inters...),
 		predicates:          append([]predicate.Statistic{}, sq.predicates...),
 		withMatch:           sq.withMatch.Clone(),
 		withStatDescription: sq.withStatDescription.Clone(),
 		withPlayer:          sq.withPlayer.Clone(),
 		// clone intermediate query.
-		sql:    sq.sql.Clone(),
-		path:   sq.path,
-		unique: sq.unique,
+		sql:  sq.sql.Clone(),
+		path: sq.path,
 	}
 }
 
 // WithMatch tells the query-builder to eager-load the nodes that are connected to
 // the "match" edge. The optional arguments are used to configure the query builder of the edge.
 func (sq *StatisticQuery) WithMatch(opts ...func(*MatchQuery)) *StatisticQuery {
-	query := &MatchQuery{config: sq.config}
+	query := (&MatchClient{config: sq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -340,7 +348,7 @@ func (sq *StatisticQuery) WithMatch(opts ...func(*MatchQuery)) *StatisticQuery {
 // WithStatDescription tells the query-builder to eager-load the nodes that are connected to
 // the "stat_description" edge. The optional arguments are used to configure the query builder of the edge.
 func (sq *StatisticQuery) WithStatDescription(opts ...func(*StatDescriptionQuery)) *StatisticQuery {
-	query := &StatDescriptionQuery{config: sq.config}
+	query := (&StatDescriptionClient{config: sq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -351,7 +359,7 @@ func (sq *StatisticQuery) WithStatDescription(opts ...func(*StatDescriptionQuery
 // WithPlayer tells the query-builder to eager-load the nodes that are connected to
 // the "player" edge. The optional arguments are used to configure the query builder of the edge.
 func (sq *StatisticQuery) WithPlayer(opts ...func(*PlayerQuery)) *StatisticQuery {
-	query := &PlayerQuery{config: sq.config}
+	query := (&PlayerClient{config: sq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -374,16 +382,11 @@ func (sq *StatisticQuery) WithPlayer(opts ...func(*PlayerQuery)) *StatisticQuery
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (sq *StatisticQuery) GroupBy(field string, fields ...string) *StatisticGroupBy {
-	grbuild := &StatisticGroupBy{config: sq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := sq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return sq.sqlQuery(ctx), nil
-	}
+	sq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &StatisticGroupBy{build: sq}
+	grbuild.flds = &sq.ctx.Fields
 	grbuild.label = statistic.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	grbuild.scan = grbuild.Scan
 	return grbuild
 }
 
@@ -400,11 +403,11 @@ func (sq *StatisticQuery) GroupBy(field string, fields ...string) *StatisticGrou
 //		Select(statistic.FieldValue).
 //		Scan(ctx, &v)
 func (sq *StatisticQuery) Select(fields ...string) *StatisticSelect {
-	sq.fields = append(sq.fields, fields...)
-	selbuild := &StatisticSelect{StatisticQuery: sq}
-	selbuild.label = statistic.Label
-	selbuild.flds, selbuild.scan = &sq.fields, selbuild.Scan
-	return selbuild
+	sq.ctx.Fields = append(sq.ctx.Fields, fields...)
+	sbuild := &StatisticSelect{StatisticQuery: sq}
+	sbuild.label = statistic.Label
+	sbuild.flds, sbuild.scan = &sq.ctx.Fields, sbuild.Scan
+	return sbuild
 }
 
 // Aggregate returns a StatisticSelect configured with the given aggregations.
@@ -413,7 +416,17 @@ func (sq *StatisticQuery) Aggregate(fns ...AggregateFunc) *StatisticSelect {
 }
 
 func (sq *StatisticQuery) prepareQuery(ctx context.Context) error {
-	for _, f := range sq.fields {
+	for _, inter := range sq.inters {
+		if inter == nil {
+			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
+		}
+		if trv, ok := inter.(Traverser); ok {
+			if err := trv.Traverse(ctx, sq); err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range sq.ctx.Fields {
 		if !statistic.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -505,6 +518,9 @@ func (sq *StatisticQuery) loadMatch(ctx context.Context, query *MatchQuery, node
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(match.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -533,6 +549,9 @@ func (sq *StatisticQuery) loadStatDescription(ctx context.Context, query *StatDe
 			ids = append(ids, fk)
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
 	}
 	query.Where(statdescription.IDIn(ids...))
 	neighbors, err := query.All(ctx)
@@ -563,6 +582,9 @@ func (sq *StatisticQuery) loadPlayer(ctx context.Context, query *PlayerQuery, no
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(player.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -585,41 +607,22 @@ func (sq *StatisticQuery) sqlCount(ctx context.Context) (int, error) {
 	if len(sq.modifiers) > 0 {
 		_spec.Modifiers = sq.modifiers
 	}
-	_spec.Node.Columns = sq.fields
-	if len(sq.fields) > 0 {
-		_spec.Unique = sq.unique != nil && *sq.unique
+	_spec.Node.Columns = sq.ctx.Fields
+	if len(sq.ctx.Fields) > 0 {
+		_spec.Unique = sq.ctx.Unique != nil && *sq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, sq.driver, _spec)
 }
 
-func (sq *StatisticQuery) sqlExist(ctx context.Context) (bool, error) {
-	switch _, err := sq.FirstID(ctx); {
-	case IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("ent: check existence: %w", err)
-	default:
-		return true, nil
-	}
-}
-
 func (sq *StatisticQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   statistic.Table,
-			Columns: statistic.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: statistic.FieldID,
-			},
-		},
-		From:   sq.sql,
-		Unique: true,
-	}
-	if unique := sq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(statistic.Table, statistic.Columns, sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString))
+	_spec.From = sq.sql
+	if unique := sq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if sq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := sq.fields; len(fields) > 0 {
+	if fields := sq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, statistic.FieldID)
 		for i := range fields {
@@ -635,10 +638,10 @@ func (sq *StatisticQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := sq.limit; limit != nil {
+	if limit := sq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := sq.offset; offset != nil {
+	if offset := sq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := sq.order; len(ps) > 0 {
@@ -654,7 +657,7 @@ func (sq *StatisticQuery) querySpec() *sqlgraph.QuerySpec {
 func (sq *StatisticQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(sq.driver.Dialect())
 	t1 := builder.Table(statistic.Table)
-	columns := sq.fields
+	columns := sq.ctx.Fields
 	if len(columns) == 0 {
 		columns = statistic.Columns
 	}
@@ -663,7 +666,7 @@ func (sq *StatisticQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector = sq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if sq.unique != nil && *sq.unique {
+	if sq.ctx.Unique != nil && *sq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range sq.predicates {
@@ -672,12 +675,12 @@ func (sq *StatisticQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	for _, p := range sq.order {
 		p(selector)
 	}
-	if offset := sq.offset; offset != nil {
+	if offset := sq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := sq.limit; limit != nil {
+	if limit := sq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -685,13 +688,8 @@ func (sq *StatisticQuery) sqlQuery(ctx context.Context) *sql.Selector {
 
 // StatisticGroupBy is the group-by builder for Statistic entities.
 type StatisticGroupBy struct {
-	config
 	selector
-	fields []string
-	fns    []AggregateFunc
-	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	build *StatisticQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
@@ -700,58 +698,46 @@ func (sgb *StatisticGroupBy) Aggregate(fns ...AggregateFunc) *StatisticGroupBy {
 	return sgb
 }
 
-// Scan applies the group-by query and scans the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (sgb *StatisticGroupBy) Scan(ctx context.Context, v any) error {
-	query, err := sgb.path(ctx)
-	if err != nil {
+	ctx = setContextOp(ctx, sgb.build.ctx, "GroupBy")
+	if err := sgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	sgb.sql = query
-	return sgb.sqlScan(ctx, v)
+	return scanWithInterceptors[*StatisticQuery, *StatisticGroupBy](ctx, sgb.build, sgb, sgb.build.inters, v)
 }
 
-func (sgb *StatisticGroupBy) sqlScan(ctx context.Context, v any) error {
-	for _, f := range sgb.fields {
-		if !statistic.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
-		}
+func (sgb *StatisticGroupBy) sqlScan(ctx context.Context, root *StatisticQuery, v any) error {
+	selector := root.sqlQuery(ctx).Select()
+	aggregation := make([]string, 0, len(sgb.fns))
+	for _, fn := range sgb.fns {
+		aggregation = append(aggregation, fn(selector))
 	}
-	selector := sgb.sqlQuery()
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(*sgb.flds)+len(sgb.fns))
+		for _, f := range *sgb.flds {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	selector.GroupBy(selector.Columns(*sgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := sgb.driver.Query(ctx, query, args, rows); err != nil {
+	if err := sgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-func (sgb *StatisticGroupBy) sqlQuery() *sql.Selector {
-	selector := sgb.sql.Select()
-	aggregation := make([]string, 0, len(sgb.fns))
-	for _, fn := range sgb.fns {
-		aggregation = append(aggregation, fn(selector))
-	}
-	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(sgb.fields)+len(sgb.fns))
-		for _, f := range sgb.fields {
-			columns = append(columns, selector.C(f))
-		}
-		columns = append(columns, aggregation...)
-		selector.Select(columns...)
-	}
-	return selector.GroupBy(selector.Columns(sgb.fields...)...)
-}
-
 // StatisticSelect is the builder for selecting fields of Statistic entities.
 type StatisticSelect struct {
 	*StatisticQuery
 	selector
-	// intermediate query (i.e. traversal path).
-	sql *sql.Selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
@@ -762,26 +748,27 @@ func (ss *StatisticSelect) Aggregate(fns ...AggregateFunc) *StatisticSelect {
 
 // Scan applies the selector query and scans the result into the given value.
 func (ss *StatisticSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, ss.ctx, "Select")
 	if err := ss.prepareQuery(ctx); err != nil {
 		return err
 	}
-	ss.sql = ss.StatisticQuery.sqlQuery(ctx)
-	return ss.sqlScan(ctx, v)
+	return scanWithInterceptors[*StatisticQuery, *StatisticSelect](ctx, ss.StatisticQuery, ss, ss.inters, v)
 }
 
-func (ss *StatisticSelect) sqlScan(ctx context.Context, v any) error {
+func (ss *StatisticSelect) sqlScan(ctx context.Context, root *StatisticQuery, v any) error {
+	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(ss.fns))
 	for _, fn := range ss.fns {
-		aggregation = append(aggregation, fn(ss.sql))
+		aggregation = append(aggregation, fn(selector))
 	}
 	switch n := len(*ss.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
-		ss.sql.Select(aggregation...)
+		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
-		ss.sql.AppendSelect(aggregation...)
+		selector.AppendSelect(aggregation...)
 	}
 	rows := &sql.Rows{}
-	query, args := ss.sql.Query()
+	query, args := selector.Query()
 	if err := ss.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

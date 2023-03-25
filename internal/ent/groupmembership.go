@@ -128,19 +128,19 @@ func (gm *GroupMembership) assignValues(columns []string, values []any) error {
 
 // QueryGroup queries the "group" edge of the GroupMembership entity.
 func (gm *GroupMembership) QueryGroup() *GroupQuery {
-	return (&GroupMembershipClient{config: gm.config}).QueryGroup(gm)
+	return NewGroupMembershipClient(gm.config).QueryGroup(gm)
 }
 
 // QueryUser queries the "user" edge of the GroupMembership entity.
 func (gm *GroupMembership) QueryUser() *UserQuery {
-	return (&GroupMembershipClient{config: gm.config}).QueryUser(gm)
+	return NewGroupMembershipClient(gm.config).QueryUser(gm)
 }
 
 // Update returns a builder for updating this GroupMembership.
 // Note that you need to call GroupMembership.Unwrap() before calling this method if this GroupMembership
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (gm *GroupMembership) Update() *GroupMembershipUpdateOne {
-	return (&GroupMembershipClient{config: gm.config}).UpdateOne(gm)
+	return NewGroupMembershipClient(gm.config).UpdateOne(gm)
 }
 
 // Unwrap unwraps the GroupMembership entity that was returned from a transaction after it was closed,
@@ -167,9 +167,3 @@ func (gm *GroupMembership) String() string {
 
 // GroupMemberships is a parsable slice of GroupMembership.
 type GroupMemberships []*GroupMembership
-
-func (gm GroupMemberships) config(cfg config) {
-	for _i := range gm {
-		gm[_i].config = cfg
-	}
-}

@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"fmt"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -28,34 +27,7 @@ func (gsd *GroupSettingsDelete) Where(ps ...predicate.GroupSettings) *GroupSetti
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (gsd *GroupSettingsDelete) Exec(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(gsd.hooks) == 0 {
-		affected, err = gsd.sqlExec(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GroupSettingsMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			gsd.mutation = mutation
-			affected, err = gsd.sqlExec(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(gsd.hooks) - 1; i >= 0; i-- {
-			if gsd.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gsd.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, gsd.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, GroupSettingsMutation](ctx, gsd.sqlExec, gsd.mutation, gsd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
@@ -68,15 +40,7 @@ func (gsd *GroupSettingsDelete) ExecX(ctx context.Context) int {
 }
 
 func (gsd *GroupSettingsDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := &sqlgraph.DeleteSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table: groupsettings.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupsettings.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewDeleteSpec(groupsettings.Table, sqlgraph.NewFieldSpec(groupsettings.FieldID, field.TypeString))
 	if ps := gsd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -88,12 +52,19 @@ func (gsd *GroupSettingsDelete) sqlExec(ctx context.Context) (int, error) {
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
+	gsd.mutation.done = true
 	return affected, err
 }
 
 // GroupSettingsDeleteOne is the builder for deleting a single GroupSettings entity.
 type GroupSettingsDeleteOne struct {
 	gsd *GroupSettingsDelete
+}
+
+// Where appends a list predicates to the GroupSettingsDelete builder.
+func (gsdo *GroupSettingsDeleteOne) Where(ps ...predicate.GroupSettings) *GroupSettingsDeleteOne {
+	gsdo.gsd.mutation.Where(ps...)
+	return gsdo
 }
 
 // Exec executes the deletion query.
@@ -111,5 +82,7 @@ func (gsdo *GroupSettingsDeleteOne) Exec(ctx context.Context) error {
 
 // ExecX is like Exec, but panics if an error occurs.
 func (gsdo *GroupSettingsDeleteOne) ExecX(ctx context.Context) {
-	gsdo.gsd.ExecX(ctx)
+	if err := gsdo.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

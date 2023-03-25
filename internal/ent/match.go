@@ -116,24 +116,24 @@ func (m *Match) assignValues(columns []string, values []any) error {
 
 // QueryGame queries the "game" edge of the Match entity.
 func (m *Match) QueryGame() *GameQuery {
-	return (&MatchClient{config: m.config}).QueryGame(m)
+	return NewMatchClient(m.config).QueryGame(m)
 }
 
 // QueryPlayers queries the "players" edge of the Match entity.
 func (m *Match) QueryPlayers() *PlayerQuery {
-	return (&MatchClient{config: m.config}).QueryPlayers(m)
+	return NewMatchClient(m.config).QueryPlayers(m)
 }
 
 // QueryStats queries the "stats" edge of the Match entity.
 func (m *Match) QueryStats() *StatisticQuery {
-	return (&MatchClient{config: m.config}).QueryStats(m)
+	return NewMatchClient(m.config).QueryStats(m)
 }
 
 // Update returns a builder for updating this Match.
 // Note that you need to call Match.Unwrap() before calling this method if this Match
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (m *Match) Update() *MatchUpdateOne {
-	return (&MatchClient{config: m.config}).UpdateOne(m)
+	return NewMatchClient(m.config).UpdateOne(m)
 }
 
 // Unwrap unwraps the Match entity that was returned from a transaction after it was closed,
@@ -206,9 +206,3 @@ func (m *Match) appendNamedStats(name string, edges ...*Statistic) {
 
 // Matches is a parsable slice of Match.
 type Matches []*Match
-
-func (m Matches) config(cfg config) {
-	for _i := range m {
-		m[_i].config = cfg
-	}
-}

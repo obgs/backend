@@ -175,40 +175,7 @@ func (sdu *StatDescriptionUpdate) RemoveStats(s ...*Statistic) *StatDescriptionU
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (sdu *StatDescriptionUpdate) Save(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(sdu.hooks) == 0 {
-		if err = sdu.check(); err != nil {
-			return 0, err
-		}
-		affected, err = sdu.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*StatDescriptionMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = sdu.check(); err != nil {
-				return 0, err
-			}
-			sdu.mutation = mutation
-			affected, err = sdu.sqlSave(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(sdu.hooks) - 1; i >= 0; i-- {
-			if sdu.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = sdu.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, sdu.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, StatDescriptionMutation](ctx, sdu.sqlSave, sdu.mutation, sdu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -249,16 +216,10 @@ func (sdu *StatDescriptionUpdate) check() error {
 }
 
 func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   statdescription.Table,
-			Columns: statdescription.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: statdescription.FieldID,
-			},
-		},
+	if err := sdu.check(); err != nil {
+		return n, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(statdescription.Table, statdescription.Columns, sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString))
 	if ps := sdu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -298,10 +259,7 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: statdescription.GamePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -314,10 +272,7 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: statdescription.GamePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -333,10 +288,7 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: statdescription.GamePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -352,10 +304,7 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{statdescription.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -368,10 +317,7 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{statdescription.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -387,10 +333,7 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{statdescription.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -406,6 +349,7 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 		}
 		return 0, err
 	}
+	sdu.mutation.done = true
 	return n, nil
 }
 
@@ -559,6 +503,12 @@ func (sduo *StatDescriptionUpdateOne) RemoveStats(s ...*Statistic) *StatDescript
 	return sduo.RemoveStatIDs(ids...)
 }
 
+// Where appends a list predicates to the StatDescriptionUpdate builder.
+func (sduo *StatDescriptionUpdateOne) Where(ps ...predicate.StatDescription) *StatDescriptionUpdateOne {
+	sduo.mutation.Where(ps...)
+	return sduo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (sduo *StatDescriptionUpdateOne) Select(field string, fields ...string) *StatDescriptionUpdateOne {
@@ -568,46 +518,7 @@ func (sduo *StatDescriptionUpdateOne) Select(field string, fields ...string) *St
 
 // Save executes the query and returns the updated StatDescription entity.
 func (sduo *StatDescriptionUpdateOne) Save(ctx context.Context) (*StatDescription, error) {
-	var (
-		err  error
-		node *StatDescription
-	)
-	if len(sduo.hooks) == 0 {
-		if err = sduo.check(); err != nil {
-			return nil, err
-		}
-		node, err = sduo.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*StatDescriptionMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = sduo.check(); err != nil {
-				return nil, err
-			}
-			sduo.mutation = mutation
-			node, err = sduo.sqlSave(ctx)
-			mutation.done = true
-			return node, err
-		})
-		for i := len(sduo.hooks) - 1; i >= 0; i-- {
-			if sduo.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = sduo.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, sduo.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*StatDescription)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from StatDescriptionMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*StatDescription, StatDescriptionMutation](ctx, sduo.sqlSave, sduo.mutation, sduo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -648,16 +559,10 @@ func (sduo *StatDescriptionUpdateOne) check() error {
 }
 
 func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatDescription, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   statdescription.Table,
-			Columns: statdescription.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: statdescription.FieldID,
-			},
-		},
+	if err := sduo.check(); err != nil {
+		return _node, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(statdescription.Table, statdescription.Columns, sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString))
 	id, ok := sduo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "StatDescription.id" for update`)}
@@ -714,10 +619,7 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 			Columns: statdescription.GamePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -730,10 +632,7 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 			Columns: statdescription.GamePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -749,10 +648,7 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 			Columns: statdescription.GamePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -768,10 +664,7 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 			Columns: []string{statdescription.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -784,10 +677,7 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 			Columns: []string{statdescription.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -803,10 +693,7 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 			Columns: []string{statdescription.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -825,5 +712,6 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 		}
 		return nil, err
 	}
+	sduo.mutation.done = true
 	return _node, nil
 }

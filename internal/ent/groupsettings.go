@@ -117,14 +117,14 @@ func (gs *GroupSettings) assignValues(columns []string, values []any) error {
 
 // QueryGroup queries the "group" edge of the GroupSettings entity.
 func (gs *GroupSettings) QueryGroup() *GroupQuery {
-	return (&GroupSettingsClient{config: gs.config}).QueryGroup(gs)
+	return NewGroupSettingsClient(gs.config).QueryGroup(gs)
 }
 
 // Update returns a builder for updating this GroupSettings.
 // Note that you need to call GroupSettings.Unwrap() before calling this method if this GroupSettings
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (gs *GroupSettings) Update() *GroupSettingsUpdateOne {
-	return (&GroupSettingsClient{config: gs.config}).UpdateOne(gs)
+	return NewGroupSettingsClient(gs.config).UpdateOne(gs)
 }
 
 // Unwrap unwraps the GroupSettings entity that was returned from a transaction after it was closed,
@@ -159,9 +159,3 @@ func (gs *GroupSettings) String() string {
 
 // GroupSettingsSlice is a parsable slice of GroupSettings.
 type GroupSettingsSlice []*GroupSettings
-
-func (gs GroupSettingsSlice) config(cfg config) {
-	for _i := range gs {
-		gs[_i].config = cfg
-	}
-}
