@@ -222,34 +222,7 @@ func (pu *PlayerUpdate) RemoveStats(s ...*Statistic) *PlayerUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (pu *PlayerUpdate) Save(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(pu.hooks) == 0 {
-		affected, err = pu.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*PlayerMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			pu.mutation = mutation
-			affected, err = pu.sqlSave(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(pu.hooks) - 1; i >= 0; i-- {
-			if pu.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = pu.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, pu.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, PlayerMutation](ctx, pu.sqlSave, pu.mutation, pu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -275,16 +248,7 @@ func (pu *PlayerUpdate) ExecX(ctx context.Context) {
 }
 
 func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   player.Table,
-			Columns: player.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: player.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(player.Table, player.Columns, sqlgraph.NewFieldSpec(player.FieldID, field.TypeString))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -303,10 +267,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{player.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -319,10 +280,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{player.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -338,10 +296,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: player.SupervisorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -354,10 +309,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: player.SupervisorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -373,10 +325,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: player.SupervisorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -392,10 +341,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{player.SupervisionRequestsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -408,10 +354,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{player.SupervisionRequestsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -427,10 +370,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{player.SupervisionRequestsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -446,10 +386,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: player.MatchesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -462,10 +399,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: player.MatchesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -481,10 +415,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: player.MatchesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -500,10 +431,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{player.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -516,10 +444,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{player.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -535,10 +460,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{player.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -554,6 +476,7 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
+	pu.mutation.done = true
 	return n, nil
 }
 
@@ -753,6 +676,12 @@ func (puo *PlayerUpdateOne) RemoveStats(s ...*Statistic) *PlayerUpdateOne {
 	return puo.RemoveStatIDs(ids...)
 }
 
+// Where appends a list predicates to the PlayerUpdate builder.
+func (puo *PlayerUpdateOne) Where(ps ...predicate.Player) *PlayerUpdateOne {
+	puo.mutation.Where(ps...)
+	return puo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (puo *PlayerUpdateOne) Select(field string, fields ...string) *PlayerUpdateOne {
@@ -762,40 +691,7 @@ func (puo *PlayerUpdateOne) Select(field string, fields ...string) *PlayerUpdate
 
 // Save executes the query and returns the updated Player entity.
 func (puo *PlayerUpdateOne) Save(ctx context.Context) (*Player, error) {
-	var (
-		err  error
-		node *Player
-	)
-	if len(puo.hooks) == 0 {
-		node, err = puo.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*PlayerMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			puo.mutation = mutation
-			node, err = puo.sqlSave(ctx)
-			mutation.done = true
-			return node, err
-		})
-		for i := len(puo.hooks) - 1; i >= 0; i-- {
-			if puo.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = puo.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, puo.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*Player)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from PlayerMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*Player, PlayerMutation](ctx, puo.sqlSave, puo.mutation, puo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -821,16 +717,7 @@ func (puo *PlayerUpdateOne) ExecX(ctx context.Context) {
 }
 
 func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   player.Table,
-			Columns: player.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: player.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(player.Table, player.Columns, sqlgraph.NewFieldSpec(player.FieldID, field.TypeString))
 	id, ok := puo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Player.id" for update`)}
@@ -866,10 +753,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: []string{player.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -882,10 +766,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: []string{player.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -901,10 +782,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: player.SupervisorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -917,10 +795,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: player.SupervisorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -936,10 +811,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: player.SupervisorsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -955,10 +827,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: []string{player.SupervisionRequestsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -971,10 +840,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: []string{player.SupervisionRequestsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -990,10 +856,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: []string{player.SupervisionRequestsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1009,10 +872,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: player.MatchesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1025,10 +885,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: player.MatchesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1044,10 +901,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: player.MatchesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1063,10 +917,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: []string{player.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1079,10 +930,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: []string{player.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1098,10 +946,7 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 			Columns: []string{player.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1120,5 +965,6 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 		}
 		return nil, err
 	}
+	puo.mutation.done = true
 	return _node, nil
 }

@@ -123,50 +123,8 @@ func (sdc *StatDescriptionCreate) Mutation() *StatDescriptionMutation {
 
 // Save creates the StatDescription in the database.
 func (sdc *StatDescriptionCreate) Save(ctx context.Context) (*StatDescription, error) {
-	var (
-		err  error
-		node *StatDescription
-	)
 	sdc.defaults()
-	if len(sdc.hooks) == 0 {
-		if err = sdc.check(); err != nil {
-			return nil, err
-		}
-		node, err = sdc.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*StatDescriptionMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = sdc.check(); err != nil {
-				return nil, err
-			}
-			sdc.mutation = mutation
-			if node, err = sdc.sqlSave(ctx); err != nil {
-				return nil, err
-			}
-			mutation.id = &node.ID
-			mutation.done = true
-			return node, err
-		})
-		for i := len(sdc.hooks) - 1; i >= 0; i-- {
-			if sdc.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = sdc.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, sdc.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*StatDescription)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from StatDescriptionMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*StatDescription, StatDescriptionMutation](ctx, sdc.sqlSave, sdc.mutation, sdc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -228,6 +186,9 @@ func (sdc *StatDescriptionCreate) check() error {
 }
 
 func (sdc *StatDescriptionCreate) sqlSave(ctx context.Context) (*StatDescription, error) {
+	if err := sdc.check(); err != nil {
+		return nil, err
+	}
 	_node, _spec := sdc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, sdc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -242,19 +203,15 @@ func (sdc *StatDescriptionCreate) sqlSave(ctx context.Context) (*StatDescription
 			return nil, err
 		}
 	}
+	sdc.mutation.id = &_node.ID
+	sdc.mutation.done = true
 	return _node, nil
 }
 
 func (sdc *StatDescriptionCreate) createSpec() (*StatDescription, *sqlgraph.CreateSpec) {
 	var (
 		_node = &StatDescription{config: sdc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: statdescription.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: statdescription.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(statdescription.Table, sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString))
 	)
 	_spec.OnConflict = sdc.conflict
 	if id, ok := sdc.mutation.ID(); ok {
@@ -289,10 +246,7 @@ func (sdc *StatDescriptionCreate) createSpec() (*StatDescription, *sqlgraph.Crea
 			Columns: statdescription.GamePrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -308,10 +262,7 @@ func (sdc *StatDescriptionCreate) createSpec() (*StatDescription, *sqlgraph.Crea
 			Columns: []string{statdescription.StatsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statistic.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

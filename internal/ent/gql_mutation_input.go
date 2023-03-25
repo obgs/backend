@@ -2,13 +2,16 @@
 
 package ent
 
-import "github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+import (
+	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+)
 
 // UpdateUserInput represents a mutation input for updating users.
 type UpdateUserInput struct {
 	Name            *string
 	Email           *string
 	AvatarURL       *string
+	ClearPlayers    bool
 	AddPlayerIDs    []guidgql.GUID
 	RemovePlayerIDs []guidgql.GUID
 	ClearMainPlayer bool
@@ -25,6 +28,9 @@ func (i *UpdateUserInput) Mutate(m *UserMutation) {
 	}
 	if v := i.AvatarURL; v != nil {
 		m.SetAvatarURL(*v)
+	}
+	if i.ClearPlayers {
+		m.ClearPlayers()
 	}
 	if v := i.AddPlayerIDs; len(v) > 0 {
 		m.AddPlayerIDs(v...)

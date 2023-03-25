@@ -110,40 +110,7 @@ func (gsu *GroupSettingsUpdate) ClearGroup() *GroupSettingsUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gsu *GroupSettingsUpdate) Save(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(gsu.hooks) == 0 {
-		if err = gsu.check(); err != nil {
-			return 0, err
-		}
-		affected, err = gsu.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GroupSettingsMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gsu.check(); err != nil {
-				return 0, err
-			}
-			gsu.mutation = mutation
-			affected, err = gsu.sqlSave(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(gsu.hooks) - 1; i >= 0; i-- {
-			if gsu.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gsu.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, gsu.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, GroupSettingsMutation](ctx, gsu.sqlSave, gsu.mutation, gsu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -189,16 +156,10 @@ func (gsu *GroupSettingsUpdate) check() error {
 }
 
 func (gsu *GroupSettingsUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   groupsettings.Table,
-			Columns: groupsettings.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupsettings.FieldID,
-			},
-		},
+	if err := gsu.check(); err != nil {
+		return n, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(groupsettings.Table, groupsettings.Columns, sqlgraph.NewFieldSpec(groupsettings.FieldID, field.TypeString))
 	if ps := gsu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -226,10 +187,7 @@ func (gsu *GroupSettingsUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Columns: []string{groupsettings.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -242,10 +200,7 @@ func (gsu *GroupSettingsUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Columns: []string{groupsettings.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -261,6 +216,7 @@ func (gsu *GroupSettingsUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		return 0, err
 	}
+	gsu.mutation.done = true
 	return n, nil
 }
 
@@ -350,6 +306,12 @@ func (gsuo *GroupSettingsUpdateOne) ClearGroup() *GroupSettingsUpdateOne {
 	return gsuo
 }
 
+// Where appends a list predicates to the GroupSettingsUpdate builder.
+func (gsuo *GroupSettingsUpdateOne) Where(ps ...predicate.GroupSettings) *GroupSettingsUpdateOne {
+	gsuo.mutation.Where(ps...)
+	return gsuo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (gsuo *GroupSettingsUpdateOne) Select(field string, fields ...string) *GroupSettingsUpdateOne {
@@ -359,46 +321,7 @@ func (gsuo *GroupSettingsUpdateOne) Select(field string, fields ...string) *Grou
 
 // Save executes the query and returns the updated GroupSettings entity.
 func (gsuo *GroupSettingsUpdateOne) Save(ctx context.Context) (*GroupSettings, error) {
-	var (
-		err  error
-		node *GroupSettings
-	)
-	if len(gsuo.hooks) == 0 {
-		if err = gsuo.check(); err != nil {
-			return nil, err
-		}
-		node, err = gsuo.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GroupSettingsMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gsuo.check(); err != nil {
-				return nil, err
-			}
-			gsuo.mutation = mutation
-			node, err = gsuo.sqlSave(ctx)
-			mutation.done = true
-			return node, err
-		})
-		for i := len(gsuo.hooks) - 1; i >= 0; i-- {
-			if gsuo.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gsuo.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, gsuo.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*GroupSettings)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from GroupSettingsMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*GroupSettings, GroupSettingsMutation](ctx, gsuo.sqlSave, gsuo.mutation, gsuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -444,16 +367,10 @@ func (gsuo *GroupSettingsUpdateOne) check() error {
 }
 
 func (gsuo *GroupSettingsUpdateOne) sqlSave(ctx context.Context) (_node *GroupSettings, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   groupsettings.Table,
-			Columns: groupsettings.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupsettings.FieldID,
-			},
-		},
+	if err := gsuo.check(); err != nil {
+		return _node, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(groupsettings.Table, groupsettings.Columns, sqlgraph.NewFieldSpec(groupsettings.FieldID, field.TypeString))
 	id, ok := gsuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "GroupSettings.id" for update`)}
@@ -498,10 +415,7 @@ func (gsuo *GroupSettingsUpdateOne) sqlSave(ctx context.Context) (_node *GroupSe
 			Columns: []string{groupsettings.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -514,10 +428,7 @@ func (gsuo *GroupSettingsUpdateOne) sqlSave(ctx context.Context) (_node *GroupSe
 			Columns: []string{groupsettings.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -536,5 +447,6 @@ func (gsuo *GroupSettingsUpdateOne) sqlSave(ctx context.Context) (_node *GroupSe
 		}
 		return nil, err
 	}
+	gsuo.mutation.done = true
 	return _node, nil
 }

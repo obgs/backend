@@ -12,526 +12,342 @@ import (
 
 // ID filters vertices based on their ID field.
 func ID(id guidgql.GUID) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
 func IDEQ(id guidgql.GUID) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
 func IDNEQ(id guidgql.GUID) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldID), id))
-	})
+	return predicate.StatDescription(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.In(s.C(FieldID), v...))
-	})
+	return predicate.StatDescription(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.NotIn(s.C(FieldID), v...))
-	})
+	return predicate.StatDescription(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
 func IDGT(id guidgql.GUID) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldID), id))
-	})
+	return predicate.StatDescription(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
 func IDGTE(id guidgql.GUID) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldID), id))
-	})
+	return predicate.StatDescription(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
 func IDLT(id guidgql.GUID) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldID), id))
-	})
+	return predicate.StatDescription(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
 func IDLTE(id guidgql.GUID) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldID), id))
-	})
+	return predicate.StatDescription(sql.FieldLTE(FieldID, id))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldName, v))
 }
 
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldDescription, v))
 }
 
 // Metadata applies equality check predicate on the "metadata" field. It's identical to MetadataEQ.
 func Metadata(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldMetadata, v))
 }
 
 // OrderNumber applies equality check predicate on the "order_number" field. It's identical to OrderNumberEQ.
 func OrderNumber(v int) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldOrderNumber), v))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldOrderNumber, v))
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.
 func TypeEQ(v stat.StatType) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldType), v))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldType, v))
 }
 
 // TypeNEQ applies the NEQ predicate on the "type" field.
 func TypeNEQ(v stat.StatType) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldType), v))
-	})
+	return predicate.StatDescription(sql.FieldNEQ(FieldType, v))
 }
 
 // TypeIn applies the In predicate on the "type" field.
 func TypeIn(vs ...stat.StatType) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldType), v...))
-	})
+	return predicate.StatDescription(sql.FieldIn(FieldType, vs...))
 }
 
 // TypeNotIn applies the NotIn predicate on the "type" field.
 func TypeNotIn(vs ...stat.StatType) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldType), v...))
-	})
+	return predicate.StatDescription(sql.FieldNotIn(FieldType, vs...))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldName, v))
 }
 
 // NameNEQ applies the NEQ predicate on the "name" field.
 func NameNEQ(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldNEQ(FieldName, v))
 }
 
 // NameIn applies the In predicate on the "name" field.
 func NameIn(vs ...string) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldName), v...))
-	})
+	return predicate.StatDescription(sql.FieldIn(FieldName, vs...))
 }
 
 // NameNotIn applies the NotIn predicate on the "name" field.
 func NameNotIn(vs ...string) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldName), v...))
-	})
+	return predicate.StatDescription(sql.FieldNotIn(FieldName, vs...))
 }
 
 // NameGT applies the GT predicate on the "name" field.
 func NameGT(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldGT(FieldName, v))
 }
 
 // NameGTE applies the GTE predicate on the "name" field.
 func NameGTE(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldGTE(FieldName, v))
 }
 
 // NameLT applies the LT predicate on the "name" field.
 func NameLT(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldLT(FieldName, v))
 }
 
 // NameLTE applies the LTE predicate on the "name" field.
 func NameLTE(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldLTE(FieldName, v))
 }
 
 // NameContains applies the Contains predicate on the "name" field.
 func NameContains(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldContains(FieldName, v))
 }
 
 // NameHasPrefix applies the HasPrefix predicate on the "name" field.
 func NameHasPrefix(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldHasPrefix(FieldName, v))
 }
 
 // NameHasSuffix applies the HasSuffix predicate on the "name" field.
 func NameHasSuffix(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldHasSuffix(FieldName, v))
 }
 
 // NameEqualFold applies the EqualFold predicate on the "name" field.
 func NameEqualFold(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldEqualFold(FieldName, v))
 }
 
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldName), v))
-	})
+	return predicate.StatDescription(sql.FieldContainsFold(FieldName, v))
 }
 
 // DescriptionEQ applies the EQ predicate on the "description" field.
 func DescriptionEQ(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldDescription, v))
 }
 
 // DescriptionNEQ applies the NEQ predicate on the "description" field.
 func DescriptionNEQ(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldNEQ(FieldDescription, v))
 }
 
 // DescriptionIn applies the In predicate on the "description" field.
 func DescriptionIn(vs ...string) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldDescription), v...))
-	})
+	return predicate.StatDescription(sql.FieldIn(FieldDescription, vs...))
 }
 
 // DescriptionNotIn applies the NotIn predicate on the "description" field.
 func DescriptionNotIn(vs ...string) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldDescription), v...))
-	})
+	return predicate.StatDescription(sql.FieldNotIn(FieldDescription, vs...))
 }
 
 // DescriptionGT applies the GT predicate on the "description" field.
 func DescriptionGT(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldGT(FieldDescription, v))
 }
 
 // DescriptionGTE applies the GTE predicate on the "description" field.
 func DescriptionGTE(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldGTE(FieldDescription, v))
 }
 
 // DescriptionLT applies the LT predicate on the "description" field.
 func DescriptionLT(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldLT(FieldDescription, v))
 }
 
 // DescriptionLTE applies the LTE predicate on the "description" field.
 func DescriptionLTE(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldLTE(FieldDescription, v))
 }
 
 // DescriptionContains applies the Contains predicate on the "description" field.
 func DescriptionContains(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldContains(FieldDescription, v))
 }
 
 // DescriptionHasPrefix applies the HasPrefix predicate on the "description" field.
 func DescriptionHasPrefix(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldHasPrefix(FieldDescription, v))
 }
 
 // DescriptionHasSuffix applies the HasSuffix predicate on the "description" field.
 func DescriptionHasSuffix(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldHasSuffix(FieldDescription, v))
 }
 
 // DescriptionIsNil applies the IsNil predicate on the "description" field.
 func DescriptionIsNil() predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.IsNull(s.C(FieldDescription)))
-	})
+	return predicate.StatDescription(sql.FieldIsNull(FieldDescription))
 }
 
 // DescriptionNotNil applies the NotNil predicate on the "description" field.
 func DescriptionNotNil() predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NotNull(s.C(FieldDescription)))
-	})
+	return predicate.StatDescription(sql.FieldNotNull(FieldDescription))
 }
 
 // DescriptionEqualFold applies the EqualFold predicate on the "description" field.
 func DescriptionEqualFold(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldEqualFold(FieldDescription, v))
 }
 
 // DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
 func DescriptionContainsFold(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldDescription), v))
-	})
+	return predicate.StatDescription(sql.FieldContainsFold(FieldDescription, v))
 }
 
 // MetadataEQ applies the EQ predicate on the "metadata" field.
 func MetadataEQ(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldMetadata, v))
 }
 
 // MetadataNEQ applies the NEQ predicate on the "metadata" field.
 func MetadataNEQ(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldNEQ(FieldMetadata, v))
 }
 
 // MetadataIn applies the In predicate on the "metadata" field.
 func MetadataIn(vs ...string) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldMetadata), v...))
-	})
+	return predicate.StatDescription(sql.FieldIn(FieldMetadata, vs...))
 }
 
 // MetadataNotIn applies the NotIn predicate on the "metadata" field.
 func MetadataNotIn(vs ...string) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldMetadata), v...))
-	})
+	return predicate.StatDescription(sql.FieldNotIn(FieldMetadata, vs...))
 }
 
 // MetadataGT applies the GT predicate on the "metadata" field.
 func MetadataGT(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldGT(FieldMetadata, v))
 }
 
 // MetadataGTE applies the GTE predicate on the "metadata" field.
 func MetadataGTE(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldGTE(FieldMetadata, v))
 }
 
 // MetadataLT applies the LT predicate on the "metadata" field.
 func MetadataLT(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldLT(FieldMetadata, v))
 }
 
 // MetadataLTE applies the LTE predicate on the "metadata" field.
 func MetadataLTE(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldLTE(FieldMetadata, v))
 }
 
 // MetadataContains applies the Contains predicate on the "metadata" field.
 func MetadataContains(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldContains(FieldMetadata, v))
 }
 
 // MetadataHasPrefix applies the HasPrefix predicate on the "metadata" field.
 func MetadataHasPrefix(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldHasPrefix(FieldMetadata, v))
 }
 
 // MetadataHasSuffix applies the HasSuffix predicate on the "metadata" field.
 func MetadataHasSuffix(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldHasSuffix(FieldMetadata, v))
 }
 
 // MetadataIsNil applies the IsNil predicate on the "metadata" field.
 func MetadataIsNil() predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.IsNull(s.C(FieldMetadata)))
-	})
+	return predicate.StatDescription(sql.FieldIsNull(FieldMetadata))
 }
 
 // MetadataNotNil applies the NotNil predicate on the "metadata" field.
 func MetadataNotNil() predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NotNull(s.C(FieldMetadata)))
-	})
+	return predicate.StatDescription(sql.FieldNotNull(FieldMetadata))
 }
 
 // MetadataEqualFold applies the EqualFold predicate on the "metadata" field.
 func MetadataEqualFold(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldEqualFold(FieldMetadata, v))
 }
 
 // MetadataContainsFold applies the ContainsFold predicate on the "metadata" field.
 func MetadataContainsFold(v string) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldMetadata), v))
-	})
+	return predicate.StatDescription(sql.FieldContainsFold(FieldMetadata, v))
 }
 
 // OrderNumberEQ applies the EQ predicate on the "order_number" field.
 func OrderNumberEQ(v int) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldOrderNumber), v))
-	})
+	return predicate.StatDescription(sql.FieldEQ(FieldOrderNumber, v))
 }
 
 // OrderNumberNEQ applies the NEQ predicate on the "order_number" field.
 func OrderNumberNEQ(v int) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldOrderNumber), v))
-	})
+	return predicate.StatDescription(sql.FieldNEQ(FieldOrderNumber, v))
 }
 
 // OrderNumberIn applies the In predicate on the "order_number" field.
 func OrderNumberIn(vs ...int) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldOrderNumber), v...))
-	})
+	return predicate.StatDescription(sql.FieldIn(FieldOrderNumber, vs...))
 }
 
 // OrderNumberNotIn applies the NotIn predicate on the "order_number" field.
 func OrderNumberNotIn(vs ...int) predicate.StatDescription {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldOrderNumber), v...))
-	})
+	return predicate.StatDescription(sql.FieldNotIn(FieldOrderNumber, vs...))
 }
 
 // OrderNumberGT applies the GT predicate on the "order_number" field.
 func OrderNumberGT(v int) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldOrderNumber), v))
-	})
+	return predicate.StatDescription(sql.FieldGT(FieldOrderNumber, v))
 }
 
 // OrderNumberGTE applies the GTE predicate on the "order_number" field.
 func OrderNumberGTE(v int) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldOrderNumber), v))
-	})
+	return predicate.StatDescription(sql.FieldGTE(FieldOrderNumber, v))
 }
 
 // OrderNumberLT applies the LT predicate on the "order_number" field.
 func OrderNumberLT(v int) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldOrderNumber), v))
-	})
+	return predicate.StatDescription(sql.FieldLT(FieldOrderNumber, v))
 }
 
 // OrderNumberLTE applies the LTE predicate on the "order_number" field.
 func OrderNumberLTE(v int) predicate.StatDescription {
-	return predicate.StatDescription(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldOrderNumber), v))
-	})
+	return predicate.StatDescription(sql.FieldLTE(FieldOrderNumber, v))
 }
 
 // HasGame applies the HasEdge predicate on the "game" edge.
@@ -539,7 +355,6 @@ func HasGame() predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(GameTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, GameTable, GamePrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -567,7 +382,6 @@ func HasStats() predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatsTable, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, StatsTable, StatsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

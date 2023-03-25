@@ -20,11 +20,9 @@ import (
 // GameFavoriteQuery is the builder for querying GameFavorite entities.
 type GameFavoriteQuery struct {
 	config
-	limit      *int
-	offset     *int
-	unique     *bool
+	ctx        *QueryContext
 	order      []OrderFunc
-	fields     []string
+	inters     []Interceptor
 	predicates []predicate.GameFavorite
 	withGame   *GameQuery
 	withUser   *UserQuery
@@ -42,26 +40,26 @@ func (gfq *GameFavoriteQuery) Where(ps ...predicate.GameFavorite) *GameFavoriteQ
 	return gfq
 }
 
-// Limit adds a limit step to the query.
+// Limit the number of records to be returned by this query.
 func (gfq *GameFavoriteQuery) Limit(limit int) *GameFavoriteQuery {
-	gfq.limit = &limit
+	gfq.ctx.Limit = &limit
 	return gfq
 }
 
-// Offset adds an offset step to the query.
+// Offset to start from.
 func (gfq *GameFavoriteQuery) Offset(offset int) *GameFavoriteQuery {
-	gfq.offset = &offset
+	gfq.ctx.Offset = &offset
 	return gfq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (gfq *GameFavoriteQuery) Unique(unique bool) *GameFavoriteQuery {
-	gfq.unique = &unique
+	gfq.ctx.Unique = &unique
 	return gfq
 }
 
-// Order adds an order step to the query.
+// Order specifies how the records should be ordered.
 func (gfq *GameFavoriteQuery) Order(o ...OrderFunc) *GameFavoriteQuery {
 	gfq.order = append(gfq.order, o...)
 	return gfq
@@ -69,7 +67,7 @@ func (gfq *GameFavoriteQuery) Order(o ...OrderFunc) *GameFavoriteQuery {
 
 // QueryGame chains the current query on the "game" edge.
 func (gfq *GameFavoriteQuery) QueryGame() *GameQuery {
-	query := &GameQuery{config: gfq.config}
+	query := (&GameClient{config: gfq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := gfq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -91,7 +89,7 @@ func (gfq *GameFavoriteQuery) QueryGame() *GameQuery {
 
 // QueryUser chains the current query on the "user" edge.
 func (gfq *GameFavoriteQuery) QueryUser() *UserQuery {
-	query := &UserQuery{config: gfq.config}
+	query := (&UserClient{config: gfq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := gfq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -114,7 +112,7 @@ func (gfq *GameFavoriteQuery) QueryUser() *UserQuery {
 // First returns the first GameFavorite entity from the query.
 // Returns a *NotFoundError when no GameFavorite was found.
 func (gfq *GameFavoriteQuery) First(ctx context.Context) (*GameFavorite, error) {
-	nodes, err := gfq.Limit(1).All(ctx)
+	nodes, err := gfq.Limit(1).All(setContextOp(ctx, gfq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +135,7 @@ func (gfq *GameFavoriteQuery) FirstX(ctx context.Context) *GameFavorite {
 // Returns a *NotFoundError when no GameFavorite ID was found.
 func (gfq *GameFavoriteQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = gfq.Limit(1).IDs(ctx); err != nil {
+	if ids, err = gfq.Limit(1).IDs(setContextOp(ctx, gfq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -160,7 +158,7 @@ func (gfq *GameFavoriteQuery) FirstIDX(ctx context.Context) guidgql.GUID {
 // Returns a *NotSingularError when more than one GameFavorite entity is found.
 // Returns a *NotFoundError when no GameFavorite entities are found.
 func (gfq *GameFavoriteQuery) Only(ctx context.Context) (*GameFavorite, error) {
-	nodes, err := gfq.Limit(2).All(ctx)
+	nodes, err := gfq.Limit(2).All(setContextOp(ctx, gfq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +186,7 @@ func (gfq *GameFavoriteQuery) OnlyX(ctx context.Context) *GameFavorite {
 // Returns a *NotFoundError when no entities are found.
 func (gfq *GameFavoriteQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = gfq.Limit(2).IDs(ctx); err != nil {
+	if ids, err = gfq.Limit(2).IDs(setContextOp(ctx, gfq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -213,10 +211,12 @@ func (gfq *GameFavoriteQuery) OnlyIDX(ctx context.Context) guidgql.GUID {
 
 // All executes the query and returns a list of GameFavorites.
 func (gfq *GameFavoriteQuery) All(ctx context.Context) ([]*GameFavorite, error) {
+	ctx = setContextOp(ctx, gfq.ctx, "All")
 	if err := gfq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	return gfq.sqlAll(ctx)
+	qr := querierAll[[]*GameFavorite, *GameFavoriteQuery]()
+	return withInterceptors[[]*GameFavorite](ctx, gfq, qr, gfq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
@@ -229,9 +229,12 @@ func (gfq *GameFavoriteQuery) AllX(ctx context.Context) []*GameFavorite {
 }
 
 // IDs executes the query and returns a list of GameFavorite IDs.
-func (gfq *GameFavoriteQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
-	var ids []guidgql.GUID
-	if err := gfq.Select(gamefavorite.FieldID).Scan(ctx, &ids); err != nil {
+func (gfq *GameFavoriteQuery) IDs(ctx context.Context) (ids []guidgql.GUID, err error) {
+	if gfq.ctx.Unique == nil && gfq.path != nil {
+		gfq.Unique(true)
+	}
+	ctx = setContextOp(ctx, gfq.ctx, "IDs")
+	if err = gfq.Select(gamefavorite.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -248,10 +251,11 @@ func (gfq *GameFavoriteQuery) IDsX(ctx context.Context) []guidgql.GUID {
 
 // Count returns the count of the given query.
 func (gfq *GameFavoriteQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, gfq.ctx, "Count")
 	if err := gfq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return gfq.sqlCount(ctx)
+	return withInterceptors[int](ctx, gfq, querierCount[*GameFavoriteQuery](), gfq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
@@ -265,10 +269,15 @@ func (gfq *GameFavoriteQuery) CountX(ctx context.Context) int {
 
 // Exist returns true if the query has elements in the graph.
 func (gfq *GameFavoriteQuery) Exist(ctx context.Context) (bool, error) {
-	if err := gfq.prepareQuery(ctx); err != nil {
-		return false, err
+	ctx = setContextOp(ctx, gfq.ctx, "Exist")
+	switch _, err := gfq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return gfq.sqlExist(ctx)
 }
 
 // ExistX is like Exist, but panics if an error occurs.
@@ -288,23 +297,22 @@ func (gfq *GameFavoriteQuery) Clone() *GameFavoriteQuery {
 	}
 	return &GameFavoriteQuery{
 		config:     gfq.config,
-		limit:      gfq.limit,
-		offset:     gfq.offset,
+		ctx:        gfq.ctx.Clone(),
 		order:      append([]OrderFunc{}, gfq.order...),
+		inters:     append([]Interceptor{}, gfq.inters...),
 		predicates: append([]predicate.GameFavorite{}, gfq.predicates...),
 		withGame:   gfq.withGame.Clone(),
 		withUser:   gfq.withUser.Clone(),
 		// clone intermediate query.
-		sql:    gfq.sql.Clone(),
-		path:   gfq.path,
-		unique: gfq.unique,
+		sql:  gfq.sql.Clone(),
+		path: gfq.path,
 	}
 }
 
 // WithGame tells the query-builder to eager-load the nodes that are connected to
 // the "game" edge. The optional arguments are used to configure the query builder of the edge.
 func (gfq *GameFavoriteQuery) WithGame(opts ...func(*GameQuery)) *GameFavoriteQuery {
-	query := &GameQuery{config: gfq.config}
+	query := (&GameClient{config: gfq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -315,7 +323,7 @@ func (gfq *GameFavoriteQuery) WithGame(opts ...func(*GameQuery)) *GameFavoriteQu
 // WithUser tells the query-builder to eager-load the nodes that are connected to
 // the "user" edge. The optional arguments are used to configure the query builder of the edge.
 func (gfq *GameFavoriteQuery) WithUser(opts ...func(*UserQuery)) *GameFavoriteQuery {
-	query := &UserQuery{config: gfq.config}
+	query := (&UserClient{config: gfq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -326,27 +334,22 @@ func (gfq *GameFavoriteQuery) WithUser(opts ...func(*UserQuery)) *GameFavoriteQu
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 func (gfq *GameFavoriteQuery) GroupBy(field string, fields ...string) *GameFavoriteGroupBy {
-	grbuild := &GameFavoriteGroupBy{config: gfq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := gfq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return gfq.sqlQuery(ctx), nil
-	}
+	gfq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &GameFavoriteGroupBy{build: gfq}
+	grbuild.flds = &gfq.ctx.Fields
 	grbuild.label = gamefavorite.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	grbuild.scan = grbuild.Scan
 	return grbuild
 }
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
 func (gfq *GameFavoriteQuery) Select(fields ...string) *GameFavoriteSelect {
-	gfq.fields = append(gfq.fields, fields...)
-	selbuild := &GameFavoriteSelect{GameFavoriteQuery: gfq}
-	selbuild.label = gamefavorite.Label
-	selbuild.flds, selbuild.scan = &gfq.fields, selbuild.Scan
-	return selbuild
+	gfq.ctx.Fields = append(gfq.ctx.Fields, fields...)
+	sbuild := &GameFavoriteSelect{GameFavoriteQuery: gfq}
+	sbuild.label = gamefavorite.Label
+	sbuild.flds, sbuild.scan = &gfq.ctx.Fields, sbuild.Scan
+	return sbuild
 }
 
 // Aggregate returns a GameFavoriteSelect configured with the given aggregations.
@@ -355,7 +358,17 @@ func (gfq *GameFavoriteQuery) Aggregate(fns ...AggregateFunc) *GameFavoriteSelec
 }
 
 func (gfq *GameFavoriteQuery) prepareQuery(ctx context.Context) error {
-	for _, f := range gfq.fields {
+	for _, inter := range gfq.inters {
+		if inter == nil {
+			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
+		}
+		if trv, ok := inter.(Traverser); ok {
+			if err := trv.Traverse(ctx, gfq); err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range gfq.ctx.Fields {
 		if !gamefavorite.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -440,6 +453,9 @@ func (gfq *GameFavoriteQuery) loadGame(ctx context.Context, query *GameQuery, no
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(game.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -469,6 +485,9 @@ func (gfq *GameFavoriteQuery) loadUser(ctx context.Context, query *UserQuery, no
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -491,41 +510,22 @@ func (gfq *GameFavoriteQuery) sqlCount(ctx context.Context) (int, error) {
 	if len(gfq.modifiers) > 0 {
 		_spec.Modifiers = gfq.modifiers
 	}
-	_spec.Node.Columns = gfq.fields
-	if len(gfq.fields) > 0 {
-		_spec.Unique = gfq.unique != nil && *gfq.unique
+	_spec.Node.Columns = gfq.ctx.Fields
+	if len(gfq.ctx.Fields) > 0 {
+		_spec.Unique = gfq.ctx.Unique != nil && *gfq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, gfq.driver, _spec)
 }
 
-func (gfq *GameFavoriteQuery) sqlExist(ctx context.Context) (bool, error) {
-	switch _, err := gfq.FirstID(ctx); {
-	case IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("ent: check existence: %w", err)
-	default:
-		return true, nil
-	}
-}
-
 func (gfq *GameFavoriteQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   gamefavorite.Table,
-			Columns: gamefavorite.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: gamefavorite.FieldID,
-			},
-		},
-		From:   gfq.sql,
-		Unique: true,
-	}
-	if unique := gfq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(gamefavorite.Table, gamefavorite.Columns, sqlgraph.NewFieldSpec(gamefavorite.FieldID, field.TypeString))
+	_spec.From = gfq.sql
+	if unique := gfq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if gfq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := gfq.fields; len(fields) > 0 {
+	if fields := gfq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, gamefavorite.FieldID)
 		for i := range fields {
@@ -541,10 +541,10 @@ func (gfq *GameFavoriteQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if limit := gfq.limit; limit != nil {
+	if limit := gfq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := gfq.offset; offset != nil {
+	if offset := gfq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := gfq.order; len(ps) > 0 {
@@ -560,7 +560,7 @@ func (gfq *GameFavoriteQuery) querySpec() *sqlgraph.QuerySpec {
 func (gfq *GameFavoriteQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(gfq.driver.Dialect())
 	t1 := builder.Table(gamefavorite.Table)
-	columns := gfq.fields
+	columns := gfq.ctx.Fields
 	if len(columns) == 0 {
 		columns = gamefavorite.Columns
 	}
@@ -569,7 +569,7 @@ func (gfq *GameFavoriteQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector = gfq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if gfq.unique != nil && *gfq.unique {
+	if gfq.ctx.Unique != nil && *gfq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range gfq.predicates {
@@ -578,12 +578,12 @@ func (gfq *GameFavoriteQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	for _, p := range gfq.order {
 		p(selector)
 	}
-	if offset := gfq.offset; offset != nil {
+	if offset := gfq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := gfq.limit; limit != nil {
+	if limit := gfq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -591,13 +591,8 @@ func (gfq *GameFavoriteQuery) sqlQuery(ctx context.Context) *sql.Selector {
 
 // GameFavoriteGroupBy is the group-by builder for GameFavorite entities.
 type GameFavoriteGroupBy struct {
-	config
 	selector
-	fields []string
-	fns    []AggregateFunc
-	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	build *GameFavoriteQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
@@ -606,58 +601,46 @@ func (gfgb *GameFavoriteGroupBy) Aggregate(fns ...AggregateFunc) *GameFavoriteGr
 	return gfgb
 }
 
-// Scan applies the group-by query and scans the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (gfgb *GameFavoriteGroupBy) Scan(ctx context.Context, v any) error {
-	query, err := gfgb.path(ctx)
-	if err != nil {
+	ctx = setContextOp(ctx, gfgb.build.ctx, "GroupBy")
+	if err := gfgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	gfgb.sql = query
-	return gfgb.sqlScan(ctx, v)
+	return scanWithInterceptors[*GameFavoriteQuery, *GameFavoriteGroupBy](ctx, gfgb.build, gfgb, gfgb.build.inters, v)
 }
 
-func (gfgb *GameFavoriteGroupBy) sqlScan(ctx context.Context, v any) error {
-	for _, f := range gfgb.fields {
-		if !gamefavorite.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
-		}
+func (gfgb *GameFavoriteGroupBy) sqlScan(ctx context.Context, root *GameFavoriteQuery, v any) error {
+	selector := root.sqlQuery(ctx).Select()
+	aggregation := make([]string, 0, len(gfgb.fns))
+	for _, fn := range gfgb.fns {
+		aggregation = append(aggregation, fn(selector))
 	}
-	selector := gfgb.sqlQuery()
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(*gfgb.flds)+len(gfgb.fns))
+		for _, f := range *gfgb.flds {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	selector.GroupBy(selector.Columns(*gfgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := gfgb.driver.Query(ctx, query, args, rows); err != nil {
+	if err := gfgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-func (gfgb *GameFavoriteGroupBy) sqlQuery() *sql.Selector {
-	selector := gfgb.sql.Select()
-	aggregation := make([]string, 0, len(gfgb.fns))
-	for _, fn := range gfgb.fns {
-		aggregation = append(aggregation, fn(selector))
-	}
-	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(gfgb.fields)+len(gfgb.fns))
-		for _, f := range gfgb.fields {
-			columns = append(columns, selector.C(f))
-		}
-		columns = append(columns, aggregation...)
-		selector.Select(columns...)
-	}
-	return selector.GroupBy(selector.Columns(gfgb.fields...)...)
-}
-
 // GameFavoriteSelect is the builder for selecting fields of GameFavorite entities.
 type GameFavoriteSelect struct {
 	*GameFavoriteQuery
 	selector
-	// intermediate query (i.e. traversal path).
-	sql *sql.Selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
@@ -668,26 +651,27 @@ func (gfs *GameFavoriteSelect) Aggregate(fns ...AggregateFunc) *GameFavoriteSele
 
 // Scan applies the selector query and scans the result into the given value.
 func (gfs *GameFavoriteSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, gfs.ctx, "Select")
 	if err := gfs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	gfs.sql = gfs.GameFavoriteQuery.sqlQuery(ctx)
-	return gfs.sqlScan(ctx, v)
+	return scanWithInterceptors[*GameFavoriteQuery, *GameFavoriteSelect](ctx, gfs.GameFavoriteQuery, gfs, gfs.inters, v)
 }
 
-func (gfs *GameFavoriteSelect) sqlScan(ctx context.Context, v any) error {
+func (gfs *GameFavoriteSelect) sqlScan(ctx context.Context, root *GameFavoriteQuery, v any) error {
+	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(gfs.fns))
 	for _, fn := range gfs.fns {
-		aggregation = append(aggregation, fn(gfs.sql))
+		aggregation = append(aggregation, fn(selector))
 	}
 	switch n := len(*gfs.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
-		gfs.sql.Select(aggregation...)
+		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
-		gfs.sql.AppendSelect(aggregation...)
+		selector.AppendSelect(aggregation...)
 	}
 	rows := &sql.Rows{}
-	query, args := gfs.sql.Query()
+	query, args := selector.Query()
 	if err := gfs.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

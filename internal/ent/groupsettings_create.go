@@ -107,50 +107,8 @@ func (gsc *GroupSettingsCreate) Mutation() *GroupSettingsMutation {
 
 // Save creates the GroupSettings in the database.
 func (gsc *GroupSettingsCreate) Save(ctx context.Context) (*GroupSettings, error) {
-	var (
-		err  error
-		node *GroupSettings
-	)
 	gsc.defaults()
-	if len(gsc.hooks) == 0 {
-		if err = gsc.check(); err != nil {
-			return nil, err
-		}
-		node, err = gsc.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GroupSettingsMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gsc.check(); err != nil {
-				return nil, err
-			}
-			gsc.mutation = mutation
-			if node, err = gsc.sqlSave(ctx); err != nil {
-				return nil, err
-			}
-			mutation.id = &node.ID
-			mutation.done = true
-			return node, err
-		})
-		for i := len(gsc.hooks) - 1; i >= 0; i-- {
-			if gsc.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gsc.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, gsc.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*GroupSettings)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from GroupSettingsMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*GroupSettings, GroupSettingsMutation](ctx, gsc.sqlSave, gsc.mutation, gsc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -218,6 +176,9 @@ func (gsc *GroupSettingsCreate) check() error {
 }
 
 func (gsc *GroupSettingsCreate) sqlSave(ctx context.Context) (*GroupSettings, error) {
+	if err := gsc.check(); err != nil {
+		return nil, err
+	}
 	_node, _spec := gsc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, gsc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -232,19 +193,15 @@ func (gsc *GroupSettingsCreate) sqlSave(ctx context.Context) (*GroupSettings, er
 			return nil, err
 		}
 	}
+	gsc.mutation.id = &_node.ID
+	gsc.mutation.done = true
 	return _node, nil
 }
 
 func (gsc *GroupSettingsCreate) createSpec() (*GroupSettings, *sqlgraph.CreateSpec) {
 	var (
 		_node = &GroupSettings{config: gsc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: groupsettings.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupsettings.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(groupsettings.Table, sqlgraph.NewFieldSpec(groupsettings.FieldID, field.TypeString))
 	)
 	_spec.OnConflict = gsc.conflict
 	if id, ok := gsc.mutation.ID(); ok {
@@ -271,10 +228,7 @@ func (gsc *GroupSettingsCreate) createSpec() (*GroupSettings, *sqlgraph.CreateSp
 			Columns: []string{groupsettings.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

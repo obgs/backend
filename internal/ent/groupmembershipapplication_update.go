@@ -85,40 +85,7 @@ func (gmau *GroupMembershipApplicationUpdate) ClearGroup() *GroupMembershipAppli
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gmau *GroupMembershipApplicationUpdate) Save(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(gmau.hooks) == 0 {
-		if err = gmau.check(); err != nil {
-			return 0, err
-		}
-		affected, err = gmau.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GroupMembershipApplicationMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gmau.check(); err != nil {
-				return 0, err
-			}
-			gmau.mutation = mutation
-			affected, err = gmau.sqlSave(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(gmau.hooks) - 1; i >= 0; i-- {
-			if gmau.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gmau.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, gmau.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, GroupMembershipApplicationMutation](ctx, gmau.sqlSave, gmau.mutation, gmau.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -155,16 +122,10 @@ func (gmau *GroupMembershipApplicationUpdate) check() error {
 }
 
 func (gmau *GroupMembershipApplicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   groupmembershipapplication.Table,
-			Columns: groupmembershipapplication.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupmembershipapplication.FieldID,
-			},
-		},
+	if err := gmau.check(); err != nil {
+		return n, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(groupmembershipapplication.Table, groupmembershipapplication.Columns, sqlgraph.NewFieldSpec(groupmembershipapplication.FieldID, field.TypeString))
 	if ps := gmau.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -183,10 +144,7 @@ func (gmau *GroupMembershipApplicationUpdate) sqlSave(ctx context.Context) (n in
 			Columns: []string{groupmembershipapplication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -199,10 +157,7 @@ func (gmau *GroupMembershipApplicationUpdate) sqlSave(ctx context.Context) (n in
 			Columns: []string{groupmembershipapplication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -218,10 +173,7 @@ func (gmau *GroupMembershipApplicationUpdate) sqlSave(ctx context.Context) (n in
 			Columns: []string{groupmembershipapplication.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -234,10 +186,7 @@ func (gmau *GroupMembershipApplicationUpdate) sqlSave(ctx context.Context) (n in
 			Columns: []string{groupmembershipapplication.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -253,6 +202,7 @@ func (gmau *GroupMembershipApplicationUpdate) sqlSave(ctx context.Context) (n in
 		}
 		return 0, err
 	}
+	gmau.mutation.done = true
 	return n, nil
 }
 
@@ -317,6 +267,12 @@ func (gmauo *GroupMembershipApplicationUpdateOne) ClearGroup() *GroupMembershipA
 	return gmauo
 }
 
+// Where appends a list predicates to the GroupMembershipApplicationUpdate builder.
+func (gmauo *GroupMembershipApplicationUpdateOne) Where(ps ...predicate.GroupMembershipApplication) *GroupMembershipApplicationUpdateOne {
+	gmauo.mutation.Where(ps...)
+	return gmauo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (gmauo *GroupMembershipApplicationUpdateOne) Select(field string, fields ...string) *GroupMembershipApplicationUpdateOne {
@@ -326,46 +282,7 @@ func (gmauo *GroupMembershipApplicationUpdateOne) Select(field string, fields ..
 
 // Save executes the query and returns the updated GroupMembershipApplication entity.
 func (gmauo *GroupMembershipApplicationUpdateOne) Save(ctx context.Context) (*GroupMembershipApplication, error) {
-	var (
-		err  error
-		node *GroupMembershipApplication
-	)
-	if len(gmauo.hooks) == 0 {
-		if err = gmauo.check(); err != nil {
-			return nil, err
-		}
-		node, err = gmauo.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GroupMembershipApplicationMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gmauo.check(); err != nil {
-				return nil, err
-			}
-			gmauo.mutation = mutation
-			node, err = gmauo.sqlSave(ctx)
-			mutation.done = true
-			return node, err
-		})
-		for i := len(gmauo.hooks) - 1; i >= 0; i-- {
-			if gmauo.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gmauo.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, gmauo.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*GroupMembershipApplication)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from GroupMembershipApplicationMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*GroupMembershipApplication, GroupMembershipApplicationMutation](ctx, gmauo.sqlSave, gmauo.mutation, gmauo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -402,16 +319,10 @@ func (gmauo *GroupMembershipApplicationUpdateOne) check() error {
 }
 
 func (gmauo *GroupMembershipApplicationUpdateOne) sqlSave(ctx context.Context) (_node *GroupMembershipApplication, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   groupmembershipapplication.Table,
-			Columns: groupmembershipapplication.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupmembershipapplication.FieldID,
-			},
-		},
+	if err := gmauo.check(); err != nil {
+		return _node, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(groupmembershipapplication.Table, groupmembershipapplication.Columns, sqlgraph.NewFieldSpec(groupmembershipapplication.FieldID, field.TypeString))
 	id, ok := gmauo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "GroupMembershipApplication.id" for update`)}
@@ -447,10 +358,7 @@ func (gmauo *GroupMembershipApplicationUpdateOne) sqlSave(ctx context.Context) (
 			Columns: []string{groupmembershipapplication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -463,10 +371,7 @@ func (gmauo *GroupMembershipApplicationUpdateOne) sqlSave(ctx context.Context) (
 			Columns: []string{groupmembershipapplication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -482,10 +387,7 @@ func (gmauo *GroupMembershipApplicationUpdateOne) sqlSave(ctx context.Context) (
 			Columns: []string{groupmembershipapplication.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -498,10 +400,7 @@ func (gmauo *GroupMembershipApplicationUpdateOne) sqlSave(ctx context.Context) (
 			Columns: []string{groupmembershipapplication.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -520,5 +419,6 @@ func (gmauo *GroupMembershipApplicationUpdateOne) sqlSave(ctx context.Context) (
 		}
 		return nil, err
 	}
+	gmauo.mutation.done = true
 	return _node, nil
 }

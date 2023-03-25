@@ -82,50 +82,8 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) Mutation() *PlayerSupervisi
 
 // Save creates the PlayerSupervisionRequestApproval in the database.
 func (psrac *PlayerSupervisionRequestApprovalCreate) Save(ctx context.Context) (*PlayerSupervisionRequestApproval, error) {
-	var (
-		err  error
-		node *PlayerSupervisionRequestApproval
-	)
 	psrac.defaults()
-	if len(psrac.hooks) == 0 {
-		if err = psrac.check(); err != nil {
-			return nil, err
-		}
-		node, err = psrac.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*PlayerSupervisionRequestApprovalMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = psrac.check(); err != nil {
-				return nil, err
-			}
-			psrac.mutation = mutation
-			if node, err = psrac.sqlSave(ctx); err != nil {
-				return nil, err
-			}
-			mutation.id = &node.ID
-			mutation.done = true
-			return node, err
-		})
-		for i := len(psrac.hooks) - 1; i >= 0; i-- {
-			if psrac.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = psrac.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, psrac.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*PlayerSupervisionRequestApproval)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from PlayerSupervisionRequestApprovalMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*PlayerSupervisionRequestApproval, PlayerSupervisionRequestApprovalMutation](ctx, psrac.sqlSave, psrac.mutation, psrac.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -170,6 +128,9 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) check() error {
 }
 
 func (psrac *PlayerSupervisionRequestApprovalCreate) sqlSave(ctx context.Context) (*PlayerSupervisionRequestApproval, error) {
+	if err := psrac.check(); err != nil {
+		return nil, err
+	}
 	_node, _spec := psrac.createSpec()
 	if err := sqlgraph.CreateNode(ctx, psrac.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -184,19 +145,15 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) sqlSave(ctx context.Context
 			return nil, err
 		}
 	}
+	psrac.mutation.id = &_node.ID
+	psrac.mutation.done = true
 	return _node, nil
 }
 
 func (psrac *PlayerSupervisionRequestApprovalCreate) createSpec() (*PlayerSupervisionRequestApproval, *sqlgraph.CreateSpec) {
 	var (
 		_node = &PlayerSupervisionRequestApproval{config: psrac.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: playersupervisionrequestapproval.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: playersupervisionrequestapproval.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(playersupervisionrequestapproval.Table, sqlgraph.NewFieldSpec(playersupervisionrequestapproval.FieldID, field.TypeString))
 	)
 	_spec.OnConflict = psrac.conflict
 	if id, ok := psrac.mutation.ID(); ok {
@@ -215,10 +172,7 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) createSpec() (*PlayerSuperv
 			Columns: []string{playersupervisionrequestapproval.ApproverColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -235,10 +189,7 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) createSpec() (*PlayerSuperv
 			Columns: []string{playersupervisionrequestapproval.SupervisionRequestColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: playersupervisionrequest.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(playersupervisionrequest.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

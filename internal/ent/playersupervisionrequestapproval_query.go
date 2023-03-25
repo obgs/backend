@@ -20,11 +20,9 @@ import (
 // PlayerSupervisionRequestApprovalQuery is the builder for querying PlayerSupervisionRequestApproval entities.
 type PlayerSupervisionRequestApprovalQuery struct {
 	config
-	limit                  *int
-	offset                 *int
-	unique                 *bool
+	ctx                    *QueryContext
 	order                  []OrderFunc
-	fields                 []string
+	inters                 []Interceptor
 	predicates             []predicate.PlayerSupervisionRequestApproval
 	withApprover           *UserQuery
 	withSupervisionRequest *PlayerSupervisionRequestQuery
@@ -42,26 +40,26 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) Where(ps ...predicate.Player
 	return psraq
 }
 
-// Limit adds a limit step to the query.
+// Limit the number of records to be returned by this query.
 func (psraq *PlayerSupervisionRequestApprovalQuery) Limit(limit int) *PlayerSupervisionRequestApprovalQuery {
-	psraq.limit = &limit
+	psraq.ctx.Limit = &limit
 	return psraq
 }
 
-// Offset adds an offset step to the query.
+// Offset to start from.
 func (psraq *PlayerSupervisionRequestApprovalQuery) Offset(offset int) *PlayerSupervisionRequestApprovalQuery {
-	psraq.offset = &offset
+	psraq.ctx.Offset = &offset
 	return psraq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
 func (psraq *PlayerSupervisionRequestApprovalQuery) Unique(unique bool) *PlayerSupervisionRequestApprovalQuery {
-	psraq.unique = &unique
+	psraq.ctx.Unique = &unique
 	return psraq
 }
 
-// Order adds an order step to the query.
+// Order specifies how the records should be ordered.
 func (psraq *PlayerSupervisionRequestApprovalQuery) Order(o ...OrderFunc) *PlayerSupervisionRequestApprovalQuery {
 	psraq.order = append(psraq.order, o...)
 	return psraq
@@ -69,7 +67,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) Order(o ...OrderFunc) *Playe
 
 // QueryApprover chains the current query on the "approver" edge.
 func (psraq *PlayerSupervisionRequestApprovalQuery) QueryApprover() *UserQuery {
-	query := &UserQuery{config: psraq.config}
+	query := (&UserClient{config: psraq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := psraq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -91,7 +89,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) QueryApprover() *UserQuery {
 
 // QuerySupervisionRequest chains the current query on the "supervision_request" edge.
 func (psraq *PlayerSupervisionRequestApprovalQuery) QuerySupervisionRequest() *PlayerSupervisionRequestQuery {
-	query := &PlayerSupervisionRequestQuery{config: psraq.config}
+	query := (&PlayerSupervisionRequestClient{config: psraq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := psraq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -114,7 +112,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) QuerySupervisionRequest() *P
 // First returns the first PlayerSupervisionRequestApproval entity from the query.
 // Returns a *NotFoundError when no PlayerSupervisionRequestApproval was found.
 func (psraq *PlayerSupervisionRequestApprovalQuery) First(ctx context.Context) (*PlayerSupervisionRequestApproval, error) {
-	nodes, err := psraq.Limit(1).All(ctx)
+	nodes, err := psraq.Limit(1).All(setContextOp(ctx, psraq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +135,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) FirstX(ctx context.Context) 
 // Returns a *NotFoundError when no PlayerSupervisionRequestApproval ID was found.
 func (psraq *PlayerSupervisionRequestApprovalQuery) FirstID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = psraq.Limit(1).IDs(ctx); err != nil {
+	if ids, err = psraq.Limit(1).IDs(setContextOp(ctx, psraq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -160,7 +158,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) FirstIDX(ctx context.Context
 // Returns a *NotSingularError when more than one PlayerSupervisionRequestApproval entity is found.
 // Returns a *NotFoundError when no PlayerSupervisionRequestApproval entities are found.
 func (psraq *PlayerSupervisionRequestApprovalQuery) Only(ctx context.Context) (*PlayerSupervisionRequestApproval, error) {
-	nodes, err := psraq.Limit(2).All(ctx)
+	nodes, err := psraq.Limit(2).All(setContextOp(ctx, psraq.ctx, "Only"))
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +186,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) OnlyX(ctx context.Context) *
 // Returns a *NotFoundError when no entities are found.
 func (psraq *PlayerSupervisionRequestApprovalQuery) OnlyID(ctx context.Context) (id guidgql.GUID, err error) {
 	var ids []guidgql.GUID
-	if ids, err = psraq.Limit(2).IDs(ctx); err != nil {
+	if ids, err = psraq.Limit(2).IDs(setContextOp(ctx, psraq.ctx, "OnlyID")); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -213,10 +211,12 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) OnlyIDX(ctx context.Context)
 
 // All executes the query and returns a list of PlayerSupervisionRequestApprovals.
 func (psraq *PlayerSupervisionRequestApprovalQuery) All(ctx context.Context) ([]*PlayerSupervisionRequestApproval, error) {
+	ctx = setContextOp(ctx, psraq.ctx, "All")
 	if err := psraq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	return psraq.sqlAll(ctx)
+	qr := querierAll[[]*PlayerSupervisionRequestApproval, *PlayerSupervisionRequestApprovalQuery]()
+	return withInterceptors[[]*PlayerSupervisionRequestApproval](ctx, psraq, qr, psraq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
@@ -229,9 +229,12 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) AllX(ctx context.Context) []
 }
 
 // IDs executes the query and returns a list of PlayerSupervisionRequestApproval IDs.
-func (psraq *PlayerSupervisionRequestApprovalQuery) IDs(ctx context.Context) ([]guidgql.GUID, error) {
-	var ids []guidgql.GUID
-	if err := psraq.Select(playersupervisionrequestapproval.FieldID).Scan(ctx, &ids); err != nil {
+func (psraq *PlayerSupervisionRequestApprovalQuery) IDs(ctx context.Context) (ids []guidgql.GUID, err error) {
+	if psraq.ctx.Unique == nil && psraq.path != nil {
+		psraq.Unique(true)
+	}
+	ctx = setContextOp(ctx, psraq.ctx, "IDs")
+	if err = psraq.Select(playersupervisionrequestapproval.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -248,10 +251,11 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) IDsX(ctx context.Context) []
 
 // Count returns the count of the given query.
 func (psraq *PlayerSupervisionRequestApprovalQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, psraq.ctx, "Count")
 	if err := psraq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return psraq.sqlCount(ctx)
+	return withInterceptors[int](ctx, psraq, querierCount[*PlayerSupervisionRequestApprovalQuery](), psraq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
@@ -265,10 +269,15 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) CountX(ctx context.Context) 
 
 // Exist returns true if the query has elements in the graph.
 func (psraq *PlayerSupervisionRequestApprovalQuery) Exist(ctx context.Context) (bool, error) {
-	if err := psraq.prepareQuery(ctx); err != nil {
-		return false, err
+	ctx = setContextOp(ctx, psraq.ctx, "Exist")
+	switch _, err := psraq.FirstID(ctx); {
+	case IsNotFound(err):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("ent: check existence: %w", err)
+	default:
+		return true, nil
 	}
-	return psraq.sqlExist(ctx)
 }
 
 // ExistX is like Exist, but panics if an error occurs.
@@ -288,23 +297,22 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) Clone() *PlayerSupervisionRe
 	}
 	return &PlayerSupervisionRequestApprovalQuery{
 		config:                 psraq.config,
-		limit:                  psraq.limit,
-		offset:                 psraq.offset,
+		ctx:                    psraq.ctx.Clone(),
 		order:                  append([]OrderFunc{}, psraq.order...),
+		inters:                 append([]Interceptor{}, psraq.inters...),
 		predicates:             append([]predicate.PlayerSupervisionRequestApproval{}, psraq.predicates...),
 		withApprover:           psraq.withApprover.Clone(),
 		withSupervisionRequest: psraq.withSupervisionRequest.Clone(),
 		// clone intermediate query.
-		sql:    psraq.sql.Clone(),
-		path:   psraq.path,
-		unique: psraq.unique,
+		sql:  psraq.sql.Clone(),
+		path: psraq.path,
 	}
 }
 
 // WithApprover tells the query-builder to eager-load the nodes that are connected to
 // the "approver" edge. The optional arguments are used to configure the query builder of the edge.
 func (psraq *PlayerSupervisionRequestApprovalQuery) WithApprover(opts ...func(*UserQuery)) *PlayerSupervisionRequestApprovalQuery {
-	query := &UserQuery{config: psraq.config}
+	query := (&UserClient{config: psraq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -315,7 +323,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) WithApprover(opts ...func(*U
 // WithSupervisionRequest tells the query-builder to eager-load the nodes that are connected to
 // the "supervision_request" edge. The optional arguments are used to configure the query builder of the edge.
 func (psraq *PlayerSupervisionRequestApprovalQuery) WithSupervisionRequest(opts ...func(*PlayerSupervisionRequestQuery)) *PlayerSupervisionRequestApprovalQuery {
-	query := &PlayerSupervisionRequestQuery{config: psraq.config}
+	query := (&PlayerSupervisionRequestClient{config: psraq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -338,16 +346,11 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) WithSupervisionRequest(opts 
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (psraq *PlayerSupervisionRequestApprovalQuery) GroupBy(field string, fields ...string) *PlayerSupervisionRequestApprovalGroupBy {
-	grbuild := &PlayerSupervisionRequestApprovalGroupBy{config: psraq.config}
-	grbuild.fields = append([]string{field}, fields...)
-	grbuild.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := psraq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return psraq.sqlQuery(ctx), nil
-	}
+	psraq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &PlayerSupervisionRequestApprovalGroupBy{build: psraq}
+	grbuild.flds = &psraq.ctx.Fields
 	grbuild.label = playersupervisionrequestapproval.Label
-	grbuild.flds, grbuild.scan = &grbuild.fields, grbuild.Scan
+	grbuild.scan = grbuild.Scan
 	return grbuild
 }
 
@@ -364,11 +367,11 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) GroupBy(field string, fields
 //		Select(playersupervisionrequestapproval.FieldApproved).
 //		Scan(ctx, &v)
 func (psraq *PlayerSupervisionRequestApprovalQuery) Select(fields ...string) *PlayerSupervisionRequestApprovalSelect {
-	psraq.fields = append(psraq.fields, fields...)
-	selbuild := &PlayerSupervisionRequestApprovalSelect{PlayerSupervisionRequestApprovalQuery: psraq}
-	selbuild.label = playersupervisionrequestapproval.Label
-	selbuild.flds, selbuild.scan = &psraq.fields, selbuild.Scan
-	return selbuild
+	psraq.ctx.Fields = append(psraq.ctx.Fields, fields...)
+	sbuild := &PlayerSupervisionRequestApprovalSelect{PlayerSupervisionRequestApprovalQuery: psraq}
+	sbuild.label = playersupervisionrequestapproval.Label
+	sbuild.flds, sbuild.scan = &psraq.ctx.Fields, sbuild.Scan
+	return sbuild
 }
 
 // Aggregate returns a PlayerSupervisionRequestApprovalSelect configured with the given aggregations.
@@ -377,7 +380,17 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) Aggregate(fns ...AggregateFu
 }
 
 func (psraq *PlayerSupervisionRequestApprovalQuery) prepareQuery(ctx context.Context) error {
-	for _, f := range psraq.fields {
+	for _, inter := range psraq.inters {
+		if inter == nil {
+			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
+		}
+		if trv, ok := inter.(Traverser); ok {
+			if err := trv.Traverse(ctx, psraq); err != nil {
+				return err
+			}
+		}
+	}
+	for _, f := range psraq.ctx.Fields {
 		if !playersupervisionrequestapproval.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
@@ -462,6 +475,9 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) loadApprover(ctx context.Con
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -491,6 +507,9 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) loadSupervisionRequest(ctx c
 		}
 		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 	query.Where(playersupervisionrequest.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -513,41 +532,22 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) sqlCount(ctx context.Context
 	if len(psraq.modifiers) > 0 {
 		_spec.Modifiers = psraq.modifiers
 	}
-	_spec.Node.Columns = psraq.fields
-	if len(psraq.fields) > 0 {
-		_spec.Unique = psraq.unique != nil && *psraq.unique
+	_spec.Node.Columns = psraq.ctx.Fields
+	if len(psraq.ctx.Fields) > 0 {
+		_spec.Unique = psraq.ctx.Unique != nil && *psraq.ctx.Unique
 	}
 	return sqlgraph.CountNodes(ctx, psraq.driver, _spec)
 }
 
-func (psraq *PlayerSupervisionRequestApprovalQuery) sqlExist(ctx context.Context) (bool, error) {
-	switch _, err := psraq.FirstID(ctx); {
-	case IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, fmt.Errorf("ent: check existence: %w", err)
-	default:
-		return true, nil
-	}
-}
-
 func (psraq *PlayerSupervisionRequestApprovalQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   playersupervisionrequestapproval.Table,
-			Columns: playersupervisionrequestapproval.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: playersupervisionrequestapproval.FieldID,
-			},
-		},
-		From:   psraq.sql,
-		Unique: true,
-	}
-	if unique := psraq.unique; unique != nil {
+	_spec := sqlgraph.NewQuerySpec(playersupervisionrequestapproval.Table, playersupervisionrequestapproval.Columns, sqlgraph.NewFieldSpec(playersupervisionrequestapproval.FieldID, field.TypeString))
+	_spec.From = psraq.sql
+	if unique := psraq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if psraq.path != nil {
+		_spec.Unique = true
 	}
-	if fields := psraq.fields; len(fields) > 0 {
+	if fields := psraq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, playersupervisionrequestapproval.FieldID)
 		for i := range fields {
@@ -563,10 +563,10 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) querySpec() *sqlgraph.QueryS
 			}
 		}
 	}
-	if limit := psraq.limit; limit != nil {
+	if limit := psraq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := psraq.offset; offset != nil {
+	if offset := psraq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
 	if ps := psraq.order; len(ps) > 0 {
@@ -582,7 +582,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) querySpec() *sqlgraph.QueryS
 func (psraq *PlayerSupervisionRequestApprovalQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(psraq.driver.Dialect())
 	t1 := builder.Table(playersupervisionrequestapproval.Table)
-	columns := psraq.fields
+	columns := psraq.ctx.Fields
 	if len(columns) == 0 {
 		columns = playersupervisionrequestapproval.Columns
 	}
@@ -591,7 +591,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) sqlQuery(ctx context.Context
 		selector = psraq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if psraq.unique != nil && *psraq.unique {
+	if psraq.ctx.Unique != nil && *psraq.ctx.Unique {
 		selector.Distinct()
 	}
 	for _, p := range psraq.predicates {
@@ -600,12 +600,12 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) sqlQuery(ctx context.Context
 	for _, p := range psraq.order {
 		p(selector)
 	}
-	if offset := psraq.offset; offset != nil {
+	if offset := psraq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := psraq.limit; limit != nil {
+	if limit := psraq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -613,13 +613,8 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) sqlQuery(ctx context.Context
 
 // PlayerSupervisionRequestApprovalGroupBy is the group-by builder for PlayerSupervisionRequestApproval entities.
 type PlayerSupervisionRequestApprovalGroupBy struct {
-	config
 	selector
-	fields []string
-	fns    []AggregateFunc
-	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	build *PlayerSupervisionRequestApprovalQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
@@ -628,58 +623,46 @@ func (psragb *PlayerSupervisionRequestApprovalGroupBy) Aggregate(fns ...Aggregat
 	return psragb
 }
 
-// Scan applies the group-by query and scans the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (psragb *PlayerSupervisionRequestApprovalGroupBy) Scan(ctx context.Context, v any) error {
-	query, err := psragb.path(ctx)
-	if err != nil {
+	ctx = setContextOp(ctx, psragb.build.ctx, "GroupBy")
+	if err := psragb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	psragb.sql = query
-	return psragb.sqlScan(ctx, v)
+	return scanWithInterceptors[*PlayerSupervisionRequestApprovalQuery, *PlayerSupervisionRequestApprovalGroupBy](ctx, psragb.build, psragb, psragb.build.inters, v)
 }
 
-func (psragb *PlayerSupervisionRequestApprovalGroupBy) sqlScan(ctx context.Context, v any) error {
-	for _, f := range psragb.fields {
-		if !playersupervisionrequestapproval.ValidColumn(f) {
-			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
-		}
+func (psragb *PlayerSupervisionRequestApprovalGroupBy) sqlScan(ctx context.Context, root *PlayerSupervisionRequestApprovalQuery, v any) error {
+	selector := root.sqlQuery(ctx).Select()
+	aggregation := make([]string, 0, len(psragb.fns))
+	for _, fn := range psragb.fns {
+		aggregation = append(aggregation, fn(selector))
 	}
-	selector := psragb.sqlQuery()
+	if len(selector.SelectedColumns()) == 0 {
+		columns := make([]string, 0, len(*psragb.flds)+len(psragb.fns))
+		for _, f := range *psragb.flds {
+			columns = append(columns, selector.C(f))
+		}
+		columns = append(columns, aggregation...)
+		selector.Select(columns...)
+	}
+	selector.GroupBy(selector.Columns(*psragb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := psragb.driver.Query(ctx, query, args, rows); err != nil {
+	if err := psragb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
 }
 
-func (psragb *PlayerSupervisionRequestApprovalGroupBy) sqlQuery() *sql.Selector {
-	selector := psragb.sql.Select()
-	aggregation := make([]string, 0, len(psragb.fns))
-	for _, fn := range psragb.fns {
-		aggregation = append(aggregation, fn(selector))
-	}
-	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(psragb.fields)+len(psragb.fns))
-		for _, f := range psragb.fields {
-			columns = append(columns, selector.C(f))
-		}
-		columns = append(columns, aggregation...)
-		selector.Select(columns...)
-	}
-	return selector.GroupBy(selector.Columns(psragb.fields...)...)
-}
-
 // PlayerSupervisionRequestApprovalSelect is the builder for selecting fields of PlayerSupervisionRequestApproval entities.
 type PlayerSupervisionRequestApprovalSelect struct {
 	*PlayerSupervisionRequestApprovalQuery
 	selector
-	// intermediate query (i.e. traversal path).
-	sql *sql.Selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
@@ -690,26 +673,27 @@ func (psras *PlayerSupervisionRequestApprovalSelect) Aggregate(fns ...AggregateF
 
 // Scan applies the selector query and scans the result into the given value.
 func (psras *PlayerSupervisionRequestApprovalSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, psras.ctx, "Select")
 	if err := psras.prepareQuery(ctx); err != nil {
 		return err
 	}
-	psras.sql = psras.PlayerSupervisionRequestApprovalQuery.sqlQuery(ctx)
-	return psras.sqlScan(ctx, v)
+	return scanWithInterceptors[*PlayerSupervisionRequestApprovalQuery, *PlayerSupervisionRequestApprovalSelect](ctx, psras.PlayerSupervisionRequestApprovalQuery, psras, psras.inters, v)
 }
 
-func (psras *PlayerSupervisionRequestApprovalSelect) sqlScan(ctx context.Context, v any) error {
+func (psras *PlayerSupervisionRequestApprovalSelect) sqlScan(ctx context.Context, root *PlayerSupervisionRequestApprovalQuery, v any) error {
+	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(psras.fns))
 	for _, fn := range psras.fns {
-		aggregation = append(aggregation, fn(psras.sql))
+		aggregation = append(aggregation, fn(selector))
 	}
 	switch n := len(*psras.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
-		psras.sql.Select(aggregation...)
+		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
-		psras.sql.AppendSelect(aggregation...)
+		selector.AppendSelect(aggregation...)
 	}
 	rows := &sql.Rows{}
-	query, args := psras.sql.Query()
+	query, args := selector.Query()
 	if err := psras.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}

@@ -103,40 +103,7 @@ func (su *StatisticUpdate) ClearPlayer() *StatisticUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (su *StatisticUpdate) Save(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(su.hooks) == 0 {
-		if err = su.check(); err != nil {
-			return 0, err
-		}
-		affected, err = su.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*StatisticMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = su.check(); err != nil {
-				return 0, err
-			}
-			su.mutation = mutation
-			affected, err = su.sqlSave(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(su.hooks) - 1; i >= 0; i-- {
-			if su.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = su.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, su.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, StatisticMutation](ctx, su.sqlSave, su.mutation, su.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -176,16 +143,10 @@ func (su *StatisticUpdate) check() error {
 }
 
 func (su *StatisticUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   statistic.Table,
-			Columns: statistic.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: statistic.FieldID,
-			},
-		},
+	if err := su.check(); err != nil {
+		return n, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(statistic.Table, statistic.Columns, sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString))
 	if ps := su.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -204,10 +165,7 @@ func (su *StatisticUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{statistic.MatchColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -220,10 +178,7 @@ func (su *StatisticUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{statistic.MatchColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -239,10 +194,7 @@ func (su *StatisticUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{statistic.StatDescriptionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statdescription.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -255,10 +207,7 @@ func (su *StatisticUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{statistic.StatDescriptionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statdescription.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -274,10 +223,7 @@ func (su *StatisticUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{statistic.PlayerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: player.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -290,10 +236,7 @@ func (su *StatisticUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{statistic.PlayerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: player.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -309,6 +252,7 @@ func (su *StatisticUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
+	su.mutation.done = true
 	return n, nil
 }
 
@@ -390,6 +334,12 @@ func (suo *StatisticUpdateOne) ClearPlayer() *StatisticUpdateOne {
 	return suo
 }
 
+// Where appends a list predicates to the StatisticUpdate builder.
+func (suo *StatisticUpdateOne) Where(ps ...predicate.Statistic) *StatisticUpdateOne {
+	suo.mutation.Where(ps...)
+	return suo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (suo *StatisticUpdateOne) Select(field string, fields ...string) *StatisticUpdateOne {
@@ -399,46 +349,7 @@ func (suo *StatisticUpdateOne) Select(field string, fields ...string) *Statistic
 
 // Save executes the query and returns the updated Statistic entity.
 func (suo *StatisticUpdateOne) Save(ctx context.Context) (*Statistic, error) {
-	var (
-		err  error
-		node *Statistic
-	)
-	if len(suo.hooks) == 0 {
-		if err = suo.check(); err != nil {
-			return nil, err
-		}
-		node, err = suo.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*StatisticMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = suo.check(); err != nil {
-				return nil, err
-			}
-			suo.mutation = mutation
-			node, err = suo.sqlSave(ctx)
-			mutation.done = true
-			return node, err
-		})
-		for i := len(suo.hooks) - 1; i >= 0; i-- {
-			if suo.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = suo.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, suo.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*Statistic)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from StatisticMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*Statistic, StatisticMutation](ctx, suo.sqlSave, suo.mutation, suo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -478,16 +389,10 @@ func (suo *StatisticUpdateOne) check() error {
 }
 
 func (suo *StatisticUpdateOne) sqlSave(ctx context.Context) (_node *Statistic, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   statistic.Table,
-			Columns: statistic.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: statistic.FieldID,
-			},
-		},
+	if err := suo.check(); err != nil {
+		return _node, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(statistic.Table, statistic.Columns, sqlgraph.NewFieldSpec(statistic.FieldID, field.TypeString))
 	id, ok := suo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Statistic.id" for update`)}
@@ -523,10 +428,7 @@ func (suo *StatisticUpdateOne) sqlSave(ctx context.Context) (_node *Statistic, e
 			Columns: []string{statistic.MatchColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -539,10 +441,7 @@ func (suo *StatisticUpdateOne) sqlSave(ctx context.Context) (_node *Statistic, e
 			Columns: []string{statistic.MatchColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: match.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -558,10 +457,7 @@ func (suo *StatisticUpdateOne) sqlSave(ctx context.Context) (_node *Statistic, e
 			Columns: []string{statistic.StatDescriptionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statdescription.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -574,10 +470,7 @@ func (suo *StatisticUpdateOne) sqlSave(ctx context.Context) (_node *Statistic, e
 			Columns: []string{statistic.StatDescriptionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: statdescription.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -593,10 +486,7 @@ func (suo *StatisticUpdateOne) sqlSave(ctx context.Context) (_node *Statistic, e
 			Columns: []string{statistic.PlayerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: player.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -609,10 +499,7 @@ func (suo *StatisticUpdateOne) sqlSave(ctx context.Context) (_node *Statistic, e
 			Columns: []string{statistic.PlayerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: player.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(player.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -631,5 +518,6 @@ func (suo *StatisticUpdateOne) sqlSave(ctx context.Context) (_node *Statistic, e
 		}
 		return nil, err
 	}
+	suo.mutation.done = true
 	return _node, nil
 }

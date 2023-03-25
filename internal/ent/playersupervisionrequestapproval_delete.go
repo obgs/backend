@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"fmt"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -28,34 +27,7 @@ func (psrad *PlayerSupervisionRequestApprovalDelete) Where(ps ...predicate.Playe
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (psrad *PlayerSupervisionRequestApprovalDelete) Exec(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(psrad.hooks) == 0 {
-		affected, err = psrad.sqlExec(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*PlayerSupervisionRequestApprovalMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			psrad.mutation = mutation
-			affected, err = psrad.sqlExec(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(psrad.hooks) - 1; i >= 0; i-- {
-			if psrad.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = psrad.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, psrad.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, PlayerSupervisionRequestApprovalMutation](ctx, psrad.sqlExec, psrad.mutation, psrad.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
@@ -68,15 +40,7 @@ func (psrad *PlayerSupervisionRequestApprovalDelete) ExecX(ctx context.Context) 
 }
 
 func (psrad *PlayerSupervisionRequestApprovalDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := &sqlgraph.DeleteSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table: playersupervisionrequestapproval.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: playersupervisionrequestapproval.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewDeleteSpec(playersupervisionrequestapproval.Table, sqlgraph.NewFieldSpec(playersupervisionrequestapproval.FieldID, field.TypeString))
 	if ps := psrad.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -88,12 +52,19 @@ func (psrad *PlayerSupervisionRequestApprovalDelete) sqlExec(ctx context.Context
 	if err != nil && sqlgraph.IsConstraintError(err) {
 		err = &ConstraintError{msg: err.Error(), wrap: err}
 	}
+	psrad.mutation.done = true
 	return affected, err
 }
 
 // PlayerSupervisionRequestApprovalDeleteOne is the builder for deleting a single PlayerSupervisionRequestApproval entity.
 type PlayerSupervisionRequestApprovalDeleteOne struct {
 	psrad *PlayerSupervisionRequestApprovalDelete
+}
+
+// Where appends a list predicates to the PlayerSupervisionRequestApprovalDelete builder.
+func (psrado *PlayerSupervisionRequestApprovalDeleteOne) Where(ps ...predicate.PlayerSupervisionRequestApproval) *PlayerSupervisionRequestApprovalDeleteOne {
+	psrado.psrad.mutation.Where(ps...)
+	return psrado
 }
 
 // Exec executes the deletion query.
@@ -111,5 +82,7 @@ func (psrado *PlayerSupervisionRequestApprovalDeleteOne) Exec(ctx context.Contex
 
 // ExecX is like Exec, but panics if an error occurs.
 func (psrado *PlayerSupervisionRequestApprovalDeleteOne) ExecX(ctx context.Context) {
-	psrado.psrad.ExecX(ctx)
+	if err := psrado.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

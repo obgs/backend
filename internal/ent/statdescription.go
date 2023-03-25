@@ -135,19 +135,19 @@ func (sd *StatDescription) assignValues(columns []string, values []any) error {
 
 // QueryGame queries the "game" edge of the StatDescription entity.
 func (sd *StatDescription) QueryGame() *GameQuery {
-	return (&StatDescriptionClient{config: sd.config}).QueryGame(sd)
+	return NewStatDescriptionClient(sd.config).QueryGame(sd)
 }
 
 // QueryStats queries the "stats" edge of the StatDescription entity.
 func (sd *StatDescription) QueryStats() *StatisticQuery {
-	return (&StatDescriptionClient{config: sd.config}).QueryStats(sd)
+	return NewStatDescriptionClient(sd.config).QueryStats(sd)
 }
 
 // Update returns a builder for updating this StatDescription.
 // Note that you need to call StatDescription.Unwrap() before calling this method if this StatDescription
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (sd *StatDescription) Update() *StatDescriptionUpdateOne {
-	return (&StatDescriptionClient{config: sd.config}).UpdateOne(sd)
+	return NewStatDescriptionClient(sd.config).UpdateOne(sd)
 }
 
 // Unwrap unwraps the StatDescription entity that was returned from a transaction after it was closed,
@@ -234,9 +234,3 @@ func (sd *StatDescription) appendNamedStats(name string, edges ...*Statistic) {
 
 // StatDescriptions is a parsable slice of StatDescription.
 type StatDescriptions []*StatDescription
-
-func (sd StatDescriptions) config(cfg config) {
-	for _i := range sd {
-		sd[_i].config = cfg
-	}
-}

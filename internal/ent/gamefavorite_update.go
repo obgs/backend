@@ -71,40 +71,7 @@ func (gfu *GameFavoriteUpdate) ClearUser() *GameFavoriteUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gfu *GameFavoriteUpdate) Save(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
-	if len(gfu.hooks) == 0 {
-		if err = gfu.check(); err != nil {
-			return 0, err
-		}
-		affected, err = gfu.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GameFavoriteMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gfu.check(); err != nil {
-				return 0, err
-			}
-			gfu.mutation = mutation
-			affected, err = gfu.sqlSave(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(gfu.hooks) - 1; i >= 0; i-- {
-			if gfu.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gfu.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, gfu.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, GameFavoriteMutation](ctx, gfu.sqlSave, gfu.mutation, gfu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -141,16 +108,10 @@ func (gfu *GameFavoriteUpdate) check() error {
 }
 
 func (gfu *GameFavoriteUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   gamefavorite.Table,
-			Columns: gamefavorite.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: gamefavorite.FieldID,
-			},
-		},
+	if err := gfu.check(); err != nil {
+		return n, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(gamefavorite.Table, gamefavorite.Columns, sqlgraph.NewFieldSpec(gamefavorite.FieldID, field.TypeString))
 	if ps := gfu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -166,10 +127,7 @@ func (gfu *GameFavoriteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{gamefavorite.GameColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -182,10 +140,7 @@ func (gfu *GameFavoriteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{gamefavorite.GameColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -201,10 +156,7 @@ func (gfu *GameFavoriteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{gamefavorite.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -217,10 +169,7 @@ func (gfu *GameFavoriteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{gamefavorite.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -236,6 +185,7 @@ func (gfu *GameFavoriteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
+	gfu.mutation.done = true
 	return n, nil
 }
 
@@ -286,6 +236,12 @@ func (gfuo *GameFavoriteUpdateOne) ClearUser() *GameFavoriteUpdateOne {
 	return gfuo
 }
 
+// Where appends a list predicates to the GameFavoriteUpdate builder.
+func (gfuo *GameFavoriteUpdateOne) Where(ps ...predicate.GameFavorite) *GameFavoriteUpdateOne {
+	gfuo.mutation.Where(ps...)
+	return gfuo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (gfuo *GameFavoriteUpdateOne) Select(field string, fields ...string) *GameFavoriteUpdateOne {
@@ -295,46 +251,7 @@ func (gfuo *GameFavoriteUpdateOne) Select(field string, fields ...string) *GameF
 
 // Save executes the query and returns the updated GameFavorite entity.
 func (gfuo *GameFavoriteUpdateOne) Save(ctx context.Context) (*GameFavorite, error) {
-	var (
-		err  error
-		node *GameFavorite
-	)
-	if len(gfuo.hooks) == 0 {
-		if err = gfuo.check(); err != nil {
-			return nil, err
-		}
-		node, err = gfuo.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GameFavoriteMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gfuo.check(); err != nil {
-				return nil, err
-			}
-			gfuo.mutation = mutation
-			node, err = gfuo.sqlSave(ctx)
-			mutation.done = true
-			return node, err
-		})
-		for i := len(gfuo.hooks) - 1; i >= 0; i-- {
-			if gfuo.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gfuo.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, gfuo.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*GameFavorite)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from GameFavoriteMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*GameFavorite, GameFavoriteMutation](ctx, gfuo.sqlSave, gfuo.mutation, gfuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -371,16 +288,10 @@ func (gfuo *GameFavoriteUpdateOne) check() error {
 }
 
 func (gfuo *GameFavoriteUpdateOne) sqlSave(ctx context.Context) (_node *GameFavorite, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   gamefavorite.Table,
-			Columns: gamefavorite.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: gamefavorite.FieldID,
-			},
-		},
+	if err := gfuo.check(); err != nil {
+		return _node, err
 	}
+	_spec := sqlgraph.NewUpdateSpec(gamefavorite.Table, gamefavorite.Columns, sqlgraph.NewFieldSpec(gamefavorite.FieldID, field.TypeString))
 	id, ok := gfuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "GameFavorite.id" for update`)}
@@ -413,10 +324,7 @@ func (gfuo *GameFavoriteUpdateOne) sqlSave(ctx context.Context) (_node *GameFavo
 			Columns: []string{gamefavorite.GameColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -429,10 +337,7 @@ func (gfuo *GameFavoriteUpdateOne) sqlSave(ctx context.Context) (_node *GameFavo
 			Columns: []string{gamefavorite.GameColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: game.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -448,10 +353,7 @@ func (gfuo *GameFavoriteUpdateOne) sqlSave(ctx context.Context) (_node *GameFavo
 			Columns: []string{gamefavorite.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -464,10 +366,7 @@ func (gfuo *GameFavoriteUpdateOne) sqlSave(ctx context.Context) (_node *GameFavo
 			Columns: []string{gamefavorite.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -486,5 +385,6 @@ func (gfuo *GameFavoriteUpdateOne) sqlSave(ctx context.Context) (_node *GameFavo
 		}
 		return nil, err
 	}
+	gfuo.mutation.done = true
 	return _node, nil
 }

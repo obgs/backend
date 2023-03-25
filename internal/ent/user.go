@@ -200,49 +200,49 @@ func (u *User) assignValues(columns []string, values []any) error {
 
 // QueryPlayers queries the "players" edge of the User entity.
 func (u *User) QueryPlayers() *PlayerQuery {
-	return (&UserClient{config: u.config}).QueryPlayers(u)
+	return NewUserClient(u.config).QueryPlayers(u)
 }
 
 // QueryMainPlayer queries the "main_player" edge of the User entity.
 func (u *User) QueryMainPlayer() *PlayerQuery {
-	return (&UserClient{config: u.config}).QueryMainPlayer(u)
+	return NewUserClient(u.config).QueryMainPlayer(u)
 }
 
 // QuerySentSupervisionRequests queries the "sent_supervision_requests" edge of the User entity.
 func (u *User) QuerySentSupervisionRequests() *PlayerSupervisionRequestQuery {
-	return (&UserClient{config: u.config}).QuerySentSupervisionRequests(u)
+	return NewUserClient(u.config).QuerySentSupervisionRequests(u)
 }
 
 // QuerySupervisionRequestApprovals queries the "supervision_request_approvals" edge of the User entity.
 func (u *User) QuerySupervisionRequestApprovals() *PlayerSupervisionRequestApprovalQuery {
-	return (&UserClient{config: u.config}).QuerySupervisionRequestApprovals(u)
+	return NewUserClient(u.config).QuerySupervisionRequestApprovals(u)
 }
 
 // QueryGroupMemberships queries the "group_memberships" edge of the User entity.
 func (u *User) QueryGroupMemberships() *GroupMembershipQuery {
-	return (&UserClient{config: u.config}).QueryGroupMemberships(u)
+	return NewUserClient(u.config).QueryGroupMemberships(u)
 }
 
 // QueryGroupMembershipApplications queries the "group_membership_applications" edge of the User entity.
 func (u *User) QueryGroupMembershipApplications() *GroupMembershipApplicationQuery {
-	return (&UserClient{config: u.config}).QueryGroupMembershipApplications(u)
+	return NewUserClient(u.config).QueryGroupMembershipApplications(u)
 }
 
 // QueryGames queries the "games" edge of the User entity.
 func (u *User) QueryGames() *GameQuery {
-	return (&UserClient{config: u.config}).QueryGames(u)
+	return NewUserClient(u.config).QueryGames(u)
 }
 
 // QueryFavoriteGames queries the "favorite_games" edge of the User entity.
 func (u *User) QueryFavoriteGames() *GameFavoriteQuery {
-	return (&UserClient{config: u.config}).QueryFavoriteGames(u)
+	return NewUserClient(u.config).QueryFavoriteGames(u)
 }
 
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (u *User) Update() *UserUpdateOne {
-	return (&UserClient{config: u.config}).UpdateOne(u)
+	return NewUserClient(u.config).UpdateOne(u)
 }
 
 // Unwrap unwraps the User entity that was returned from a transaction after it was closed,
@@ -445,9 +445,3 @@ func (u *User) appendNamedFavoriteGames(name string, edges ...*GameFavorite) {
 
 // Users is a parsable slice of User.
 type Users []*User
-
-func (u Users) config(cfg config) {
-	for _i := range u {
-		u[_i].config = cfg
-	}
-}

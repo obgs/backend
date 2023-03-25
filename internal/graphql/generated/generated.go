@@ -2103,8 +2103,9 @@ input UpdateUserInput {
   avatarURL: String
   addPlayerIDs: [ID!]
   removePlayerIDs: [ID!]
-  clearMainPlayer: Boolean
+  clearPlayers: Boolean
   mainPlayerID: ID
+  clearMainPlayer: Boolean
 }
 type User implements Node {
   id: ID!
@@ -14543,7 +14544,7 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "email", "avatarURL", "addPlayerIDs", "removePlayerIDs", "clearMainPlayer", "mainPlayerID"}
+	fieldsInOrder := [...]string{"name", "email", "avatarURL", "addPlayerIDs", "removePlayerIDs", "clearPlayers", "mainPlayerID", "clearMainPlayer"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14590,11 +14591,11 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 			if err != nil {
 				return it, err
 			}
-		case "clearMainPlayer":
+		case "clearPlayers":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearMainPlayer"))
-			it.ClearMainPlayer, err = ec.unmarshalOBoolean2bool(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearPlayers"))
+			it.ClearPlayers, err = ec.unmarshalOBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -14603,6 +14604,14 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mainPlayerID"))
 			it.MainPlayerID, err = ec.unmarshalOID2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚋschemaᚋguidgqlᚐGUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "clearMainPlayer":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearMainPlayer"))
+			it.ClearMainPlayer, err = ec.unmarshalOBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}

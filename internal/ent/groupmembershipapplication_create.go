@@ -82,50 +82,8 @@ func (gmac *GroupMembershipApplicationCreate) Mutation() *GroupMembershipApplica
 
 // Save creates the GroupMembershipApplication in the database.
 func (gmac *GroupMembershipApplicationCreate) Save(ctx context.Context) (*GroupMembershipApplication, error) {
-	var (
-		err  error
-		node *GroupMembershipApplication
-	)
 	gmac.defaults()
-	if len(gmac.hooks) == 0 {
-		if err = gmac.check(); err != nil {
-			return nil, err
-		}
-		node, err = gmac.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GroupMembershipApplicationMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gmac.check(); err != nil {
-				return nil, err
-			}
-			gmac.mutation = mutation
-			if node, err = gmac.sqlSave(ctx); err != nil {
-				return nil, err
-			}
-			mutation.id = &node.ID
-			mutation.done = true
-			return node, err
-		})
-		for i := len(gmac.hooks) - 1; i >= 0; i-- {
-			if gmac.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gmac.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, gmac.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*GroupMembershipApplication)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from GroupMembershipApplicationMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*GroupMembershipApplication, GroupMembershipApplicationMutation](ctx, gmac.sqlSave, gmac.mutation, gmac.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -177,6 +135,9 @@ func (gmac *GroupMembershipApplicationCreate) check() error {
 }
 
 func (gmac *GroupMembershipApplicationCreate) sqlSave(ctx context.Context) (*GroupMembershipApplication, error) {
+	if err := gmac.check(); err != nil {
+		return nil, err
+	}
 	_node, _spec := gmac.createSpec()
 	if err := sqlgraph.CreateNode(ctx, gmac.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -191,19 +152,15 @@ func (gmac *GroupMembershipApplicationCreate) sqlSave(ctx context.Context) (*Gro
 			return nil, err
 		}
 	}
+	gmac.mutation.id = &_node.ID
+	gmac.mutation.done = true
 	return _node, nil
 }
 
 func (gmac *GroupMembershipApplicationCreate) createSpec() (*GroupMembershipApplication, *sqlgraph.CreateSpec) {
 	var (
 		_node = &GroupMembershipApplication{config: gmac.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: groupmembershipapplication.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: groupmembershipapplication.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(groupmembershipapplication.Table, sqlgraph.NewFieldSpec(groupmembershipapplication.FieldID, field.TypeString))
 	)
 	_spec.OnConflict = gmac.conflict
 	if id, ok := gmac.mutation.ID(); ok {
@@ -222,10 +179,7 @@ func (gmac *GroupMembershipApplicationCreate) createSpec() (*GroupMembershipAppl
 			Columns: []string{groupmembershipapplication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -242,10 +196,7 @@ func (gmac *GroupMembershipApplicationCreate) createSpec() (*GroupMembershipAppl
 			Columns: []string{groupmembershipapplication.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeString,
-					Column: group.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

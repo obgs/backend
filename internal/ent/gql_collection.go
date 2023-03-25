@@ -33,7 +33,7 @@ func (ga *GameQuery) collectField(ctx context.Context, op *graphql.OperationCont
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &UserQuery{config: ga.config}
+				query = (&UserClient{config: ga.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -93,7 +93,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &GroupSettingsQuery{config: gr.config}
+				query = (&GroupSettingsClient{config: gr.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -103,7 +103,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &GroupMembershipQuery{config: gr.config}
+				query = (&GroupMembershipClient{config: gr.config}).Query()
 			)
 			args := newGroupMembershipPaginateArgs(fieldArgs(ctx, new(GroupMembershipWhereInput), path...))
 			if err := validateFirstLast(args.first, args.last); err != nil {
@@ -186,7 +186,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &GroupMembershipApplicationQuery{config: gr.config}
+				query = (&GroupMembershipApplicationClient{config: gr.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -248,7 +248,7 @@ func (gm *GroupMembershipQuery) collectField(ctx context.Context, op *graphql.Op
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &GroupQuery{config: gm.config}
+				query = (&GroupClient{config: gm.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -258,7 +258,7 @@ func (gm *GroupMembershipQuery) collectField(ctx context.Context, op *graphql.Op
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &UserQuery{config: gm.config}
+				query = (&UserClient{config: gm.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -318,7 +318,7 @@ func (gma *GroupMembershipApplicationQuery) collectField(ctx context.Context, op
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &UserQuery{config: gma.config}
+				query = (&UserClient{config: gma.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -328,7 +328,7 @@ func (gma *GroupMembershipApplicationQuery) collectField(ctx context.Context, op
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &GroupQuery{config: gma.config}
+				query = (&GroupClient{config: gma.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -431,7 +431,7 @@ func (m *MatchQuery) collectField(ctx context.Context, op *graphql.OperationCont
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &GameQuery{config: m.config}
+				query = (&GameClient{config: m.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -441,7 +441,7 @@ func (m *MatchQuery) collectField(ctx context.Context, op *graphql.OperationCont
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &PlayerQuery{config: m.config}
+				query = (&PlayerClient{config: m.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -453,7 +453,7 @@ func (m *MatchQuery) collectField(ctx context.Context, op *graphql.OperationCont
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &StatisticQuery{config: m.config}
+				query = (&StatisticClient{config: m.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -515,7 +515,7 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &UserQuery{config: pl.config}
+				query = (&UserClient{config: pl.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -525,7 +525,7 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &UserQuery{config: pl.config}
+				query = (&UserClient{config: pl.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -537,7 +537,7 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &PlayerSupervisionRequestQuery{config: pl.config}
+				query = (&PlayerSupervisionRequestClient{config: pl.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -549,7 +549,7 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &MatchQuery{config: pl.config}
+				query = (&MatchClient{config: pl.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -611,7 +611,7 @@ func (psr *PlayerSupervisionRequestQuery) collectField(ctx context.Context, op *
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &UserQuery{config: psr.config}
+				query = (&UserClient{config: psr.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -621,7 +621,7 @@ func (psr *PlayerSupervisionRequestQuery) collectField(ctx context.Context, op *
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &PlayerQuery{config: psr.config}
+				query = (&PlayerClient{config: psr.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -631,7 +631,7 @@ func (psr *PlayerSupervisionRequestQuery) collectField(ctx context.Context, op *
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &PlayerSupervisionRequestApprovalQuery{config: psr.config}
+				query = (&PlayerSupervisionRequestApprovalClient{config: psr.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -693,7 +693,7 @@ func (psra *PlayerSupervisionRequestApprovalQuery) collectField(ctx context.Cont
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &UserQuery{config: psra.config}
+				query = (&UserClient{config: psra.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -703,7 +703,7 @@ func (psra *PlayerSupervisionRequestApprovalQuery) collectField(ctx context.Cont
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &PlayerSupervisionRequestQuery{config: psra.config}
+				query = (&PlayerSupervisionRequestClient{config: psra.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -806,7 +806,7 @@ func (s *StatisticQuery) collectField(ctx context.Context, op *graphql.Operation
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &MatchQuery{config: s.config}
+				query = (&MatchClient{config: s.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -816,7 +816,7 @@ func (s *StatisticQuery) collectField(ctx context.Context, op *graphql.Operation
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &StatDescriptionQuery{config: s.config}
+				query = (&StatDescriptionClient{config: s.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -826,7 +826,7 @@ func (s *StatisticQuery) collectField(ctx context.Context, op *graphql.Operation
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &PlayerQuery{config: s.config}
+				query = (&PlayerClient{config: s.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -883,7 +883,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &PlayerQuery{config: u.config}
+				query = (&PlayerClient{config: u.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -895,7 +895,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &PlayerQuery{config: u.config}
+				query = (&PlayerClient{config: u.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -905,7 +905,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &GroupMembershipQuery{config: u.config}
+				query = (&GroupMembershipClient{config: u.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -917,7 +917,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &GroupMembershipApplicationQuery{config: u.config}
+				query = (&GroupMembershipApplicationClient{config: u.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
@@ -929,7 +929,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = &GameQuery{config: u.config}
+				query = (&GameClient{config: u.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err

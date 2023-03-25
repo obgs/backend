@@ -153,24 +153,24 @@ func (s *Statistic) assignValues(columns []string, values []any) error {
 
 // QueryMatch queries the "match" edge of the Statistic entity.
 func (s *Statistic) QueryMatch() *MatchQuery {
-	return (&StatisticClient{config: s.config}).QueryMatch(s)
+	return NewStatisticClient(s.config).QueryMatch(s)
 }
 
 // QueryStatDescription queries the "stat_description" edge of the Statistic entity.
 func (s *Statistic) QueryStatDescription() *StatDescriptionQuery {
-	return (&StatisticClient{config: s.config}).QueryStatDescription(s)
+	return NewStatisticClient(s.config).QueryStatDescription(s)
 }
 
 // QueryPlayer queries the "player" edge of the Statistic entity.
 func (s *Statistic) QueryPlayer() *PlayerQuery {
-	return (&StatisticClient{config: s.config}).QueryPlayer(s)
+	return NewStatisticClient(s.config).QueryPlayer(s)
 }
 
 // Update returns a builder for updating this Statistic.
 // Note that you need to call Statistic.Unwrap() before calling this method if this Statistic
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (s *Statistic) Update() *StatisticUpdateOne {
-	return (&StatisticClient{config: s.config}).UpdateOne(s)
+	return NewStatisticClient(s.config).UpdateOne(s)
 }
 
 // Unwrap unwraps the Statistic entity that was returned from a transaction after it was closed,
@@ -197,9 +197,3 @@ func (s *Statistic) String() string {
 
 // Statistics is a parsable slice of Statistic.
 type Statistics []*Statistic
-
-func (s Statistics) config(cfg config) {
-	for _i := range s {
-		s[_i].config = cfg
-	}
-}

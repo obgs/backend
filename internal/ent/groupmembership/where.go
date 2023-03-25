@@ -12,89 +12,59 @@ import (
 
 // ID filters vertices based on their ID field.
 func ID(id guidgql.GUID) predicate.GroupMembership {
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.GroupMembership(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
 func IDEQ(id guidgql.GUID) predicate.GroupMembership {
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.GroupMembership(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
 func IDNEQ(id guidgql.GUID) predicate.GroupMembership {
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldID), id))
-	})
+	return predicate.GroupMembership(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.GroupMembership {
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.In(s.C(FieldID), v...))
-	})
+	return predicate.GroupMembership(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.GroupMembership {
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.NotIn(s.C(FieldID), v...))
-	})
+	return predicate.GroupMembership(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
 func IDGT(id guidgql.GUID) predicate.GroupMembership {
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldID), id))
-	})
+	return predicate.GroupMembership(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
 func IDGTE(id guidgql.GUID) predicate.GroupMembership {
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldID), id))
-	})
+	return predicate.GroupMembership(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
 func IDLT(id guidgql.GUID) predicate.GroupMembership {
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldID), id))
-	})
+	return predicate.GroupMembership(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
 func IDLTE(id guidgql.GUID) predicate.GroupMembership {
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldID), id))
-	})
+	return predicate.GroupMembership(sql.FieldLTE(FieldID, id))
 }
 
 // RoleEQ applies the EQ predicate on the "role" field.
 func RoleEQ(v enums.Role) predicate.GroupMembership {
 	vc := v
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldRole), vc))
-	})
+	return predicate.GroupMembership(sql.FieldEQ(FieldRole, vc))
 }
 
 // RoleNEQ applies the NEQ predicate on the "role" field.
 func RoleNEQ(v enums.Role) predicate.GroupMembership {
 	vc := v
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldRole), vc))
-	})
+	return predicate.GroupMembership(sql.FieldNEQ(FieldRole, vc))
 }
 
 // RoleIn applies the In predicate on the "role" field.
@@ -103,9 +73,7 @@ func RoleIn(vs ...enums.Role) predicate.GroupMembership {
 	for i := range v {
 		v[i] = vs[i]
 	}
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldRole), v...))
-	})
+	return predicate.GroupMembership(sql.FieldIn(FieldRole, v...))
 }
 
 // RoleNotIn applies the NotIn predicate on the "role" field.
@@ -114,9 +82,7 @@ func RoleNotIn(vs ...enums.Role) predicate.GroupMembership {
 	for i := range v {
 		v[i] = vs[i]
 	}
-	return predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldRole), v...))
-	})
+	return predicate.GroupMembership(sql.FieldNotIn(FieldRole, v...))
 }
 
 // HasGroup applies the HasEdge predicate on the "group" edge.
@@ -124,7 +90,6 @@ func HasGroup() predicate.GroupMembership {
 	return predicate.GroupMembership(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(GroupTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, GroupTable, GroupColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -152,7 +117,6 @@ func HasUser() predicate.GroupMembership {
 	return predicate.GroupMembership(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(UserTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

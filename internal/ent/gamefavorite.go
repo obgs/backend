@@ -117,19 +117,19 @@ func (gf *GameFavorite) assignValues(columns []string, values []any) error {
 
 // QueryGame queries the "game" edge of the GameFavorite entity.
 func (gf *GameFavorite) QueryGame() *GameQuery {
-	return (&GameFavoriteClient{config: gf.config}).QueryGame(gf)
+	return NewGameFavoriteClient(gf.config).QueryGame(gf)
 }
 
 // QueryUser queries the "user" edge of the GameFavorite entity.
 func (gf *GameFavorite) QueryUser() *UserQuery {
-	return (&GameFavoriteClient{config: gf.config}).QueryUser(gf)
+	return NewGameFavoriteClient(gf.config).QueryUser(gf)
 }
 
 // Update returns a builder for updating this GameFavorite.
 // Note that you need to call GameFavorite.Unwrap() before calling this method if this GameFavorite
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (gf *GameFavorite) Update() *GameFavoriteUpdateOne {
-	return (&GameFavoriteClient{config: gf.config}).UpdateOne(gf)
+	return NewGameFavoriteClient(gf.config).UpdateOne(gf)
 }
 
 // Unwrap unwraps the GameFavorite entity that was returned from a transaction after it was closed,
@@ -154,9 +154,3 @@ func (gf *GameFavorite) String() string {
 
 // GameFavorites is a parsable slice of GameFavorite.
 type GameFavorites []*GameFavorite
-
-func (gf GameFavorites) config(cfg config) {
-	for _i := range gf {
-		gf[_i].config = cfg
-	}
-}

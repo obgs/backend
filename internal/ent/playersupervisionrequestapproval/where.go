@@ -11,108 +11,72 @@ import (
 
 // ID filters vertices based on their ID field.
 func ID(id guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
 func IDEQ(id guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
 func IDNEQ(id guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
 func IDIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.In(s.C(FieldID), v...))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
 func IDNotIn(ids ...guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		v := make([]any, len(ids))
-		for i := range v {
-			v[i] = ids[i]
-		}
-		s.Where(sql.NotIn(s.C(FieldID), v...))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
 func IDGT(id guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
 func IDGTE(id guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
 func IDLT(id guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
 func IDLTE(id guidgql.GUID) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldID), id))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldLTE(FieldID, id))
 }
 
 // Approved applies equality check predicate on the "approved" field. It's identical to ApprovedEQ.
 func Approved(v bool) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldApproved), v))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldEQ(FieldApproved, v))
 }
 
 // ApprovedEQ applies the EQ predicate on the "approved" field.
 func ApprovedEQ(v bool) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldApproved), v))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldEQ(FieldApproved, v))
 }
 
 // ApprovedNEQ applies the NEQ predicate on the "approved" field.
 func ApprovedNEQ(v bool) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldApproved), v))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldNEQ(FieldApproved, v))
 }
 
 // ApprovedIsNil applies the IsNil predicate on the "approved" field.
 func ApprovedIsNil() predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.IsNull(s.C(FieldApproved)))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldIsNull(FieldApproved))
 }
 
 // ApprovedNotNil applies the NotNil predicate on the "approved" field.
 func ApprovedNotNil() predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.NotNull(s.C(FieldApproved)))
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.FieldNotNull(FieldApproved))
 }
 
 // HasApprover applies the HasEdge predicate on the "approver" edge.
@@ -120,7 +84,6 @@ func HasApprover() predicate.PlayerSupervisionRequestApproval {
 	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ApproverTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, ApproverTable, ApproverColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -148,7 +111,6 @@ func HasSupervisionRequest() predicate.PlayerSupervisionRequestApproval {
 	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SupervisionRequestTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, SupervisionRequestTable, SupervisionRequestColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
