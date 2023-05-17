@@ -53,7 +53,7 @@ func (r *mutationResolver) CreateMatch(ctx context.Context, input model.CreateMa
 			SetMatch(m)
 	}
 
-	aggregateStats, err := calculateAggregateStatValues(ctx, client, input.Stats, playerIds, m)
+	aggregateStats, err := calculateAllAggregateStats(ctx, client, input.Stats, playerIds, m)
 	if err != nil {
 		return nil, err
 	}

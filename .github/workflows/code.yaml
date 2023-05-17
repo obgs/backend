@@ -8,12 +8,10 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
-
   code:
     strategy:
       matrix:
         mode:
-
           - name: Test
             command: go test ./...
 
@@ -27,12 +25,11 @@ jobs:
       contents: read
     timeout-minutes: 30
     steps:
-
       - uses: actions/checkout@v3
 
       - uses: actions/setup-go@v3
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
           cache: true
 
       - run: ${{ matrix.mode.command }}
@@ -44,13 +41,14 @@ jobs:
       contents: read
     timeout-minutes: 30
     steps:
-
       - uses: actions/checkout@v3
 
       - uses: actions/setup-go@v3
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
           cache: true
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
+        with:
+          args: --timeout 5m
