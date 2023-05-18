@@ -58,6 +58,26 @@ var (
 			},
 		},
 	}
+	// GameVersionsColumns holds the columns for the "game_versions" table.
+	GameVersionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "version_number", Type: field.TypeInt, Default: 1},
+		{Name: "game_version_game", Type: field.TypeString},
+	}
+	// GameVersionsTable holds the schema information for the "game_versions" table.
+	GameVersionsTable = &schema.Table{
+		Name:       "game_versions",
+		Columns:    GameVersionsColumns,
+		PrimaryKey: []*schema.Column{GameVersionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "game_versions_games_game",
+				Columns:    []*schema.Column{GameVersionsColumns[2]},
+				RefColumns: []*schema.Column{GamesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -150,7 +170,7 @@ var (
 	// MatchesColumns holds the columns for the "matches" table.
 	MatchesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "game_matches", Type: field.TypeString},
+		{Name: "game_version_matches", Type: field.TypeString},
 	}
 	// MatchesTable holds the schema information for the "matches" table.
 	MatchesTable = &schema.Table{
@@ -159,9 +179,9 @@ var (
 		PrimaryKey: []*schema.Column{MatchesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "matches_games_matches",
+				Symbol:     "matches_game_versions_matches",
 				Columns:    []*schema.Column{MatchesColumns[1]},
-				RefColumns: []*schema.Column{GamesColumns[0]},
+				RefColumns: []*schema.Column{GameVersionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -328,27 +348,27 @@ var (
 			},
 		},
 	}
-	// StatDescriptionGameColumns holds the columns for the "stat_description_game" table.
-	StatDescriptionGameColumns = []*schema.Column{
+	// StatDescriptionGameVersionColumns holds the columns for the "stat_description_game_version" table.
+	StatDescriptionGameVersionColumns = []*schema.Column{
 		{Name: "stat_description_id", Type: field.TypeString},
-		{Name: "game_id", Type: field.TypeString},
+		{Name: "game_version_id", Type: field.TypeString},
 	}
-	// StatDescriptionGameTable holds the schema information for the "stat_description_game" table.
-	StatDescriptionGameTable = &schema.Table{
-		Name:       "stat_description_game",
-		Columns:    StatDescriptionGameColumns,
-		PrimaryKey: []*schema.Column{StatDescriptionGameColumns[0], StatDescriptionGameColumns[1]},
+	// StatDescriptionGameVersionTable holds the schema information for the "stat_description_game_version" table.
+	StatDescriptionGameVersionTable = &schema.Table{
+		Name:       "stat_description_game_version",
+		Columns:    StatDescriptionGameVersionColumns,
+		PrimaryKey: []*schema.Column{StatDescriptionGameVersionColumns[0], StatDescriptionGameVersionColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "stat_description_game_stat_description_id",
-				Columns:    []*schema.Column{StatDescriptionGameColumns[0]},
+				Symbol:     "stat_description_game_version_stat_description_id",
+				Columns:    []*schema.Column{StatDescriptionGameVersionColumns[0]},
 				RefColumns: []*schema.Column{StatDescriptionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "stat_description_game_game_id",
-				Columns:    []*schema.Column{StatDescriptionGameColumns[1]},
-				RefColumns: []*schema.Column{GamesColumns[0]},
+				Symbol:     "stat_description_game_version_game_version_id",
+				Columns:    []*schema.Column{StatDescriptionGameVersionColumns[1]},
+				RefColumns: []*schema.Column{GameVersionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -382,6 +402,7 @@ var (
 	Tables = []*schema.Table{
 		GamesTable,
 		GameFavoritesTable,
+		GameVersionsTable,
 		GroupsTable,
 		GroupMembershipsTable,
 		GroupMembershipApplicationsTable,
@@ -394,7 +415,7 @@ var (
 		StatisticsTable,
 		UsersTable,
 		MatchPlayersTable,
-		StatDescriptionGameTable,
+		StatDescriptionGameVersionTable,
 		UserPlayersTable,
 	}
 )
@@ -403,12 +424,13 @@ func init() {
 	GamesTable.ForeignKeys[0].RefTable = UsersTable
 	GameFavoritesTable.ForeignKeys[0].RefTable = GamesTable
 	GameFavoritesTable.ForeignKeys[1].RefTable = UsersTable
+	GameVersionsTable.ForeignKeys[0].RefTable = GamesTable
 	GroupMembershipsTable.ForeignKeys[0].RefTable = GroupsTable
 	GroupMembershipsTable.ForeignKeys[1].RefTable = UsersTable
 	GroupMembershipApplicationsTable.ForeignKeys[0].RefTable = GroupsTable
 	GroupMembershipApplicationsTable.ForeignKeys[1].RefTable = UsersTable
 	GroupSettingsTable.ForeignKeys[0].RefTable = GroupsTable
-	MatchesTable.ForeignKeys[0].RefTable = GamesTable
+	MatchesTable.ForeignKeys[0].RefTable = GameVersionsTable
 	PlayersTable.ForeignKeys[0].RefTable = UsersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[0].RefTable = PlayersTable
 	PlayerSupervisionRequestsTable.ForeignKeys[1].RefTable = UsersTable
@@ -419,8 +441,8 @@ func init() {
 	StatisticsTable.ForeignKeys[2].RefTable = StatDescriptionsTable
 	MatchPlayersTable.ForeignKeys[0].RefTable = MatchesTable
 	MatchPlayersTable.ForeignKeys[1].RefTable = PlayersTable
-	StatDescriptionGameTable.ForeignKeys[0].RefTable = StatDescriptionsTable
-	StatDescriptionGameTable.ForeignKeys[1].RefTable = GamesTable
+	StatDescriptionGameVersionTable.ForeignKeys[0].RefTable = StatDescriptionsTable
+	StatDescriptionGameVersionTable.ForeignKeys[1].RefTable = GameVersionsTable
 	UserPlayersTable.ForeignKeys[0].RefTable = UsersTable
 	UserPlayersTable.ForeignKeys[1].RefTable = PlayersTable
 }

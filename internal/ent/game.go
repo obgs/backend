@@ -39,19 +39,16 @@ type GameEdges struct {
 	Author *User `json:"author,omitempty"`
 	// Favorites holds the value of the favorites edge.
 	Favorites []*GameFavorite `json:"favorites,omitempty"`
-	// StatDescriptions holds the value of the stat_descriptions edge.
-	StatDescriptions []*StatDescription `json:"stat_descriptions,omitempty"`
-	// Matches holds the value of the matches edge.
-	Matches []*Match `json:"matches,omitempty"`
+	// Versions holds the value of the versions edge.
+	Versions []*GameVersion `json:"versions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
 	totalCount [1]map[string]int
 
-	namedFavorites        map[string][]*GameFavorite
-	namedStatDescriptions map[string][]*StatDescription
-	namedMatches          map[string][]*Match
+	namedFavorites map[string][]*GameFavorite
+	namedVersions  map[string][]*GameVersion
 }
 
 // AuthorOrErr returns the Author value or an error if the edge
@@ -76,22 +73,13 @@ func (e GameEdges) FavoritesOrErr() ([]*GameFavorite, error) {
 	return nil, &NotLoadedError{edge: "favorites"}
 }
 
-// StatDescriptionsOrErr returns the StatDescriptions value or an error if the edge
+// VersionsOrErr returns the Versions value or an error if the edge
 // was not loaded in eager-loading.
-func (e GameEdges) StatDescriptionsOrErr() ([]*StatDescription, error) {
+func (e GameEdges) VersionsOrErr() ([]*GameVersion, error) {
 	if e.loadedTypes[2] {
-		return e.StatDescriptions, nil
+		return e.Versions, nil
 	}
-	return nil, &NotLoadedError{edge: "stat_descriptions"}
-}
-
-// MatchesOrErr returns the Matches value or an error if the edge
-// was not loaded in eager-loading.
-func (e GameEdges) MatchesOrErr() ([]*Match, error) {
-	if e.loadedTypes[3] {
-		return e.Matches, nil
-	}
-	return nil, &NotLoadedError{edge: "matches"}
+	return nil, &NotLoadedError{edge: "versions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -180,14 +168,9 @@ func (ga *Game) QueryFavorites() *GameFavoriteQuery {
 	return NewGameClient(ga.config).QueryFavorites(ga)
 }
 
-// QueryStatDescriptions queries the "stat_descriptions" edge of the Game entity.
-func (ga *Game) QueryStatDescriptions() *StatDescriptionQuery {
-	return NewGameClient(ga.config).QueryStatDescriptions(ga)
-}
-
-// QueryMatches queries the "matches" edge of the Game entity.
-func (ga *Game) QueryMatches() *MatchQuery {
-	return NewGameClient(ga.config).QueryMatches(ga)
+// QueryVersions queries the "versions" edge of the Game entity.
+func (ga *Game) QueryVersions() *GameVersionQuery {
+	return NewGameClient(ga.config).QueryVersions(ga)
 }
 
 // Update returns a builder for updating this Game.
@@ -255,51 +238,27 @@ func (ga *Game) appendNamedFavorites(name string, edges ...*GameFavorite) {
 	}
 }
 
-// NamedStatDescriptions returns the StatDescriptions named value or an error if the edge was not
+// NamedVersions returns the Versions named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (ga *Game) NamedStatDescriptions(name string) ([]*StatDescription, error) {
-	if ga.Edges.namedStatDescriptions == nil {
+func (ga *Game) NamedVersions(name string) ([]*GameVersion, error) {
+	if ga.Edges.namedVersions == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := ga.Edges.namedStatDescriptions[name]
+	nodes, ok := ga.Edges.namedVersions[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (ga *Game) appendNamedStatDescriptions(name string, edges ...*StatDescription) {
-	if ga.Edges.namedStatDescriptions == nil {
-		ga.Edges.namedStatDescriptions = make(map[string][]*StatDescription)
+func (ga *Game) appendNamedVersions(name string, edges ...*GameVersion) {
+	if ga.Edges.namedVersions == nil {
+		ga.Edges.namedVersions = make(map[string][]*GameVersion)
 	}
 	if len(edges) == 0 {
-		ga.Edges.namedStatDescriptions[name] = []*StatDescription{}
+		ga.Edges.namedVersions[name] = []*GameVersion{}
 	} else {
-		ga.Edges.namedStatDescriptions[name] = append(ga.Edges.namedStatDescriptions[name], edges...)
-	}
-}
-
-// NamedMatches returns the Matches named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (ga *Game) NamedMatches(name string) ([]*Match, error) {
-	if ga.Edges.namedMatches == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := ga.Edges.namedMatches[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (ga *Game) appendNamedMatches(name string, edges ...*Match) {
-	if ga.Edges.namedMatches == nil {
-		ga.Edges.namedMatches = make(map[string][]*Match)
-	}
-	if len(edges) == 0 {
-		ga.Edges.namedMatches[name] = []*Match{}
-	} else {
-		ga.Edges.namedMatches[name] = append(ga.Edges.namedMatches[name], edges...)
+		ga.Edges.namedVersions[name] = append(ga.Edges.namedVersions[name], edges...)
 	}
 }
 

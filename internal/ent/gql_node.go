@@ -10,6 +10,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/hashicorp/go-multierror"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -31,6 +32,9 @@ type Noder interface {
 
 // IsNode implements the Node interface check for GQLGen.
 func (n *Game) IsNode() {}
+
+// IsNode implements the Node interface check for GQLGen.
+func (n *GameVersion) IsNode() {}
 
 // IsNode implements the Node interface check for GQLGen.
 func (n *Group) IsNode() {}
@@ -131,6 +135,22 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		query := c.Game.Query().
 			Where(game.ID(uid))
 		query, err := query.CollectFields(ctx, "Game")
+		if err != nil {
+			return nil, err
+		}
+		n, err := query.Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case gameversion.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
+			return nil, err
+		}
+		query := c.GameVersion.Query().
+			Where(gameversion.ID(uid))
+		query, err := query.CollectFields(ctx, "GameVersion")
 		if err != nil {
 			return nil, err
 		}
@@ -392,6 +412,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 		query := c.Game.Query().
 			Where(game.IDIn(ids...))
 		query, err := query.CollectFields(ctx, "Game")
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case gameversion.Table:
+		query := c.GameVersion.Query().
+			Where(gameversion.IDIn(ids...))
+		query, err := query.CollectFields(ctx, "GameVersion")
 		if err != nil {
 			return nil, err
 		}

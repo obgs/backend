@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
@@ -21,16 +21,16 @@ import (
 // StatDescriptionQuery is the builder for querying StatDescription entities.
 type StatDescriptionQuery struct {
 	config
-	ctx            *QueryContext
-	order          []OrderFunc
-	inters         []Interceptor
-	predicates     []predicate.StatDescription
-	withGame       *GameQuery
-	withStats      *StatisticQuery
-	modifiers      []func(*sql.Selector)
-	loadTotal      []func(context.Context, []*StatDescription) error
-	withNamedGame  map[string]*GameQuery
-	withNamedStats map[string]*StatisticQuery
+	ctx                  *QueryContext
+	order                []OrderFunc
+	inters               []Interceptor
+	predicates           []predicate.StatDescription
+	withGameVersion      *GameVersionQuery
+	withStats            *StatisticQuery
+	modifiers            []func(*sql.Selector)
+	loadTotal            []func(context.Context, []*StatDescription) error
+	withNamedGameVersion map[string]*GameVersionQuery
+	withNamedStats       map[string]*StatisticQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -67,9 +67,9 @@ func (sdq *StatDescriptionQuery) Order(o ...OrderFunc) *StatDescriptionQuery {
 	return sdq
 }
 
-// QueryGame chains the current query on the "game" edge.
-func (sdq *StatDescriptionQuery) QueryGame() *GameQuery {
-	query := (&GameClient{config: sdq.config}).Query()
+// QueryGameVersion chains the current query on the "game_version" edge.
+func (sdq *StatDescriptionQuery) QueryGameVersion() *GameVersionQuery {
+	query := (&GameVersionClient{config: sdq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := sdq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -80,8 +80,8 @@ func (sdq *StatDescriptionQuery) QueryGame() *GameQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(statdescription.Table, statdescription.FieldID, selector),
-			sqlgraph.To(game.Table, game.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, statdescription.GameTable, statdescription.GamePrimaryKey...),
+			sqlgraph.To(gameversion.Table, gameversion.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, statdescription.GameVersionTable, statdescription.GameVersionPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(sdq.driver.Dialect(), step)
 		return fromU, nil
@@ -298,27 +298,27 @@ func (sdq *StatDescriptionQuery) Clone() *StatDescriptionQuery {
 		return nil
 	}
 	return &StatDescriptionQuery{
-		config:     sdq.config,
-		ctx:        sdq.ctx.Clone(),
-		order:      append([]OrderFunc{}, sdq.order...),
-		inters:     append([]Interceptor{}, sdq.inters...),
-		predicates: append([]predicate.StatDescription{}, sdq.predicates...),
-		withGame:   sdq.withGame.Clone(),
-		withStats:  sdq.withStats.Clone(),
+		config:          sdq.config,
+		ctx:             sdq.ctx.Clone(),
+		order:           append([]OrderFunc{}, sdq.order...),
+		inters:          append([]Interceptor{}, sdq.inters...),
+		predicates:      append([]predicate.StatDescription{}, sdq.predicates...),
+		withGameVersion: sdq.withGameVersion.Clone(),
+		withStats:       sdq.withStats.Clone(),
 		// clone intermediate query.
 		sql:  sdq.sql.Clone(),
 		path: sdq.path,
 	}
 }
 
-// WithGame tells the query-builder to eager-load the nodes that are connected to
-// the "game" edge. The optional arguments are used to configure the query builder of the edge.
-func (sdq *StatDescriptionQuery) WithGame(opts ...func(*GameQuery)) *StatDescriptionQuery {
-	query := (&GameClient{config: sdq.config}).Query()
+// WithGameVersion tells the query-builder to eager-load the nodes that are connected to
+// the "game_version" edge. The optional arguments are used to configure the query builder of the edge.
+func (sdq *StatDescriptionQuery) WithGameVersion(opts ...func(*GameVersionQuery)) *StatDescriptionQuery {
+	query := (&GameVersionClient{config: sdq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	sdq.withGame = query
+	sdq.withGameVersion = query
 	return sdq
 }
 
@@ -412,7 +412,7 @@ func (sdq *StatDescriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*StatDescription{}
 		_spec       = sdq.querySpec()
 		loadedTypes = [2]bool{
-			sdq.withGame != nil,
+			sdq.withGameVersion != nil,
 			sdq.withStats != nil,
 		}
 	)
@@ -437,10 +437,10 @@ func (sdq *StatDescriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := sdq.withGame; query != nil {
-		if err := sdq.loadGame(ctx, query, nodes,
-			func(n *StatDescription) { n.Edges.Game = []*Game{} },
-			func(n *StatDescription, e *Game) { n.Edges.Game = append(n.Edges.Game, e) }); err != nil {
+	if query := sdq.withGameVersion; query != nil {
+		if err := sdq.loadGameVersion(ctx, query, nodes,
+			func(n *StatDescription) { n.Edges.GameVersion = []*GameVersion{} },
+			func(n *StatDescription, e *GameVersion) { n.Edges.GameVersion = append(n.Edges.GameVersion, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -451,10 +451,10 @@ func (sdq *StatDescriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
-	for name, query := range sdq.withNamedGame {
-		if err := sdq.loadGame(ctx, query, nodes,
-			func(n *StatDescription) { n.appendNamedGame(name) },
-			func(n *StatDescription, e *Game) { n.appendNamedGame(name, e) }); err != nil {
+	for name, query := range sdq.withNamedGameVersion {
+		if err := sdq.loadGameVersion(ctx, query, nodes,
+			func(n *StatDescription) { n.appendNamedGameVersion(name) },
+			func(n *StatDescription, e *GameVersion) { n.appendNamedGameVersion(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -473,7 +473,7 @@ func (sdq *StatDescriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	return nodes, nil
 }
 
-func (sdq *StatDescriptionQuery) loadGame(ctx context.Context, query *GameQuery, nodes []*StatDescription, init func(*StatDescription), assign func(*StatDescription, *Game)) error {
+func (sdq *StatDescriptionQuery) loadGameVersion(ctx context.Context, query *GameVersionQuery, nodes []*StatDescription, init func(*StatDescription), assign func(*StatDescription, *GameVersion)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[guidgql.GUID]*StatDescription)
 	nids := make(map[guidgql.GUID]map[*StatDescription]struct{})
@@ -485,11 +485,11 @@ func (sdq *StatDescriptionQuery) loadGame(ctx context.Context, query *GameQuery,
 		}
 	}
 	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(statdescription.GameTable)
-		s.Join(joinT).On(s.C(game.FieldID), joinT.C(statdescription.GamePrimaryKey[1]))
-		s.Where(sql.InValues(joinT.C(statdescription.GamePrimaryKey[0]), edgeIDs...))
+		joinT := sql.Table(statdescription.GameVersionTable)
+		s.Join(joinT).On(s.C(gameversion.FieldID), joinT.C(statdescription.GameVersionPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(statdescription.GameVersionPrimaryKey[0]), edgeIDs...))
 		columns := s.SelectedColumns()
-		s.Select(joinT.C(statdescription.GamePrimaryKey[0]))
+		s.Select(joinT.C(statdescription.GameVersionPrimaryKey[0]))
 		s.AppendSelect(columns...)
 		s.SetDistinct(false)
 	})
@@ -519,14 +519,14 @@ func (sdq *StatDescriptionQuery) loadGame(ctx context.Context, query *GameQuery,
 			}
 		})
 	})
-	neighbors, err := withInterceptors[[]*Game](ctx, query, qr, query.inters)
+	neighbors, err := withInterceptors[[]*GameVersion](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
 		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "game" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "game_version" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)
@@ -650,17 +650,17 @@ func (sdq *StatDescriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// WithNamedGame tells the query-builder to eager-load the nodes that are connected to the "game"
+// WithNamedGameVersion tells the query-builder to eager-load the nodes that are connected to the "game_version"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
-func (sdq *StatDescriptionQuery) WithNamedGame(name string, opts ...func(*GameQuery)) *StatDescriptionQuery {
-	query := (&GameClient{config: sdq.config}).Query()
+func (sdq *StatDescriptionQuery) WithNamedGameVersion(name string, opts ...func(*GameVersionQuery)) *StatDescriptionQuery {
+	query := (&GameVersionClient{config: sdq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	if sdq.withNamedGame == nil {
-		sdq.withNamedGame = make(map[string]*GameQuery)
+	if sdq.withNamedGameVersion == nil {
+		sdq.withNamedGameVersion = make(map[string]*GameVersionQuery)
 	}
-	sdq.withNamedGame[name] = query
+	sdq.withNamedGameVersion[name] = query
 	return sdq
 }
 

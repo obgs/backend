@@ -16,6 +16,8 @@ type Tx struct {
 	Game *GameClient
 	// GameFavorite is the client for interacting with the GameFavorite builders.
 	GameFavorite *GameFavoriteClient
+	// GameVersion is the client for interacting with the GameVersion builders.
+	GameVersion *GameVersionClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// GroupMembership is the client for interacting with the GroupMembership builders.
@@ -171,6 +173,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Game = NewGameClient(tx.config)
 	tx.GameFavorite = NewGameFavoriteClient(tx.config)
+	tx.GameVersion = NewGameVersionClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.GroupMembership = NewGroupMembershipClient(tx.config)
 	tx.GroupMembershipApplication = NewGroupMembershipApplicationClient(tx.config)

@@ -12,10 +12,9 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
-	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -146,34 +145,19 @@ func (gu *GameUpdate) AddFavorites(g ...*GameFavorite) *GameUpdate {
 	return gu.AddFavoriteIDs(ids...)
 }
 
-// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by IDs.
-func (gu *GameUpdate) AddStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
-	gu.mutation.AddStatDescriptionIDs(ids...)
+// AddVersionIDs adds the "versions" edge to the GameVersion entity by IDs.
+func (gu *GameUpdate) AddVersionIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.AddVersionIDs(ids...)
 	return gu
 }
 
-// AddStatDescriptions adds the "stat_descriptions" edges to the StatDescription entity.
-func (gu *GameUpdate) AddStatDescriptions(s ...*StatDescription) *GameUpdate {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddVersions adds the "versions" edges to the GameVersion entity.
+func (gu *GameUpdate) AddVersions(g ...*GameVersion) *GameUpdate {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
 	}
-	return gu.AddStatDescriptionIDs(ids...)
-}
-
-// AddMatchIDs adds the "matches" edge to the Match entity by IDs.
-func (gu *GameUpdate) AddMatchIDs(ids ...guidgql.GUID) *GameUpdate {
-	gu.mutation.AddMatchIDs(ids...)
-	return gu
-}
-
-// AddMatches adds the "matches" edges to the Match entity.
-func (gu *GameUpdate) AddMatches(m ...*Match) *GameUpdate {
-	ids := make([]guidgql.GUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
-	}
-	return gu.AddMatchIDs(ids...)
+	return gu.AddVersionIDs(ids...)
 }
 
 // Mutation returns the GameMutation object of the builder.
@@ -208,46 +192,25 @@ func (gu *GameUpdate) RemoveFavorites(g ...*GameFavorite) *GameUpdate {
 	return gu.RemoveFavoriteIDs(ids...)
 }
 
-// ClearStatDescriptions clears all "stat_descriptions" edges to the StatDescription entity.
-func (gu *GameUpdate) ClearStatDescriptions() *GameUpdate {
-	gu.mutation.ClearStatDescriptions()
+// ClearVersions clears all "versions" edges to the GameVersion entity.
+func (gu *GameUpdate) ClearVersions() *GameUpdate {
+	gu.mutation.ClearVersions()
 	return gu
 }
 
-// RemoveStatDescriptionIDs removes the "stat_descriptions" edge to StatDescription entities by IDs.
-func (gu *GameUpdate) RemoveStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdate {
-	gu.mutation.RemoveStatDescriptionIDs(ids...)
+// RemoveVersionIDs removes the "versions" edge to GameVersion entities by IDs.
+func (gu *GameUpdate) RemoveVersionIDs(ids ...guidgql.GUID) *GameUpdate {
+	gu.mutation.RemoveVersionIDs(ids...)
 	return gu
 }
 
-// RemoveStatDescriptions removes "stat_descriptions" edges to StatDescription entities.
-func (gu *GameUpdate) RemoveStatDescriptions(s ...*StatDescription) *GameUpdate {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// RemoveVersions removes "versions" edges to GameVersion entities.
+func (gu *GameUpdate) RemoveVersions(g ...*GameVersion) *GameUpdate {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
 	}
-	return gu.RemoveStatDescriptionIDs(ids...)
-}
-
-// ClearMatches clears all "matches" edges to the Match entity.
-func (gu *GameUpdate) ClearMatches() *GameUpdate {
-	gu.mutation.ClearMatches()
-	return gu
-}
-
-// RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
-func (gu *GameUpdate) RemoveMatchIDs(ids ...guidgql.GUID) *GameUpdate {
-	gu.mutation.RemoveMatchIDs(ids...)
-	return gu
-}
-
-// RemoveMatches removes "matches" edges to Match entities.
-func (gu *GameUpdate) RemoveMatches(m ...*Match) *GameUpdate {
-	ids := make([]guidgql.GUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
-	}
-	return gu.RemoveMatchIDs(ids...)
+	return gu.RemoveVersionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -403,28 +366,28 @@ func (gu *GameUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if gu.mutation.StatDescriptionsCleared() {
+	if gu.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.VersionsTable,
+			Columns: []string{game.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.RemovedStatDescriptionsIDs(); len(nodes) > 0 && !gu.mutation.StatDescriptionsCleared() {
+	if nodes := gu.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !gu.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.VersionsTable,
+			Columns: []string{game.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -432,60 +395,15 @@ func (gu *GameUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.StatDescriptionsIDs(); len(nodes) > 0 {
+	if nodes := gu.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.VersionsTable,
+			Columns: []string{game.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if gu.mutation.MatchesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   game.MatchesTable,
-			Columns: []string{game.MatchesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := gu.mutation.RemovedMatchesIDs(); len(nodes) > 0 && !gu.mutation.MatchesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   game.MatchesTable,
-			Columns: []string{game.MatchesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := gu.mutation.MatchesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   game.MatchesTable,
-			Columns: []string{game.MatchesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -627,34 +545,19 @@ func (guo *GameUpdateOne) AddFavorites(g ...*GameFavorite) *GameUpdateOne {
 	return guo.AddFavoriteIDs(ids...)
 }
 
-// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by IDs.
-func (guo *GameUpdateOne) AddStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
-	guo.mutation.AddStatDescriptionIDs(ids...)
+// AddVersionIDs adds the "versions" edge to the GameVersion entity by IDs.
+func (guo *GameUpdateOne) AddVersionIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.AddVersionIDs(ids...)
 	return guo
 }
 
-// AddStatDescriptions adds the "stat_descriptions" edges to the StatDescription entity.
-func (guo *GameUpdateOne) AddStatDescriptions(s ...*StatDescription) *GameUpdateOne {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddVersions adds the "versions" edges to the GameVersion entity.
+func (guo *GameUpdateOne) AddVersions(g ...*GameVersion) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
 	}
-	return guo.AddStatDescriptionIDs(ids...)
-}
-
-// AddMatchIDs adds the "matches" edge to the Match entity by IDs.
-func (guo *GameUpdateOne) AddMatchIDs(ids ...guidgql.GUID) *GameUpdateOne {
-	guo.mutation.AddMatchIDs(ids...)
-	return guo
-}
-
-// AddMatches adds the "matches" edges to the Match entity.
-func (guo *GameUpdateOne) AddMatches(m ...*Match) *GameUpdateOne {
-	ids := make([]guidgql.GUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
-	}
-	return guo.AddMatchIDs(ids...)
+	return guo.AddVersionIDs(ids...)
 }
 
 // Mutation returns the GameMutation object of the builder.
@@ -689,46 +592,25 @@ func (guo *GameUpdateOne) RemoveFavorites(g ...*GameFavorite) *GameUpdateOne {
 	return guo.RemoveFavoriteIDs(ids...)
 }
 
-// ClearStatDescriptions clears all "stat_descriptions" edges to the StatDescription entity.
-func (guo *GameUpdateOne) ClearStatDescriptions() *GameUpdateOne {
-	guo.mutation.ClearStatDescriptions()
+// ClearVersions clears all "versions" edges to the GameVersion entity.
+func (guo *GameUpdateOne) ClearVersions() *GameUpdateOne {
+	guo.mutation.ClearVersions()
 	return guo
 }
 
-// RemoveStatDescriptionIDs removes the "stat_descriptions" edge to StatDescription entities by IDs.
-func (guo *GameUpdateOne) RemoveStatDescriptionIDs(ids ...guidgql.GUID) *GameUpdateOne {
-	guo.mutation.RemoveStatDescriptionIDs(ids...)
+// RemoveVersionIDs removes the "versions" edge to GameVersion entities by IDs.
+func (guo *GameUpdateOne) RemoveVersionIDs(ids ...guidgql.GUID) *GameUpdateOne {
+	guo.mutation.RemoveVersionIDs(ids...)
 	return guo
 }
 
-// RemoveStatDescriptions removes "stat_descriptions" edges to StatDescription entities.
-func (guo *GameUpdateOne) RemoveStatDescriptions(s ...*StatDescription) *GameUpdateOne {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// RemoveVersions removes "versions" edges to GameVersion entities.
+func (guo *GameUpdateOne) RemoveVersions(g ...*GameVersion) *GameUpdateOne {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
 	}
-	return guo.RemoveStatDescriptionIDs(ids...)
-}
-
-// ClearMatches clears all "matches" edges to the Match entity.
-func (guo *GameUpdateOne) ClearMatches() *GameUpdateOne {
-	guo.mutation.ClearMatches()
-	return guo
-}
-
-// RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
-func (guo *GameUpdateOne) RemoveMatchIDs(ids ...guidgql.GUID) *GameUpdateOne {
-	guo.mutation.RemoveMatchIDs(ids...)
-	return guo
-}
-
-// RemoveMatches removes "matches" edges to Match entities.
-func (guo *GameUpdateOne) RemoveMatches(m ...*Match) *GameUpdateOne {
-	ids := make([]guidgql.GUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
-	}
-	return guo.RemoveMatchIDs(ids...)
+	return guo.RemoveVersionIDs(ids...)
 }
 
 // Where appends a list predicates to the GameUpdate builder.
@@ -914,28 +796,28 @@ func (guo *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if guo.mutation.StatDescriptionsCleared() {
+	if guo.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.VersionsTable,
+			Columns: []string{game.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.RemovedStatDescriptionsIDs(); len(nodes) > 0 && !guo.mutation.StatDescriptionsCleared() {
+	if nodes := guo.mutation.RemovedVersionsIDs(); len(nodes) > 0 && !guo.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.VersionsTable,
+			Columns: []string{game.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -943,60 +825,15 @@ func (guo *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.StatDescriptionsIDs(); len(nodes) > 0 {
+	if nodes := guo.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
+			Table:   game.VersionsTable,
+			Columns: []string{game.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if guo.mutation.MatchesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   game.MatchesTable,
-			Columns: []string{game.MatchesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := guo.mutation.RemovedMatchesIDs(); len(nodes) > 0 && !guo.mutation.MatchesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   game.MatchesTable,
-			Columns: []string{game.MatchesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := guo.mutation.MatchesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   game.MatchesTable,
-			Columns: []string{game.MatchesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

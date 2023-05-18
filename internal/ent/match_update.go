@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
@@ -31,15 +31,15 @@ func (mu *MatchUpdate) Where(ps ...predicate.Match) *MatchUpdate {
 	return mu
 }
 
-// SetGameID sets the "game" edge to the Game entity by ID.
-func (mu *MatchUpdate) SetGameID(id guidgql.GUID) *MatchUpdate {
-	mu.mutation.SetGameID(id)
+// SetGameVersionID sets the "game_version" edge to the GameVersion entity by ID.
+func (mu *MatchUpdate) SetGameVersionID(id guidgql.GUID) *MatchUpdate {
+	mu.mutation.SetGameVersionID(id)
 	return mu
 }
 
-// SetGame sets the "game" edge to the Game entity.
-func (mu *MatchUpdate) SetGame(g *Game) *MatchUpdate {
-	return mu.SetGameID(g.ID)
+// SetGameVersion sets the "game_version" edge to the GameVersion entity.
+func (mu *MatchUpdate) SetGameVersion(g *GameVersion) *MatchUpdate {
+	return mu.SetGameVersionID(g.ID)
 }
 
 // AddPlayerIDs adds the "players" edge to the Player entity by IDs.
@@ -77,9 +77,9 @@ func (mu *MatchUpdate) Mutation() *MatchMutation {
 	return mu.mutation
 }
 
-// ClearGame clears the "game" edge to the Game entity.
-func (mu *MatchUpdate) ClearGame() *MatchUpdate {
-	mu.mutation.ClearGame()
+// ClearGameVersion clears the "game_version" edge to the GameVersion entity.
+func (mu *MatchUpdate) ClearGameVersion() *MatchUpdate {
+	mu.mutation.ClearGameVersion()
 	return mu
 }
 
@@ -154,8 +154,8 @@ func (mu *MatchUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (mu *MatchUpdate) check() error {
-	if _, ok := mu.mutation.GameID(); mu.mutation.GameCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Match.game"`)
+	if _, ok := mu.mutation.GameVersionID(); mu.mutation.GameVersionCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Match.game_version"`)
 	}
 	return nil
 }
@@ -172,28 +172,28 @@ func (mu *MatchUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if mu.mutation.GameCleared() {
+	if mu.mutation.GameVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   match.GameTable,
-			Columns: []string{match.GameColumn},
+			Table:   match.GameVersionTable,
+			Columns: []string{match.GameVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := mu.mutation.GameIDs(); len(nodes) > 0 {
+	if nodes := mu.mutation.GameVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   match.GameTable,
-			Columns: []string{match.GameColumn},
+			Table:   match.GameVersionTable,
+			Columns: []string{match.GameVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -311,15 +311,15 @@ type MatchUpdateOne struct {
 	mutation *MatchMutation
 }
 
-// SetGameID sets the "game" edge to the Game entity by ID.
-func (muo *MatchUpdateOne) SetGameID(id guidgql.GUID) *MatchUpdateOne {
-	muo.mutation.SetGameID(id)
+// SetGameVersionID sets the "game_version" edge to the GameVersion entity by ID.
+func (muo *MatchUpdateOne) SetGameVersionID(id guidgql.GUID) *MatchUpdateOne {
+	muo.mutation.SetGameVersionID(id)
 	return muo
 }
 
-// SetGame sets the "game" edge to the Game entity.
-func (muo *MatchUpdateOne) SetGame(g *Game) *MatchUpdateOne {
-	return muo.SetGameID(g.ID)
+// SetGameVersion sets the "game_version" edge to the GameVersion entity.
+func (muo *MatchUpdateOne) SetGameVersion(g *GameVersion) *MatchUpdateOne {
+	return muo.SetGameVersionID(g.ID)
 }
 
 // AddPlayerIDs adds the "players" edge to the Player entity by IDs.
@@ -357,9 +357,9 @@ func (muo *MatchUpdateOne) Mutation() *MatchMutation {
 	return muo.mutation
 }
 
-// ClearGame clears the "game" edge to the Game entity.
-func (muo *MatchUpdateOne) ClearGame() *MatchUpdateOne {
-	muo.mutation.ClearGame()
+// ClearGameVersion clears the "game_version" edge to the GameVersion entity.
+func (muo *MatchUpdateOne) ClearGameVersion() *MatchUpdateOne {
+	muo.mutation.ClearGameVersion()
 	return muo
 }
 
@@ -447,8 +447,8 @@ func (muo *MatchUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (muo *MatchUpdateOne) check() error {
-	if _, ok := muo.mutation.GameID(); muo.mutation.GameCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Match.game"`)
+	if _, ok := muo.mutation.GameVersionID(); muo.mutation.GameVersionCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Match.game_version"`)
 	}
 	return nil
 }
@@ -482,28 +482,28 @@ func (muo *MatchUpdateOne) sqlSave(ctx context.Context) (_node *Match, err error
 			}
 		}
 	}
-	if muo.mutation.GameCleared() {
+	if muo.mutation.GameVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   match.GameTable,
-			Columns: []string{match.GameColumn},
+			Table:   match.GameVersionTable,
+			Columns: []string{match.GameVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := muo.mutation.GameIDs(); len(nodes) > 0 {
+	if nodes := muo.mutation.GameVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   match.GameTable,
-			Columns: []string{match.GameColumn},
+			Table:   match.GameVersionTable,
+			Columns: []string{match.GameVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

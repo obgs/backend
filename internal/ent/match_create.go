@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -40,15 +40,15 @@ func (mc *MatchCreate) SetNillableID(gu *guidgql.GUID) *MatchCreate {
 	return mc
 }
 
-// SetGameID sets the "game" edge to the Game entity by ID.
-func (mc *MatchCreate) SetGameID(id guidgql.GUID) *MatchCreate {
-	mc.mutation.SetGameID(id)
+// SetGameVersionID sets the "game_version" edge to the GameVersion entity by ID.
+func (mc *MatchCreate) SetGameVersionID(id guidgql.GUID) *MatchCreate {
+	mc.mutation.SetGameVersionID(id)
 	return mc
 }
 
-// SetGame sets the "game" edge to the Game entity.
-func (mc *MatchCreate) SetGame(g *Game) *MatchCreate {
-	return mc.SetGameID(g.ID)
+// SetGameVersion sets the "game_version" edge to the GameVersion entity.
+func (mc *MatchCreate) SetGameVersion(g *GameVersion) *MatchCreate {
+	return mc.SetGameVersionID(g.ID)
 }
 
 // AddPlayerIDs adds the "players" edge to the Player entity by IDs.
@@ -124,8 +124,8 @@ func (mc *MatchCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (mc *MatchCreate) check() error {
-	if _, ok := mc.mutation.GameID(); !ok {
-		return &ValidationError{Name: "game", err: errors.New(`ent: missing required edge "Match.game"`)}
+	if _, ok := mc.mutation.GameVersionID(); !ok {
+		return &ValidationError{Name: "game_version", err: errors.New(`ent: missing required edge "Match.game_version"`)}
 	}
 	if len(mc.mutation.PlayersIDs()) == 0 {
 		return &ValidationError{Name: "players", err: errors.New(`ent: missing required edge "Match.players"`)}
@@ -166,21 +166,21 @@ func (mc *MatchCreate) createSpec() (*Match, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if nodes := mc.mutation.GameIDs(); len(nodes) > 0 {
+	if nodes := mc.mutation.GameVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   match.GameTable,
-			Columns: []string{match.GameColumn},
+			Table:   match.GameVersionTable,
+			Columns: []string{match.GameVersionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.game_matches = &nodes[0]
+		_node.game_version_matches = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := mc.mutation.PlayersIDs(); len(nodes) > 0 {

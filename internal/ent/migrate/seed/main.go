@@ -23,10 +23,11 @@ func SeedDB(ctx context.Context, client *ent.Client) (err error) {
 	addGameToFavorites(ctx, tx, user1, terraformingMars)
 	addGameToFavorites(ctx, tx, user2, terraformingMars)
 
-	createMatch(ctx, tx, terraformingMars, []*ent.Player{player1, player2, player3})
-	createMatch(ctx, tx, terraformingMars, []*ent.Player{player1, player3})
-	createMatch(ctx, tx, terraformingMars, []*ent.Player{player1, player2})
-	createMatch(ctx, tx, terraformingMars, []*ent.Player{player2, player3})
+	v1 := terraformingMars.QueryVersions().AllX(ctx)[0]
+	createMatch(ctx, tx, v1, []*ent.Player{player1, player2, player3})
+	createMatch(ctx, tx, v1, []*ent.Player{player1, player3})
+	createMatch(ctx, tx, v1, []*ent.Player{player1, player2})
+	createMatch(ctx, tx, v1, []*ent.Player{player2, player3})
 
 	return tx.Commit()
 }

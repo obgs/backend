@@ -428,51 +428,24 @@ func HasFavoritesWith(preds ...predicate.GameFavorite) predicate.Game {
 	})
 }
 
-// HasStatDescriptions applies the HasEdge predicate on the "stat_descriptions" edge.
-func HasStatDescriptions() predicate.Game {
+// HasVersions applies the HasEdge predicate on the "versions" edge.
+func HasVersions() predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, StatDescriptionsTable, StatDescriptionsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, VersionsTable, VersionsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasStatDescriptionsWith applies the HasEdge predicate on the "stat_descriptions" edge with a given conditions (other predicates).
-func HasStatDescriptionsWith(preds ...predicate.StatDescription) predicate.Game {
+// HasVersionsWith applies the HasEdge predicate on the "versions" edge with a given conditions (other predicates).
+func HasVersionsWith(preds ...predicate.GameVersion) predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatDescriptionsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, StatDescriptionsTable, StatDescriptionsPrimaryKey...),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasMatches applies the HasEdge predicate on the "matches" edge.
-func HasMatches() predicate.Game {
-	return predicate.Game(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, MatchesTable, MatchesColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasMatchesWith applies the HasEdge predicate on the "matches" edge with a given conditions (other predicates).
-func HasMatchesWith(preds ...predicate.Match) predicate.Game {
-	return predicate.Game(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(MatchesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, MatchesTable, MatchesColumn),
+			sqlgraph.To(VersionsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, VersionsTable, VersionsColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

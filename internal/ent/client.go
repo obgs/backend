@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -39,6 +40,8 @@ type Client struct {
 	Game *GameClient
 	// GameFavorite is the client for interacting with the GameFavorite builders.
 	GameFavorite *GameFavoriteClient
+	// GameVersion is the client for interacting with the GameVersion builders.
+	GameVersion *GameVersionClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// GroupMembership is the client for interacting with the GroupMembership builders.
@@ -76,6 +79,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Game = NewGameClient(c.config)
 	c.GameFavorite = NewGameFavoriteClient(c.config)
+	c.GameVersion = NewGameVersionClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.GroupMembership = NewGroupMembershipClient(c.config)
 	c.GroupMembershipApplication = NewGroupMembershipApplicationClient(c.config)
@@ -171,6 +175,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		config:                           cfg,
 		Game:                             NewGameClient(cfg),
 		GameFavorite:                     NewGameFavoriteClient(cfg),
+		GameVersion:                      NewGameVersionClient(cfg),
 		Group:                            NewGroupClient(cfg),
 		GroupMembership:                  NewGroupMembershipClient(cfg),
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
@@ -203,6 +208,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		config:                           cfg,
 		Game:                             NewGameClient(cfg),
 		GameFavorite:                     NewGameFavoriteClient(cfg),
+		GameVersion:                      NewGameVersionClient(cfg),
 		Group:                            NewGroupClient(cfg),
 		GroupMembership:                  NewGroupMembershipClient(cfg),
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
@@ -243,7 +249,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Game, c.GameFavorite, c.Group, c.GroupMembership,
+		c.Game, c.GameFavorite, c.GameVersion, c.Group, c.GroupMembership,
 		c.GroupMembershipApplication, c.GroupSettings, c.Match, c.Player,
 		c.PlayerSupervisionRequest, c.PlayerSupervisionRequestApproval,
 		c.StatDescription, c.Statistic, c.User,
@@ -256,7 +262,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Game, c.GameFavorite, c.Group, c.GroupMembership,
+		c.Game, c.GameFavorite, c.GameVersion, c.Group, c.GroupMembership,
 		c.GroupMembershipApplication, c.GroupSettings, c.Match, c.Player,
 		c.PlayerSupervisionRequest, c.PlayerSupervisionRequestApproval,
 		c.StatDescription, c.Statistic, c.User,
@@ -272,6 +278,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Game.mutate(ctx, m)
 	case *GameFavoriteMutation:
 		return c.GameFavorite.mutate(ctx, m)
+	case *GameVersionMutation:
+		return c.GameVersion.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *GroupMembershipMutation:
@@ -424,31 +432,15 @@ func (c *GameClient) QueryFavorites(ga *Game) *GameFavoriteQuery {
 	return query
 }
 
-// QueryStatDescriptions queries the stat_descriptions edge of a Game.
-func (c *GameClient) QueryStatDescriptions(ga *Game) *StatDescriptionQuery {
-	query := (&StatDescriptionClient{config: c.config}).Query()
+// QueryVersions queries the versions edge of a Game.
+func (c *GameClient) QueryVersions(ga *Game) *GameVersionQuery {
+	query := (&GameVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := ga.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(game.Table, game.FieldID, id),
-			sqlgraph.To(statdescription.Table, statdescription.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, game.StatDescriptionsTable, game.StatDescriptionsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryMatches queries the matches edge of a Game.
-func (c *GameClient) QueryMatches(ga *Game) *MatchQuery {
-	query := (&MatchClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ga.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(game.Table, game.FieldID, id),
-			sqlgraph.To(match.Table, match.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, game.MatchesTable, game.MatchesColumn),
+			sqlgraph.To(gameversion.Table, gameversion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, game.VersionsTable, game.VersionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
 		return fromV, nil
@@ -628,6 +620,172 @@ func (c *GameFavoriteClient) mutate(ctx context.Context, m *GameFavoriteMutation
 		return (&GameFavoriteDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown GameFavorite mutation op: %q", m.Op())
+	}
+}
+
+// GameVersionClient is a client for the GameVersion schema.
+type GameVersionClient struct {
+	config
+}
+
+// NewGameVersionClient returns a client for the GameVersion from the given config.
+func NewGameVersionClient(c config) *GameVersionClient {
+	return &GameVersionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `gameversion.Hooks(f(g(h())))`.
+func (c *GameVersionClient) Use(hooks ...Hook) {
+	c.hooks.GameVersion = append(c.hooks.GameVersion, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `gameversion.Intercept(f(g(h())))`.
+func (c *GameVersionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GameVersion = append(c.inters.GameVersion, interceptors...)
+}
+
+// Create returns a builder for creating a GameVersion entity.
+func (c *GameVersionClient) Create() *GameVersionCreate {
+	mutation := newGameVersionMutation(c.config, OpCreate)
+	return &GameVersionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GameVersion entities.
+func (c *GameVersionClient) CreateBulk(builders ...*GameVersionCreate) *GameVersionCreateBulk {
+	return &GameVersionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GameVersion.
+func (c *GameVersionClient) Update() *GameVersionUpdate {
+	mutation := newGameVersionMutation(c.config, OpUpdate)
+	return &GameVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GameVersionClient) UpdateOne(gv *GameVersion) *GameVersionUpdateOne {
+	mutation := newGameVersionMutation(c.config, OpUpdateOne, withGameVersion(gv))
+	return &GameVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GameVersionClient) UpdateOneID(id guidgql.GUID) *GameVersionUpdateOne {
+	mutation := newGameVersionMutation(c.config, OpUpdateOne, withGameVersionID(id))
+	return &GameVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GameVersion.
+func (c *GameVersionClient) Delete() *GameVersionDelete {
+	mutation := newGameVersionMutation(c.config, OpDelete)
+	return &GameVersionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GameVersionClient) DeleteOne(gv *GameVersion) *GameVersionDeleteOne {
+	return c.DeleteOneID(gv.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GameVersionClient) DeleteOneID(id guidgql.GUID) *GameVersionDeleteOne {
+	builder := c.Delete().Where(gameversion.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GameVersionDeleteOne{builder}
+}
+
+// Query returns a query builder for GameVersion.
+func (c *GameVersionClient) Query() *GameVersionQuery {
+	return &GameVersionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGameVersion},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GameVersion entity by its id.
+func (c *GameVersionClient) Get(ctx context.Context, id guidgql.GUID) (*GameVersion, error) {
+	return c.Query().Where(gameversion.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GameVersionClient) GetX(ctx context.Context, id guidgql.GUID) *GameVersion {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a GameVersion.
+func (c *GameVersionClient) QueryGame(gv *GameVersion) *GameQuery {
+	query := (&GameClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gameversion.Table, gameversion.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, gameversion.GameTable, gameversion.GameColumn),
+		)
+		fromV = sqlgraph.Neighbors(gv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryStatDescriptions queries the stat_descriptions edge of a GameVersion.
+func (c *GameVersionClient) QueryStatDescriptions(gv *GameVersion) *StatDescriptionQuery {
+	query := (&StatDescriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gameversion.Table, gameversion.FieldID, id),
+			sqlgraph.To(statdescription.Table, statdescription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, gameversion.StatDescriptionsTable, gameversion.StatDescriptionsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(gv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMatches queries the matches edge of a GameVersion.
+func (c *GameVersionClient) QueryMatches(gv *GameVersion) *MatchQuery {
+	query := (&MatchClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gameversion.Table, gameversion.FieldID, id),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, gameversion.MatchesTable, gameversion.MatchesColumn),
+		)
+		fromV = sqlgraph.Neighbors(gv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GameVersionClient) Hooks() []Hook {
+	return c.hooks.GameVersion
+}
+
+// Interceptors returns the client interceptors.
+func (c *GameVersionClient) Interceptors() []Interceptor {
+	return c.inters.GameVersion
+}
+
+func (c *GameVersionClient) mutate(ctx context.Context, m *GameVersionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GameVersionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GameVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GameVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GameVersionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GameVersion mutation op: %q", m.Op())
 	}
 }
 
@@ -1324,15 +1482,15 @@ func (c *MatchClient) GetX(ctx context.Context, id guidgql.GUID) *Match {
 	return obj
 }
 
-// QueryGame queries the game edge of a Match.
-func (c *MatchClient) QueryGame(m *Match) *GameQuery {
-	query := (&GameClient{config: c.config}).Query()
+// QueryGameVersion queries the game_version edge of a Match.
+func (c *MatchClient) QueryGameVersion(m *Match) *GameVersionQuery {
+	query := (&GameVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(match.Table, match.FieldID, id),
-			sqlgraph.To(game.Table, game.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, match.GameTable, match.GameColumn),
+			sqlgraph.To(gameversion.Table, gameversion.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, match.GameVersionTable, match.GameVersionColumn),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil
@@ -2004,15 +2162,15 @@ func (c *StatDescriptionClient) GetX(ctx context.Context, id guidgql.GUID) *Stat
 	return obj
 }
 
-// QueryGame queries the game edge of a StatDescription.
-func (c *StatDescriptionClient) QueryGame(sd *StatDescription) *GameQuery {
-	query := (&GameClient{config: c.config}).Query()
+// QueryGameVersion queries the game_version edge of a StatDescription.
+func (c *StatDescriptionClient) QueryGameVersion(sd *StatDescription) *GameVersionQuery {
+	query := (&GameVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := sd.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(statdescription.Table, statdescription.FieldID, id),
-			sqlgraph.To(game.Table, game.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, statdescription.GameTable, statdescription.GamePrimaryKey...),
+			sqlgraph.To(gameversion.Table, gameversion.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, statdescription.GameVersionTable, statdescription.GameVersionPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
 		return fromV, nil
@@ -2476,14 +2634,15 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Game, GameFavorite, Group, GroupMembership, GroupMembershipApplication,
-		GroupSettings, Match, Player, PlayerSupervisionRequest,
-		PlayerSupervisionRequestApproval, StatDescription, Statistic, User []ent.Hook
+		Game, GameFavorite, GameVersion, Group, GroupMembership,
+		GroupMembershipApplication, GroupSettings, Match, Player,
+		PlayerSupervisionRequest, PlayerSupervisionRequestApproval, StatDescription,
+		Statistic, User []ent.Hook
 	}
 	inters struct {
-		Game, GameFavorite, Group, GroupMembership, GroupMembershipApplication,
-		GroupSettings, Match, Player, PlayerSupervisionRequest,
-		PlayerSupervisionRequestApproval, StatDescription, Statistic,
-		User []ent.Interceptor
+		Game, GameFavorite, GameVersion, Group, GroupMembership,
+		GroupMembershipApplication, GroupSettings, Match, Player,
+		PlayerSupervisionRequest, PlayerSupervisionRequestApproval, StatDescription,
+		Statistic, User []ent.Interceptor
 	}
 )

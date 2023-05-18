@@ -24,7 +24,7 @@ func (r *mutationResolver) CreateMatch(ctx context.Context, input model.CreateMa
 
 	// add checks for the current user to have access to players
 	m, err := client.Match.Create().
-		SetGameID(input.GameID).
+		SetGameVersionID(input.GameVersionID).
 		AddPlayerIDs(playerIds...).
 		Save(ctx)
 	if err != nil {

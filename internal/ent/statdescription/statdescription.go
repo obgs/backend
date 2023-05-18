@@ -25,17 +25,17 @@ const (
 	FieldMetadata = "metadata"
 	// FieldOrderNumber holds the string denoting the order_number field in the database.
 	FieldOrderNumber = "order_number"
-	// EdgeGame holds the string denoting the game edge name in mutations.
-	EdgeGame = "game"
+	// EdgeGameVersion holds the string denoting the game_version edge name in mutations.
+	EdgeGameVersion = "game_version"
 	// EdgeStats holds the string denoting the stats edge name in mutations.
 	EdgeStats = "stats"
 	// Table holds the table name of the statdescription in the database.
 	Table = "stat_descriptions"
-	// GameTable is the table that holds the game relation/edge. The primary key declared below.
-	GameTable = "stat_description_game"
-	// GameInverseTable is the table name for the Game entity.
-	// It exists in this package in order to avoid circular dependency with the "game" package.
-	GameInverseTable = "games"
+	// GameVersionTable is the table that holds the game_version relation/edge. The primary key declared below.
+	GameVersionTable = "stat_description_game_version"
+	// GameVersionInverseTable is the table name for the GameVersion entity.
+	// It exists in this package in order to avoid circular dependency with the "gameversion" package.
+	GameVersionInverseTable = "game_versions"
 	// StatsTable is the table that holds the stats relation/edge.
 	StatsTable = "statistics"
 	// StatsInverseTable is the table name for the Statistic entity.
@@ -56,9 +56,9 @@ var Columns = []string{
 }
 
 var (
-	// GamePrimaryKey and GameColumn2 are the table columns denoting the
-	// primary key for the game relation (M2M).
-	GamePrimaryKey = []string{"stat_description_id", "game_id"}
+	// GameVersionPrimaryKey and GameVersionColumn2 are the table columns denoting the
+	// primary key for the game_version relation (M2M).
+	GameVersionPrimaryKey = []string{"stat_description_id", "game_version_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

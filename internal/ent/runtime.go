@@ -5,6 +5,7 @@ package ent
 import (
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -52,6 +53,16 @@ func init() {
 	gamefavoriteDescID := gamefavoriteFields[0].Descriptor()
 	// gamefavorite.DefaultID holds the default value on creation for the id field.
 	gamefavorite.DefaultID = gamefavoriteDescID.Default.(func() guidgql.GUID)
+	gameversionFields := schema.GameVersion{}.Fields()
+	_ = gameversionFields
+	// gameversionDescVersionNumber is the schema descriptor for version_number field.
+	gameversionDescVersionNumber := gameversionFields[1].Descriptor()
+	// gameversion.DefaultVersionNumber holds the default value on creation for the version_number field.
+	gameversion.DefaultVersionNumber = gameversionDescVersionNumber.Default.(int)
+	// gameversionDescID is the schema descriptor for id field.
+	gameversionDescID := gameversionFields[0].Descriptor()
+	// gameversion.DefaultID holds the default value on creation for the id field.
+	gameversion.DefaultID = gameversionDescID.Default.(func() guidgql.GUID)
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescName is the schema descriptor for name field.

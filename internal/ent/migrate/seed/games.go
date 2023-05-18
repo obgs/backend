@@ -135,14 +135,20 @@ func createTerraformingMars(ctx context.Context, tx *ent.Tx, author *ent.User) *
 	corporationsMetadataBytes, _ := json.Marshal(corporationsMetadata)
 	tx.StatDescription.UpdateOne(stats[0]).SetMetadata(string(corporationsMetadataBytes)).ExecX(ctx)
 
-	return tx.Game.Create().
+	g := tx.Game.Create().
 		SetName("Terraforming Mars").
 		SetMinPlayers(MIN_PLAYERS).
 		SetMaxPlayers(MAX_PLAYERS).
 		SetBoardgamegeekURL("https://boardgamegeek.com/boardgame/167791/terraforming-mars").
 		SetAuthor(author).
-		AddStatDescriptions(stats...).
 		SaveX(ctx)
+
+	tx.GameVersion.Create().
+		AddStatDescriptions(stats...).
+		SetGame(g).
+		SaveX(ctx)
+
+	return g
 }
 
 func addGameToFavorites(ctx context.Context, tx *ent.Tx, user *ent.User, game *ent.Game) {

@@ -74,6 +74,78 @@ func newGamePaginateArgs(rv map[string]interface{}) *gamePaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (gv *GameVersionQuery) CollectFields(ctx context.Context, satisfies ...string) (*GameVersionQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return gv, nil
+	}
+	if err := gv.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return gv, nil
+}
+
+func (gv *GameVersionQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+		switch field.Name {
+		case "game":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&GameClient{config: gv.config}).Query()
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			gv.withGame = query
+		case "statDescriptions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&StatDescriptionClient{config: gv.config}).Query()
+			)
+			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+				return err
+			}
+			gv.WithNamedStatDescriptions(alias, func(wq *StatDescriptionQuery) {
+				*wq = *query
+			})
+		}
+	}
+	return nil
+}
+
+type gameversionPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []GameVersionPaginateOption
+}
+
+func newGameVersionPaginateArgs(rv map[string]interface{}) *gameversionPaginateArgs {
+	args := &gameversionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*GameVersionWhereInput); ok {
+		args.opts = append(args.opts, WithGameVersionFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (gr *GroupQuery) CollectFields(ctx context.Context, satisfies ...string) (*GroupQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -427,16 +499,16 @@ func (m *MatchQuery) collectField(ctx context.Context, op *graphql.OperationCont
 	path = append([]string(nil), path...)
 	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
 		switch field.Name {
-		case "game":
+		case "gameVersion":
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&GameClient{config: m.config}).Query()
+				query = (&GameVersionClient{config: m.config}).Query()
 			)
 			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
 				return err
 			}
-			m.withGame = query
+			m.withGameVersion = query
 		case "players":
 			var (
 				alias = field.Alias

@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -481,6 +482,237 @@ func (ga *Game) ToEdge(order *GameOrder) *GameEdge {
 	return &GameEdge{
 		Node:   ga,
 		Cursor: order.Field.toCursor(ga),
+	}
+}
+
+// GameVersionEdge is the edge representation of GameVersion.
+type GameVersionEdge struct {
+	Node   *GameVersion `json:"node"`
+	Cursor Cursor       `json:"cursor"`
+}
+
+// GameVersionConnection is the connection containing edges to GameVersion.
+type GameVersionConnection struct {
+	Edges      []*GameVersionEdge `json:"edges"`
+	PageInfo   PageInfo           `json:"pageInfo"`
+	TotalCount int                `json:"totalCount"`
+}
+
+func (c *GameVersionConnection) build(nodes []*GameVersion, pager *gameversionPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *GameVersion
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *GameVersion {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *GameVersion {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*GameVersionEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &GameVersionEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// GameVersionPaginateOption enables pagination customization.
+type GameVersionPaginateOption func(*gameversionPager) error
+
+// WithGameVersionOrder configures pagination ordering.
+func WithGameVersionOrder(order *GameVersionOrder) GameVersionPaginateOption {
+	if order == nil {
+		order = DefaultGameVersionOrder
+	}
+	o := *order
+	return func(pager *gameversionPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultGameVersionOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithGameVersionFilter configures pagination filter.
+func WithGameVersionFilter(filter func(*GameVersionQuery) (*GameVersionQuery, error)) GameVersionPaginateOption {
+	return func(pager *gameversionPager) error {
+		if filter == nil {
+			return errors.New("GameVersionQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type gameversionPager struct {
+	order  *GameVersionOrder
+	filter func(*GameVersionQuery) (*GameVersionQuery, error)
+}
+
+func newGameVersionPager(opts []GameVersionPaginateOption) (*gameversionPager, error) {
+	pager := &gameversionPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultGameVersionOrder
+	}
+	return pager, nil
+}
+
+func (p *gameversionPager) applyFilter(query *GameVersionQuery) (*GameVersionQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *gameversionPager) toCursor(gv *GameVersion) Cursor {
+	return p.order.Field.toCursor(gv)
+}
+
+func (p *gameversionPager) applyCursors(query *GameVersionQuery, after, before *Cursor) *GameVersionQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultGameVersionOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *gameversionPager) applyOrder(query *GameVersionQuery, reverse bool) *GameVersionQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultGameVersionOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultGameVersionOrder.Field.field))
+	}
+	return query
+}
+
+func (p *gameversionPager) orderExpr(reverse bool) sql.Querier {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.field).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultGameVersionOrder.Field {
+			b.Comma().Ident(DefaultGameVersionOrder.Field.field).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to GameVersion.
+func (gv *GameVersionQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...GameVersionPaginateOption,
+) (*GameVersionConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newGameVersionPager(opts)
+	if err != nil {
+		return nil, err
+	}
+	if gv, err = pager.applyFilter(gv); err != nil {
+		return nil, err
+	}
+	conn := &GameVersionConnection{Edges: []*GameVersionEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			if conn.TotalCount, err = gv.Clone().Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+
+	gv = pager.applyCursors(gv, after, before)
+	gv = pager.applyOrder(gv, last != nil)
+	if limit := paginateLimit(first, last); limit != 0 {
+		gv.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := gv.collectField(ctx, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+
+	nodes, err := gv.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// GameVersionOrderField defines the ordering field of GameVersion.
+type GameVersionOrderField struct {
+	field    string
+	toCursor func(*GameVersion) Cursor
+}
+
+// GameVersionOrder defines the ordering of GameVersion.
+type GameVersionOrder struct {
+	Direction OrderDirection         `json:"direction"`
+	Field     *GameVersionOrderField `json:"field"`
+}
+
+// DefaultGameVersionOrder is the default ordering of GameVersion.
+var DefaultGameVersionOrder = &GameVersionOrder{
+	Direction: OrderDirectionAsc,
+	Field: &GameVersionOrderField{
+		field: gameversion.FieldID,
+		toCursor: func(gv *GameVersion) Cursor {
+			return Cursor{ID: gv.ID}
+		},
+	},
+}
+
+// ToEdge converts GameVersion into GameVersionEdge.
+func (gv *GameVersion) ToEdge(order *GameVersionOrder) *GameVersionEdge {
+	if order == nil {
+		order = DefaultGameVersionOrder
+	}
+	return &GameVersionEdge{
+		Node:   gv,
+		Cursor: order.Field.toCursor(gv),
 	}
 }
 

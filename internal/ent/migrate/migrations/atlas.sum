@@ -1,4 +1,4 @@
-h1:b/JJ1JgToGZdqzJEnjm+f/kwJoN0NPDvDhcbsbM3ds8=
+h1:haezTap+R/nf1FWX5kuDjx5ugDdl/QuiXR+lZk3NJOY=
 20221010035856_initial.sql h1:URdKuawTqokQ/RoS5zLDJV03xOEIg6AES9DybdKG3lI=
 20221010040622_players.sql h1:bjwjkKcVq+9k4nmrt9WPY77pbEJ5zRqub5Xyv1L9C3o=
 20221010130451_player_supervision_request.sql h1:mBUGi2NPzyza3CMcoyZ0JeuS5cs/LfBvQRgowU939Q4=
@@ -12,3 +12,4 @@ h1:b/JJ1JgToGZdqzJEnjm+f/kwJoN0NPDvDhcbsbM3ds8=
 20230106044418_stat_metadata.sql h1:A/cw1Fb/wGzj0ty2xH1hUT0X1oohYOI69bdUY2dnF+M=
 20230117104213_remove_unique_stat_description_index.sql h1:nCClKB1DCU2aPEOHHqXCdBVflg+BDBy4AbCyCO19ggg=
 20230221140519_stat_order.sql h1:YL6eX5xd6e7o3UFfPKa6UD1A63wgPwfTONIr0o9Qp4U=
+20230516225347_game_versions.sql h1:g9Fmqq29H5RwmF34sf0XPEYYgC2de+KzSsJcjU3AIEA=

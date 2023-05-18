@@ -24,7 +24,7 @@ func (Match) Fields() []ent.Field {
 // Edges of the Match.
 func (Match) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("game", Game.Type).Ref("matches").Unique().Required(),
+		edge.From("game_version", GameVersion.Type).Ref("matches").Unique().Required(),
 		edge.To("players", Player.Type).Required(),
 		edge.To("stats", Statistic.Type).Annotations(
 			entgql.Skip(entgql.SkipWhereInput),
