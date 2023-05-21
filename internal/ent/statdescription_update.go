@@ -175,7 +175,7 @@ func (sdu *StatDescriptionUpdate) RemoveStats(s ...*Statistic) *StatDescriptionU
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (sdu *StatDescriptionUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, StatDescriptionMutation](ctx, sdu.sqlSave, sdu.mutation, sdu.hooks)
+	return withHooks(ctx, sdu.sqlSave, sdu.mutation, sdu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -518,7 +518,7 @@ func (sduo *StatDescriptionUpdateOne) Select(field string, fields ...string) *St
 
 // Save executes the query and returns the updated StatDescription entity.
 func (sduo *StatDescriptionUpdateOne) Save(ctx context.Context) (*StatDescription, error) {
-	return withHooks[*StatDescription, StatDescriptionMutation](ctx, sduo.sqlSave, sduo.mutation, sduo.hooks)
+	return withHooks(ctx, sduo.sqlSave, sduo.mutation, sduo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

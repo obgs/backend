@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -29,8 +30,9 @@ type Game struct {
 	BoardgamegeekURL string `json:"boardgamegeek_url,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GameQuery when eager-loading is set.
-	Edges      GameEdges `json:"edges"`
-	user_games *guidgql.GUID
+	Edges        GameEdges `json:"edges"`
+	user_games   *guidgql.GUID
+	selectValues sql.SelectValues
 }
 
 // GameEdges holds the relations/edges for other nodes in the graph.
@@ -96,7 +98,7 @@ func (*Game) scanValues(columns []string) ([]any, error) {
 		case game.ForeignKeys[0]: // user_games
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Game", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -153,9 +155,17 @@ func (ga *Game) assignValues(columns []string, values []any) error {
 				ga.user_games = new(guidgql.GUID)
 				*ga.user_games = *value.S.(*guidgql.GUID)
 			}
+		default:
+			ga.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Game.
+// This includes values selected through modifiers, order, etc.
+func (ga *Game) Value(name string) (ent.Value, error) {
+	return ga.selectValues.Get(name)
 }
 
 // QueryAuthor queries the "author" edge of the Game entity.

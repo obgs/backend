@@ -23,7 +23,7 @@ import (
 type MatchQuery struct {
 	config
 	ctx              *QueryContext
-	order            []OrderFunc
+	order            []match.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.Match
 	withGameVersion  *GameVersionQuery
@@ -65,7 +65,7 @@ func (mq *MatchQuery) Unique(unique bool) *MatchQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (mq *MatchQuery) Order(o ...OrderFunc) *MatchQuery {
+func (mq *MatchQuery) Order(o ...match.OrderOption) *MatchQuery {
 	mq.order = append(mq.order, o...)
 	return mq
 }
@@ -325,7 +325,7 @@ func (mq *MatchQuery) Clone() *MatchQuery {
 	return &MatchQuery{
 		config:          mq.config,
 		ctx:             mq.ctx.Clone(),
-		order:           append([]OrderFunc{}, mq.order...),
+		order:           append([]match.OrderOption{}, mq.order...),
 		inters:          append([]Interceptor{}, mq.inters...),
 		predicates:      append([]predicate.Match{}, mq.predicates...),
 		withGameVersion: mq.withGameVersion.Clone(),
@@ -607,7 +607,7 @@ func (mq *MatchQuery) loadStats(ctx context.Context, query *StatisticQuery, node
 	}
 	query.withFKs = true
 	query.Where(predicate.Statistic(func(s *sql.Selector) {
-		s.Where(sql.InValues(match.StatsColumn, fks...))
+		s.Where(sql.InValues(s.C(match.StatsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -620,7 +620,7 @@ func (mq *MatchQuery) loadStats(ctx context.Context, query *StatisticQuery, node
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "match_stats" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "match_stats" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

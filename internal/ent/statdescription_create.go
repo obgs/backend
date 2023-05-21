@@ -124,7 +124,7 @@ func (sdc *StatDescriptionCreate) Mutation() *StatDescriptionMutation {
 // Save creates the StatDescription in the database.
 func (sdc *StatDescriptionCreate) Save(ctx context.Context) (*StatDescription, error) {
 	sdc.defaults()
-	return withHooks[*StatDescription, StatDescriptionMutation](ctx, sdc.sqlSave, sdc.mutation, sdc.hooks)
+	return withHooks(ctx, sdc.sqlSave, sdc.mutation, sdc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -602,8 +602,8 @@ func (sdcb *StatDescriptionCreateBulk) Save(ctx context.Context) ([]*StatDescrip
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, sdcb.builders[i+1].mutation)
 				} else {

@@ -21,7 +21,7 @@ import (
 type GroupMembershipApplicationQuery struct {
 	config
 	ctx        *QueryContext
-	order      []OrderFunc
+	order      []groupmembershipapplication.OrderOption
 	inters     []Interceptor
 	predicates []predicate.GroupMembershipApplication
 	withUser   *UserQuery
@@ -60,7 +60,7 @@ func (gmaq *GroupMembershipApplicationQuery) Unique(unique bool) *GroupMembershi
 }
 
 // Order specifies how the records should be ordered.
-func (gmaq *GroupMembershipApplicationQuery) Order(o ...OrderFunc) *GroupMembershipApplicationQuery {
+func (gmaq *GroupMembershipApplicationQuery) Order(o ...groupmembershipapplication.OrderOption) *GroupMembershipApplicationQuery {
 	gmaq.order = append(gmaq.order, o...)
 	return gmaq
 }
@@ -298,7 +298,7 @@ func (gmaq *GroupMembershipApplicationQuery) Clone() *GroupMembershipApplication
 	return &GroupMembershipApplicationQuery{
 		config:     gmaq.config,
 		ctx:        gmaq.ctx.Clone(),
-		order:      append([]OrderFunc{}, gmaq.order...),
+		order:      append([]groupmembershipapplication.OrderOption{}, gmaq.order...),
 		inters:     append([]Interceptor{}, gmaq.inters...),
 		predicates: append([]predicate.GroupMembershipApplication{}, gmaq.predicates...),
 		withUser:   gmaq.withUser.Clone(),

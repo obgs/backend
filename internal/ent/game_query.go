@@ -23,7 +23,7 @@ import (
 type GameQuery struct {
 	config
 	ctx                *QueryContext
-	order              []OrderFunc
+	order              []game.OrderOption
 	inters             []Interceptor
 	predicates         []predicate.Game
 	withAuthor         *UserQuery
@@ -65,7 +65,7 @@ func (gq *GameQuery) Unique(unique bool) *GameQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (gq *GameQuery) Order(o ...OrderFunc) *GameQuery {
+func (gq *GameQuery) Order(o ...game.OrderOption) *GameQuery {
 	gq.order = append(gq.order, o...)
 	return gq
 }
@@ -325,7 +325,7 @@ func (gq *GameQuery) Clone() *GameQuery {
 	return &GameQuery{
 		config:        gq.config,
 		ctx:           gq.ctx.Clone(),
-		order:         append([]OrderFunc{}, gq.order...),
+		order:         append([]game.OrderOption{}, gq.order...),
 		inters:        append([]Interceptor{}, gq.inters...),
 		predicates:    append([]predicate.Game{}, gq.predicates...),
 		withAuthor:    gq.withAuthor.Clone(),
@@ -568,7 +568,7 @@ func (gq *GameQuery) loadFavorites(ctx context.Context, query *GameFavoriteQuery
 	}
 	query.withFKs = true
 	query.Where(predicate.GameFavorite(func(s *sql.Selector) {
-		s.Where(sql.InValues(game.FavoritesColumn, fks...))
+		s.Where(sql.InValues(s.C(game.FavoritesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -581,7 +581,7 @@ func (gq *GameQuery) loadFavorites(ctx context.Context, query *GameFavoriteQuery
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "game_favorites" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "game_favorites" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -599,7 +599,7 @@ func (gq *GameQuery) loadVersions(ctx context.Context, query *GameVersionQuery, 
 	}
 	query.withFKs = true
 	query.Where(predicate.GameVersion(func(s *sql.Selector) {
-		s.Where(sql.InValues(game.VersionsColumn, fks...))
+		s.Where(sql.InValues(s.C(game.VersionsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -612,7 +612,7 @@ func (gq *GameQuery) loadVersions(ctx context.Context, query *GameVersionQuery, 
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "game_version_game" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "game_version_game" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

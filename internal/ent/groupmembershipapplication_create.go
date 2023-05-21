@@ -83,7 +83,7 @@ func (gmac *GroupMembershipApplicationCreate) Mutation() *GroupMembershipApplica
 // Save creates the GroupMembershipApplication in the database.
 func (gmac *GroupMembershipApplicationCreate) Save(ctx context.Context) (*GroupMembershipApplication, error) {
 	gmac.defaults()
-	return withHooks[*GroupMembershipApplication, GroupMembershipApplicationMutation](ctx, gmac.sqlSave, gmac.mutation, gmac.hooks)
+	return withHooks(ctx, gmac.sqlSave, gmac.mutation, gmac.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -394,8 +394,8 @@ func (gmacb *GroupMembershipApplicationCreateBulk) Save(ctx context.Context) ([]
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gmacb.builders[i+1].mutation)
 				} else {

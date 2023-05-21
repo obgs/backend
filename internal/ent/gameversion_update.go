@@ -148,7 +148,7 @@ func (gvu *GameVersionUpdate) RemoveMatches(m ...*Match) *GameVersionUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gvu *GameVersionUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, GameVersionMutation](ctx, gvu.sqlSave, gvu.mutation, gvu.hooks)
+	return withHooks(ctx, gvu.sqlSave, gvu.mutation, gvu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -468,7 +468,7 @@ func (gvuo *GameVersionUpdateOne) Select(field string, fields ...string) *GameVe
 
 // Save executes the query and returns the updated GameVersion entity.
 func (gvuo *GameVersionUpdateOne) Save(ctx context.Context) (*GameVersion, error) {
-	return withHooks[*GameVersion, GameVersionMutation](ctx, gvuo.sqlSave, gvuo.mutation, gvuo.hooks)
+	return withHooks(ctx, gvuo.sqlSave, gvuo.mutation, gvuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

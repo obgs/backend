@@ -108,7 +108,7 @@ func (gsc *GroupSettingsCreate) Mutation() *GroupSettingsMutation {
 // Save creates the GroupSettings in the database.
 func (gsc *GroupSettingsCreate) Save(ctx context.Context) (*GroupSettings, error) {
 	gsc.defaults()
-	return withHooks[*GroupSettings, GroupSettingsMutation](ctx, gsc.sqlSave, gsc.mutation, gsc.hooks)
+	return withHooks(ctx, gsc.sqlSave, gsc.mutation, gsc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -491,8 +491,8 @@ func (gscb *GroupSettingsCreateBulk) Save(ctx context.Context) ([]*GroupSettings
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gscb.builders[i+1].mutation)
 				} else {

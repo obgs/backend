@@ -3,6 +3,8 @@
 package user
 
 import (
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
@@ -130,3 +132,192 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() guidgql.GUID
 )
+
+// OrderOption defines the ordering options for the User queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByEmail orders the results by the email field.
+func ByEmail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEmail, opts...).ToFunc()
+}
+
+// ByPassword orders the results by the password field.
+func ByPassword(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPassword, opts...).ToFunc()
+}
+
+// ByAvatarURL orders the results by the avatar_url field.
+func ByAvatarURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAvatarURL, opts...).ToFunc()
+}
+
+// ByPlayersCount orders the results by players count.
+func ByPlayersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPlayersStep(), opts...)
+	}
+}
+
+// ByPlayers orders the results by players terms.
+func ByPlayers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPlayersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByMainPlayerField orders the results by main_player field.
+func ByMainPlayerField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMainPlayerStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// BySentSupervisionRequestsCount orders the results by sent_supervision_requests count.
+func BySentSupervisionRequestsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSentSupervisionRequestsStep(), opts...)
+	}
+}
+
+// BySentSupervisionRequests orders the results by sent_supervision_requests terms.
+func BySentSupervisionRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSentSupervisionRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// BySupervisionRequestApprovalsCount orders the results by supervision_request_approvals count.
+func BySupervisionRequestApprovalsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSupervisionRequestApprovalsStep(), opts...)
+	}
+}
+
+// BySupervisionRequestApprovals orders the results by supervision_request_approvals terms.
+func BySupervisionRequestApprovals(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSupervisionRequestApprovalsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGroupMembershipsCount orders the results by group_memberships count.
+func ByGroupMembershipsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupMembershipsStep(), opts...)
+	}
+}
+
+// ByGroupMemberships orders the results by group_memberships terms.
+func ByGroupMemberships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupMembershipsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGroupMembershipApplicationsCount orders the results by group_membership_applications count.
+func ByGroupMembershipApplicationsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupMembershipApplicationsStep(), opts...)
+	}
+}
+
+// ByGroupMembershipApplications orders the results by group_membership_applications terms.
+func ByGroupMembershipApplications(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupMembershipApplicationsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGamesCount orders the results by games count.
+func ByGamesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGamesStep(), opts...)
+	}
+}
+
+// ByGames orders the results by games terms.
+func ByGames(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGamesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByFavoriteGamesCount orders the results by favorite_games count.
+func ByFavoriteGamesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newFavoriteGamesStep(), opts...)
+	}
+}
+
+// ByFavoriteGames orders the results by favorite_games terms.
+func ByFavoriteGames(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFavoriteGamesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newPlayersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PlayersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, PlayersTable, PlayersPrimaryKey...),
+	)
+}
+func newMainPlayerStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MainPlayerInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, MainPlayerTable, MainPlayerColumn),
+	)
+}
+func newSentSupervisionRequestsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SentSupervisionRequestsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SentSupervisionRequestsTable, SentSupervisionRequestsColumn),
+	)
+}
+func newSupervisionRequestApprovalsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SupervisionRequestApprovalsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SupervisionRequestApprovalsTable, SupervisionRequestApprovalsColumn),
+	)
+}
+func newGroupMembershipsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupMembershipsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GroupMembershipsTable, GroupMembershipsColumn),
+	)
+}
+func newGroupMembershipApplicationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupMembershipApplicationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GroupMembershipApplicationsTable, GroupMembershipApplicationsColumn),
+	)
+}
+func newGamesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GamesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GamesTable, GamesColumn),
+	)
+}
+func newFavoriteGamesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FavoriteGamesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, FavoriteGamesTable, FavoriteGamesColumn),
+	)
+}

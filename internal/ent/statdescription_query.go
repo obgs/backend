@@ -22,7 +22,7 @@ import (
 type StatDescriptionQuery struct {
 	config
 	ctx                  *QueryContext
-	order                []OrderFunc
+	order                []statdescription.OrderOption
 	inters               []Interceptor
 	predicates           []predicate.StatDescription
 	withGameVersion      *GameVersionQuery
@@ -62,7 +62,7 @@ func (sdq *StatDescriptionQuery) Unique(unique bool) *StatDescriptionQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (sdq *StatDescriptionQuery) Order(o ...OrderFunc) *StatDescriptionQuery {
+func (sdq *StatDescriptionQuery) Order(o ...statdescription.OrderOption) *StatDescriptionQuery {
 	sdq.order = append(sdq.order, o...)
 	return sdq
 }
@@ -300,7 +300,7 @@ func (sdq *StatDescriptionQuery) Clone() *StatDescriptionQuery {
 	return &StatDescriptionQuery{
 		config:          sdq.config,
 		ctx:             sdq.ctx.Clone(),
-		order:           append([]OrderFunc{}, sdq.order...),
+		order:           append([]statdescription.OrderOption{}, sdq.order...),
 		inters:          append([]Interceptor{}, sdq.inters...),
 		predicates:      append([]predicate.StatDescription{}, sdq.predicates...),
 		withGameVersion: sdq.withGameVersion.Clone(),
@@ -546,7 +546,7 @@ func (sdq *StatDescriptionQuery) loadStats(ctx context.Context, query *Statistic
 	}
 	query.withFKs = true
 	query.Where(predicate.Statistic(func(s *sql.Selector) {
-		s.Where(sql.InValues(statdescription.StatsColumn, fks...))
+		s.Where(sql.InValues(s.C(statdescription.StatsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -559,7 +559,7 @@ func (sdq *StatDescriptionQuery) loadStats(ctx context.Context, query *Statistic
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "stat_description_stats" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "stat_description_stats" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

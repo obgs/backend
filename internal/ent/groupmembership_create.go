@@ -76,7 +76,7 @@ func (gmc *GroupMembershipCreate) Mutation() *GroupMembershipMutation {
 // Save creates the GroupMembership in the database.
 func (gmc *GroupMembershipCreate) Save(ctx context.Context) (*GroupMembership, error) {
 	gmc.defaults()
-	return withHooks[*GroupMembership, GroupMembershipMutation](ctx, gmc.sqlSave, gmc.mutation, gmc.hooks)
+	return withHooks(ctx, gmc.sqlSave, gmc.mutation, gmc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -388,8 +388,8 @@ func (gmcb *GroupMembershipCreateBulk) Save(ctx context.Context) ([]*GroupMember
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gmcb.builders[i+1].mutation)
 				} else {

@@ -21,7 +21,6 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	github.com/vektah/gqlparser/v2 v2.5.1
-	github.com/vmihailenco/msgpack/v5 v5.3.5
 	golang.org/x/crypto v0.9.0
 	golang.org/x/oauth2 v0.8.0
 	mvdan.cc/gofumpt v0.4.0
@@ -75,6 +74,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/urfave/cli/v2 v2.24.4 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zclconf/go-cty v1.13.1 // indirect

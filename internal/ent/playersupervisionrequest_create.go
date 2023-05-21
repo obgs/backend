@@ -99,7 +99,7 @@ func (psrc *PlayerSupervisionRequestCreate) Mutation() *PlayerSupervisionRequest
 // Save creates the PlayerSupervisionRequest in the database.
 func (psrc *PlayerSupervisionRequestCreate) Save(ctx context.Context) (*PlayerSupervisionRequest, error) {
 	psrc.defaults()
-	return withHooks[*PlayerSupervisionRequest, PlayerSupervisionRequestMutation](ctx, psrc.sqlSave, psrc.mutation, psrc.hooks)
+	return withHooks(ctx, psrc.sqlSave, psrc.mutation, psrc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -432,8 +432,8 @@ func (psrcb *PlayerSupervisionRequestCreateBulk) Save(ctx context.Context) ([]*P
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, psrcb.builders[i+1].mutation)
 				} else {

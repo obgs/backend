@@ -127,7 +127,7 @@ func (mu *MatchUpdate) RemoveStats(s ...*Statistic) *MatchUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (mu *MatchUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, MatchMutation](ctx, mu.sqlSave, mu.mutation, mu.hooks)
+	return withHooks(ctx, mu.sqlSave, mu.mutation, mu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -420,7 +420,7 @@ func (muo *MatchUpdateOne) Select(field string, fields ...string) *MatchUpdateOn
 
 // Save executes the query and returns the updated Match entity.
 func (muo *MatchUpdateOne) Save(ctx context.Context) (*Match, error) {
-	return withHooks[*Match, MatchMutation](ctx, muo.sqlSave, muo.mutation, muo.hooks)
+	return withHooks(ctx, muo.sqlSave, muo.mutation, muo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

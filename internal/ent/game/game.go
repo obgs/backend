@@ -3,6 +3,8 @@
 package game
 
 import (
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
@@ -95,3 +97,92 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() guidgql.GUID
 )
+
+// OrderOption defines the ordering options for the Game queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByMinPlayers orders the results by the min_players field.
+func ByMinPlayers(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMinPlayers, opts...).ToFunc()
+}
+
+// ByMaxPlayers orders the results by the max_players field.
+func ByMaxPlayers(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMaxPlayers, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByBoardgamegeekURL orders the results by the boardgamegeek_url field.
+func ByBoardgamegeekURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBoardgamegeekURL, opts...).ToFunc()
+}
+
+// ByAuthorField orders the results by author field.
+func ByAuthorField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAuthorStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByFavoritesCount orders the results by favorites count.
+func ByFavoritesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newFavoritesStep(), opts...)
+	}
+}
+
+// ByFavorites orders the results by favorites terms.
+func ByFavorites(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFavoritesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByVersionsCount orders the results by versions count.
+func ByVersionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVersionsStep(), opts...)
+	}
+}
+
+// ByVersions orders the results by versions terms.
+func ByVersions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVersionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newAuthorStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AuthorInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, AuthorTable, AuthorColumn),
+	)
+}
+func newFavoritesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FavoritesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, FavoritesTable, FavoritesColumn),
+	)
+}
+func newVersionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VersionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, VersionsTable, VersionsColumn),
+	)
+}

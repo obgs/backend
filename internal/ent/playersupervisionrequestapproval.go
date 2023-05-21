@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -25,6 +26,7 @@ type PlayerSupervisionRequestApproval struct {
 	Edges                                PlayerSupervisionRequestApprovalEdges `json:"edges"`
 	player_supervision_request_approvals *guidgql.GUID
 	user_supervision_request_approvals   *guidgql.GUID
+	selectValues                         sql.SelectValues
 }
 
 // PlayerSupervisionRequestApprovalEdges holds the relations/edges for other nodes in the graph.
@@ -80,7 +82,7 @@ func (*PlayerSupervisionRequestApproval) scanValues(columns []string) ([]any, er
 		case playersupervisionrequestapproval.ForeignKeys[1]: // user_supervision_request_approvals
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type PlayerSupervisionRequestApproval", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -121,9 +123,17 @@ func (psra *PlayerSupervisionRequestApproval) assignValues(columns []string, val
 				psra.user_supervision_request_approvals = new(guidgql.GUID)
 				*psra.user_supervision_request_approvals = *value.S.(*guidgql.GUID)
 			}
+		default:
+			psra.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the PlayerSupervisionRequestApproval.
+// This includes values selected through modifiers, order, etc.
+func (psra *PlayerSupervisionRequestApproval) Value(name string) (ent.Value, error) {
+	return psra.selectValues.Get(name)
 }
 
 // QueryApprover queries the "approver" edge of the PlayerSupervisionRequestApproval entity.

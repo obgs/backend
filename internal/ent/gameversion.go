@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
@@ -23,6 +24,7 @@ type GameVersion struct {
 	// The values are being populated by the GameVersionQuery when eager-loading is set.
 	Edges             GameVersionEdges `json:"edges"`
 	game_version_game *guidgql.GUID
+	selectValues      sql.SelectValues
 }
 
 // GameVersionEdges holds the relations/edges for other nodes in the graph.
@@ -86,7 +88,7 @@ func (*GameVersion) scanValues(columns []string) ([]any, error) {
 		case gameversion.ForeignKeys[0]: // game_version_game
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type GameVersion", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -119,9 +121,17 @@ func (gv *GameVersion) assignValues(columns []string, values []any) error {
 				gv.game_version_game = new(guidgql.GUID)
 				*gv.game_version_game = *value.S.(*guidgql.GUID)
 			}
+		default:
+			gv.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the GameVersion.
+// This includes values selected through modifiers, order, etc.
+func (gv *GameVersion) Value(name string) (ent.Value, error) {
+	return gv.selectValues.Get(name)
 }
 
 // QueryGame queries the "game" edge of the GameVersion entity.

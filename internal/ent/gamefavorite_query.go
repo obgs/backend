@@ -21,7 +21,7 @@ import (
 type GameFavoriteQuery struct {
 	config
 	ctx        *QueryContext
-	order      []OrderFunc
+	order      []gamefavorite.OrderOption
 	inters     []Interceptor
 	predicates []predicate.GameFavorite
 	withGame   *GameQuery
@@ -60,7 +60,7 @@ func (gfq *GameFavoriteQuery) Unique(unique bool) *GameFavoriteQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (gfq *GameFavoriteQuery) Order(o ...OrderFunc) *GameFavoriteQuery {
+func (gfq *GameFavoriteQuery) Order(o ...gamefavorite.OrderOption) *GameFavoriteQuery {
 	gfq.order = append(gfq.order, o...)
 	return gfq
 }
@@ -298,7 +298,7 @@ func (gfq *GameFavoriteQuery) Clone() *GameFavoriteQuery {
 	return &GameFavoriteQuery{
 		config:     gfq.config,
 		ctx:        gfq.ctx.Clone(),
-		order:      append([]OrderFunc{}, gfq.order...),
+		order:      append([]gamefavorite.OrderOption{}, gfq.order...),
 		inters:     append([]Interceptor{}, gfq.inters...),
 		predicates: append([]predicate.GameFavorite{}, gfq.predicates...),
 		withGame:   gfq.withGame.Clone(),

@@ -69,7 +69,7 @@ func (gfc *GameFavoriteCreate) Mutation() *GameFavoriteMutation {
 // Save creates the GameFavorite in the database.
 func (gfc *GameFavoriteCreate) Save(ctx context.Context) (*GameFavorite, error) {
 	gfc.defaults()
-	return withHooks[*GameFavorite, GameFavoriteMutation](ctx, gfc.sqlSave, gfc.mutation, gfc.hooks)
+	return withHooks(ctx, gfc.sqlSave, gfc.mutation, gfc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -337,8 +337,8 @@ func (gfcb *GameFavoriteCreateBulk) Save(ctx context.Context) ([]*GameFavorite, 
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gfcb.builders[i+1].mutation)
 				} else {

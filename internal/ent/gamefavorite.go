@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
@@ -23,6 +24,7 @@ type GameFavorite struct {
 	Edges               GameFavoriteEdges `json:"edges"`
 	game_favorites      *guidgql.GUID
 	user_favorite_games *guidgql.GUID
+	selectValues        sql.SelectValues
 }
 
 // GameFavoriteEdges holds the relations/edges for other nodes in the graph.
@@ -76,7 +78,7 @@ func (*GameFavorite) scanValues(columns []string) ([]any, error) {
 		case gamefavorite.ForeignKeys[1]: // user_favorite_games
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type GameFavorite", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -110,9 +112,17 @@ func (gf *GameFavorite) assignValues(columns []string, values []any) error {
 				gf.user_favorite_games = new(guidgql.GUID)
 				*gf.user_favorite_games = *value.S.(*guidgql.GUID)
 			}
+		default:
+			gf.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the GameFavorite.
+// This includes values selected through modifiers, order, etc.
+func (gf *GameFavorite) Value(name string) (ent.Value, error) {
+	return gf.selectValues.Get(name)
 }
 
 // QueryGame queries the "game" edge of the GameFavorite entity.

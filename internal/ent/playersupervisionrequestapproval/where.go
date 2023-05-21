@@ -93,11 +93,7 @@ func HasApprover() predicate.PlayerSupervisionRequestApproval {
 // HasApproverWith applies the HasEdge predicate on the "approver" edge with a given conditions (other predicates).
 func HasApproverWith(preds ...predicate.User) predicate.PlayerSupervisionRequestApproval {
 	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ApproverInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, ApproverTable, ApproverColumn),
-		)
+		step := newApproverStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -120,11 +116,7 @@ func HasSupervisionRequest() predicate.PlayerSupervisionRequestApproval {
 // HasSupervisionRequestWith applies the HasEdge predicate on the "supervision_request" edge with a given conditions (other predicates).
 func HasSupervisionRequestWith(preds ...predicate.PlayerSupervisionRequest) predicate.PlayerSupervisionRequestApproval {
 	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SupervisionRequestInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, SupervisionRequestTable, SupervisionRequestColumn),
-		)
+		step := newSupervisionRequestStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

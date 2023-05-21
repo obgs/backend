@@ -364,11 +364,7 @@ func HasGameVersion() predicate.StatDescription {
 // HasGameVersionWith applies the HasEdge predicate on the "game_version" edge with a given conditions (other predicates).
 func HasGameVersionWith(preds ...predicate.GameVersion) predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(GameVersionInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, GameVersionTable, GameVersionPrimaryKey...),
-		)
+		step := newGameVersionStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -391,11 +387,7 @@ func HasStats() predicate.StatDescription {
 // HasStatsWith applies the HasEdge predicate on the "stats" edge with a given conditions (other predicates).
 func HasStatsWith(preds ...predicate.Statistic) predicate.StatDescription {
 	return predicate.StatDescription(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, StatsTable, StatsColumn),
-		)
+		step := newStatsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

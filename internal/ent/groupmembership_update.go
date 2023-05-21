@@ -78,7 +78,7 @@ func (gmu *GroupMembershipUpdate) ClearUser() *GroupMembershipUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gmu *GroupMembershipUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, GroupMembershipMutation](ctx, gmu.sqlSave, gmu.mutation, gmu.hooks)
+	return withHooks(ctx, gmu.sqlSave, gmu.mutation, gmu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -272,7 +272,7 @@ func (gmuo *GroupMembershipUpdateOne) Select(field string, fields ...string) *Gr
 
 // Save executes the query and returns the updated GroupMembership entity.
 func (gmuo *GroupMembershipUpdateOne) Save(ctx context.Context) (*GroupMembership, error) {
-	return withHooks[*GroupMembership, GroupMembershipMutation](ctx, gmuo.sqlSave, gmuo.mutation, gmuo.hooks)
+	return withHooks(ctx, gmuo.sqlSave, gmuo.mutation, gmuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

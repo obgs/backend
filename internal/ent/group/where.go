@@ -278,11 +278,7 @@ func HasSettings() predicate.Group {
 // HasSettingsWith applies the HasEdge predicate on the "settings" edge with a given conditions (other predicates).
 func HasSettingsWith(preds ...predicate.GroupSettings) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SettingsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, SettingsTable, SettingsColumn),
-		)
+		step := newSettingsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -305,11 +301,7 @@ func HasMembers() predicate.Group {
 // HasMembersWith applies the HasEdge predicate on the "members" edge with a given conditions (other predicates).
 func HasMembersWith(preds ...predicate.GroupMembership) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(MembersInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
-		)
+		step := newMembersStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -332,11 +324,7 @@ func HasApplications() predicate.Group {
 // HasApplicationsWith applies the HasEdge predicate on the "applications" edge with a given conditions (other predicates).
 func HasApplicationsWith(preds ...predicate.GroupMembershipApplication) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ApplicationsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ApplicationsTable, ApplicationsColumn),
-		)
+		step := newApplicationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

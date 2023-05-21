@@ -103,7 +103,7 @@ func (gvc *GameVersionCreate) Mutation() *GameVersionMutation {
 // Save creates the GameVersion in the database.
 func (gvc *GameVersionCreate) Save(ctx context.Context) (*GameVersion, error) {
 	gvc.defaults()
-	return withHooks[*GameVersion, GameVersionMutation](ctx, gvc.sqlSave, gvc.mutation, gvc.hooks)
+	return withHooks(ctx, gvc.sqlSave, gvc.mutation, gvc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -442,8 +442,8 @@ func (gvcb *GameVersionCreateBulk) Save(ctx context.Context) ([]*GameVersion, er
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gvcb.builders[i+1].mutation)
 				} else {

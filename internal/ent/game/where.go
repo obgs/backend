@@ -388,11 +388,7 @@ func HasAuthor() predicate.Game {
 // HasAuthorWith applies the HasEdge predicate on the "author" edge with a given conditions (other predicates).
 func HasAuthorWith(preds ...predicate.User) predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(AuthorInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, AuthorTable, AuthorColumn),
-		)
+		step := newAuthorStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -415,11 +411,7 @@ func HasFavorites() predicate.Game {
 // HasFavoritesWith applies the HasEdge predicate on the "favorites" edge with a given conditions (other predicates).
 func HasFavoritesWith(preds ...predicate.GameFavorite) predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(FavoritesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, FavoritesTable, FavoritesColumn),
-		)
+		step := newFavoritesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -442,11 +434,7 @@ func HasVersions() predicate.Game {
 // HasVersionsWith applies the HasEdge predicate on the "versions" edge with a given conditions (other predicates).
 func HasVersionsWith(preds ...predicate.GameVersion) predicate.Game {
 	return predicate.Game(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(VersionsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, VersionsTable, VersionsColumn),
-		)
+		step := newVersionsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

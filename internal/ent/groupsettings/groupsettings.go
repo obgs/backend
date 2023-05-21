@@ -7,6 +7,8 @@ import (
 	"io"
 	"strconv"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -132,6 +134,43 @@ func MinimumRoleToInviteValidator(mrti enums.Role) error {
 	default:
 		return fmt.Errorf("groupsettings: invalid enum value for minimum_role_to_invite field: %q", mrti)
 	}
+}
+
+// OrderOption defines the ordering options for the GroupSettings queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByVisibility orders the results by the visibility field.
+func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVisibility, opts...).ToFunc()
+}
+
+// ByJoinPolicy orders the results by the join_policy field.
+func ByJoinPolicy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldJoinPolicy, opts...).ToFunc()
+}
+
+// ByMinimumRoleToInvite orders the results by the minimum_role_to_invite field.
+func ByMinimumRoleToInvite(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMinimumRoleToInvite, opts...).ToFunc()
+}
+
+// ByGroupField orders the results by group field.
+func ByGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newGroupStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, GroupTable, GroupColumn),
+	)
 }
 
 // MarshalGQL implements graphql.Marshaler interface.

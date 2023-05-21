@@ -68,11 +68,7 @@ func HasGameVersion() predicate.Match {
 // HasGameVersionWith applies the HasEdge predicate on the "game_version" edge with a given conditions (other predicates).
 func HasGameVersionWith(preds ...predicate.GameVersion) predicate.Match {
 	return predicate.Match(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(GameVersionInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, GameVersionTable, GameVersionColumn),
-		)
+		step := newGameVersionStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -95,11 +91,7 @@ func HasPlayers() predicate.Match {
 // HasPlayersWith applies the HasEdge predicate on the "players" edge with a given conditions (other predicates).
 func HasPlayersWith(preds ...predicate.Player) predicate.Match {
 	return predicate.Match(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(PlayersInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, PlayersTable, PlayersPrimaryKey...),
-		)
+		step := newPlayersStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -122,11 +114,7 @@ func HasStats() predicate.Match {
 // HasStatsWith applies the HasEdge predicate on the "stats" edge with a given conditions (other predicates).
 func HasStatsWith(preds ...predicate.Statistic) predicate.Match {
 	return predicate.Match(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, StatsTable, StatsColumn),
-		)
+		step := newStatsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

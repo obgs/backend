@@ -27,7 +27,7 @@ func (md *MatchDelete) Where(ps ...predicate.Match) *MatchDelete {
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (md *MatchDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, MatchMutation](ctx, md.sqlExec, md.mutation, md.hooks)
+	return withHooks(ctx, md.sqlExec, md.mutation, md.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

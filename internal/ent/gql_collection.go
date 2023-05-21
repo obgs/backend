@@ -9,8 +9,19 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
+	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/player"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
+	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
+	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
@@ -25,9 +36,14 @@ func (ga *GameQuery) CollectFields(ctx context.Context, satisfies ...string) (*G
 	return ga, nil
 }
 
-func (ga *GameQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (ga *GameQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(game.Columns))
+		selectedFields = []string{game.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "author":
 			var (
@@ -35,11 +51,43 @@ func (ga *GameQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				path  = append(path, alias)
 				query = (&UserClient{config: ga.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			ga.withAuthor = query
+		case "name":
+			if _, ok := fieldSeen[game.FieldName]; !ok {
+				selectedFields = append(selectedFields, game.FieldName)
+				fieldSeen[game.FieldName] = struct{}{}
+			}
+		case "minPlayers":
+			if _, ok := fieldSeen[game.FieldMinPlayers]; !ok {
+				selectedFields = append(selectedFields, game.FieldMinPlayers)
+				fieldSeen[game.FieldMinPlayers] = struct{}{}
+			}
+		case "maxPlayers":
+			if _, ok := fieldSeen[game.FieldMaxPlayers]; !ok {
+				selectedFields = append(selectedFields, game.FieldMaxPlayers)
+				fieldSeen[game.FieldMaxPlayers] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[game.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, game.FieldDescription)
+				fieldSeen[game.FieldDescription] = struct{}{}
+			}
+		case "boardgamegeekURL":
+			if _, ok := fieldSeen[game.FieldBoardgamegeekURL]; !ok {
+				selectedFields = append(selectedFields, game.FieldBoardgamegeekURL)
+				fieldSeen[game.FieldBoardgamegeekURL] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		ga.Select(selectedFields...)
 	}
 	return nil
 }
@@ -50,7 +98,7 @@ type gamePaginateArgs struct {
 	opts          []GamePaginateOption
 }
 
-func newGamePaginateArgs(rv map[string]interface{}) *gamePaginateArgs {
+func newGamePaginateArgs(rv map[string]any) *gamePaginateArgs {
 	args := &gamePaginateArgs{}
 	if rv == nil {
 		return args
@@ -85,9 +133,14 @@ func (gv *GameVersionQuery) CollectFields(ctx context.Context, satisfies ...stri
 	return gv, nil
 }
 
-func (gv *GameVersionQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (gv *GameVersionQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(gameversion.Columns))
+		selectedFields = []string{gameversion.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "game":
 			var (
@@ -95,7 +148,7 @@ func (gv *GameVersionQuery) collectField(ctx context.Context, op *graphql.Operat
 				path  = append(path, alias)
 				query = (&GameClient{config: gv.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			gv.withGame = query
@@ -105,13 +158,25 @@ func (gv *GameVersionQuery) collectField(ctx context.Context, op *graphql.Operat
 				path  = append(path, alias)
 				query = (&StatDescriptionClient{config: gv.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			gv.WithNamedStatDescriptions(alias, func(wq *StatDescriptionQuery) {
 				*wq = *query
 			})
+		case "versionNumber":
+			if _, ok := fieldSeen[gameversion.FieldVersionNumber]; !ok {
+				selectedFields = append(selectedFields, gameversion.FieldVersionNumber)
+				fieldSeen[gameversion.FieldVersionNumber] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		gv.Select(selectedFields...)
 	}
 	return nil
 }
@@ -122,7 +187,7 @@ type gameversionPaginateArgs struct {
 	opts          []GameVersionPaginateOption
 }
 
-func newGameVersionPaginateArgs(rv map[string]interface{}) *gameversionPaginateArgs {
+func newGameVersionPaginateArgs(rv map[string]any) *gameversionPaginateArgs {
 	args := &gameversionPaginateArgs{}
 	if rv == nil {
 		return args
@@ -157,9 +222,14 @@ func (gr *GroupQuery) CollectFields(ctx context.Context, satisfies ...string) (*
 	return gr, nil
 }
 
-func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (gr *GroupQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(group.Columns))
+		selectedFields = []string{group.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "settings":
 			var (
@@ -167,7 +237,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 				path  = append(path, alias)
 				query = (&GroupSettingsClient{config: gr.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			gr.withSettings = query
@@ -181,7 +251,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 			if err := validateFirstLast(args.first, args.last); err != nil {
 				return fmt.Errorf("validate first and last in path %q: %w", path, err)
 			}
-			pager, err := newGroupMembershipPager(args.opts)
+			pager, err := newGroupMembershipPager(args.opts, args.last != nil)
 			if err != nil {
 				return fmt.Errorf("create new pager in path %q: %w", path, err)
 			}
@@ -203,7 +273,7 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 							Count  int          `sql:"count"`
 						}
 						query.Where(func(s *sql.Selector) {
-							s.Where(sql.InValues(group.MembersColumn, ids...))
+							s.Where(sql.InValues(s.C(group.MembersColumn), ids...))
 						})
 						if err := query.GroupBy(group.MembersColumn).Aggregate(Count()).Scan(ctx, &v); err != nil {
 							return err
@@ -237,19 +307,20 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 			if ignoredEdges || (args.first != nil && *args.first == 0) || (args.last != nil && *args.last == 0) {
 				continue
 			}
-
-			query = pager.applyCursors(query, args.after, args.before)
-			if limit := paginateLimit(args.first, args.last); limit > 0 {
-				modify := limitRows(group.MembersColumn, limit, pager.orderExpr(args.last != nil))
-				query.modifiers = append(query.modifiers, modify)
-			} else {
-				query = pager.applyOrder(query, args.last != nil)
+			if query, err = pager.applyCursors(query, args.after, args.before); err != nil {
+				return err
 			}
 			path = append(path, edgesField, nodeField)
 			if field := collectedField(ctx, path...); field != nil {
-				if err := query.collectField(ctx, op, *field, path, satisfies...); err != nil {
+				if err := query.collectField(ctx, opCtx, *field, path, mayAddCondition(satisfies, "GroupMembership")...); err != nil {
 					return err
 				}
+			}
+			if limit := paginateLimit(args.first, args.last); limit > 0 {
+				modify := limitRows(group.MembersColumn, limit, pager.orderExpr(query))
+				query.modifiers = append(query.modifiers, modify)
+			} else {
+				query = pager.applyOrder(query)
 			}
 			gr.WithNamedMembers(alias, func(wq *GroupMembershipQuery) {
 				*wq = *query
@@ -260,13 +331,35 @@ func (gr *GroupQuery) collectField(ctx context.Context, op *graphql.OperationCon
 				path  = append(path, alias)
 				query = (&GroupMembershipApplicationClient{config: gr.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			gr.WithNamedApplications(alias, func(wq *GroupMembershipApplicationQuery) {
 				*wq = *query
 			})
+		case "name":
+			if _, ok := fieldSeen[group.FieldName]; !ok {
+				selectedFields = append(selectedFields, group.FieldName)
+				fieldSeen[group.FieldName] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[group.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, group.FieldDescription)
+				fieldSeen[group.FieldDescription] = struct{}{}
+			}
+		case "logoURL":
+			if _, ok := fieldSeen[group.FieldLogoURL]; !ok {
+				selectedFields = append(selectedFields, group.FieldLogoURL)
+				fieldSeen[group.FieldLogoURL] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		gr.Select(selectedFields...)
 	}
 	return nil
 }
@@ -277,7 +370,7 @@ type groupPaginateArgs struct {
 	opts          []GroupPaginateOption
 }
 
-func newGroupPaginateArgs(rv map[string]interface{}) *groupPaginateArgs {
+func newGroupPaginateArgs(rv map[string]any) *groupPaginateArgs {
 	args := &groupPaginateArgs{}
 	if rv == nil {
 		return args
@@ -312,9 +405,14 @@ func (gm *GroupMembershipQuery) CollectFields(ctx context.Context, satisfies ...
 	return gm, nil
 }
 
-func (gm *GroupMembershipQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (gm *GroupMembershipQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(groupmembership.Columns))
+		selectedFields = []string{groupmembership.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "group":
 			var (
@@ -322,7 +420,7 @@ func (gm *GroupMembershipQuery) collectField(ctx context.Context, op *graphql.Op
 				path  = append(path, alias)
 				query = (&GroupClient{config: gm.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			gm.withGroup = query
@@ -332,11 +430,23 @@ func (gm *GroupMembershipQuery) collectField(ctx context.Context, op *graphql.Op
 				path  = append(path, alias)
 				query = (&UserClient{config: gm.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			gm.withUser = query
+		case "role":
+			if _, ok := fieldSeen[groupmembership.FieldRole]; !ok {
+				selectedFields = append(selectedFields, groupmembership.FieldRole)
+				fieldSeen[groupmembership.FieldRole] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		gm.Select(selectedFields...)
 	}
 	return nil
 }
@@ -347,7 +457,7 @@ type groupmembershipPaginateArgs struct {
 	opts          []GroupMembershipPaginateOption
 }
 
-func newGroupMembershipPaginateArgs(rv map[string]interface{}) *groupmembershipPaginateArgs {
+func newGroupMembershipPaginateArgs(rv map[string]any) *groupmembershipPaginateArgs {
 	args := &groupmembershipPaginateArgs{}
 	if rv == nil {
 		return args
@@ -382,9 +492,14 @@ func (gma *GroupMembershipApplicationQuery) CollectFields(ctx context.Context, s
 	return gma, nil
 }
 
-func (gma *GroupMembershipApplicationQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (gma *GroupMembershipApplicationQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(groupmembershipapplication.Columns))
+		selectedFields = []string{groupmembershipapplication.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "user":
 			var (
@@ -392,7 +507,7 @@ func (gma *GroupMembershipApplicationQuery) collectField(ctx context.Context, op
 				path  = append(path, alias)
 				query = (&UserClient{config: gma.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			gma.withUser = query
@@ -402,11 +517,23 @@ func (gma *GroupMembershipApplicationQuery) collectField(ctx context.Context, op
 				path  = append(path, alias)
 				query = (&GroupClient{config: gma.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			gma.withGroup = query
+		case "message":
+			if _, ok := fieldSeen[groupmembershipapplication.FieldMessage]; !ok {
+				selectedFields = append(selectedFields, groupmembershipapplication.FieldMessage)
+				fieldSeen[groupmembershipapplication.FieldMessage] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		gma.Select(selectedFields...)
 	}
 	return nil
 }
@@ -417,7 +544,7 @@ type groupmembershipapplicationPaginateArgs struct {
 	opts          []GroupMembershipApplicationPaginateOption
 }
 
-func newGroupMembershipApplicationPaginateArgs(rv map[string]interface{}) *groupmembershipapplicationPaginateArgs {
+func newGroupMembershipApplicationPaginateArgs(rv map[string]any) *groupmembershipapplicationPaginateArgs {
 	args := &groupmembershipapplicationPaginateArgs{}
 	if rv == nil {
 		return args
@@ -449,8 +576,39 @@ func (gs *GroupSettingsQuery) CollectFields(ctx context.Context, satisfies ...st
 	return gs, nil
 }
 
-func (gs *GroupSettingsQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (gs *GroupSettingsQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(groupsettings.Columns))
+		selectedFields = []string{groupsettings.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "visibility":
+			if _, ok := fieldSeen[groupsettings.FieldVisibility]; !ok {
+				selectedFields = append(selectedFields, groupsettings.FieldVisibility)
+				fieldSeen[groupsettings.FieldVisibility] = struct{}{}
+			}
+		case "joinPolicy":
+			if _, ok := fieldSeen[groupsettings.FieldJoinPolicy]; !ok {
+				selectedFields = append(selectedFields, groupsettings.FieldJoinPolicy)
+				fieldSeen[groupsettings.FieldJoinPolicy] = struct{}{}
+			}
+		case "minimumRoleToInvite":
+			if _, ok := fieldSeen[groupsettings.FieldMinimumRoleToInvite]; !ok {
+				selectedFields = append(selectedFields, groupsettings.FieldMinimumRoleToInvite)
+				fieldSeen[groupsettings.FieldMinimumRoleToInvite] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		gs.Select(selectedFields...)
+	}
 	return nil
 }
 
@@ -460,7 +618,7 @@ type groupsettingsPaginateArgs struct {
 	opts          []GroupSettingsPaginateOption
 }
 
-func newGroupSettingsPaginateArgs(rv map[string]interface{}) *groupsettingsPaginateArgs {
+func newGroupSettingsPaginateArgs(rv map[string]any) *groupsettingsPaginateArgs {
 	args := &groupsettingsPaginateArgs{}
 	if rv == nil {
 		return args
@@ -495,9 +653,9 @@ func (m *MatchQuery) CollectFields(ctx context.Context, satisfies ...string) (*M
 	return m, nil
 }
 
-func (m *MatchQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (m *MatchQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "gameVersion":
 			var (
@@ -505,7 +663,7 @@ func (m *MatchQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				path  = append(path, alias)
 				query = (&GameVersionClient{config: m.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			m.withGameVersion = query
@@ -515,7 +673,7 @@ func (m *MatchQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				path  = append(path, alias)
 				query = (&PlayerClient{config: m.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			m.WithNamedPlayers(alias, func(wq *PlayerQuery) {
@@ -527,7 +685,7 @@ func (m *MatchQuery) collectField(ctx context.Context, op *graphql.OperationCont
 				path  = append(path, alias)
 				query = (&StatisticClient{config: m.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			m.WithNamedStats(alias, func(wq *StatisticQuery) {
@@ -544,7 +702,7 @@ type matchPaginateArgs struct {
 	opts          []MatchPaginateOption
 }
 
-func newMatchPaginateArgs(rv map[string]interface{}) *matchPaginateArgs {
+func newMatchPaginateArgs(rv map[string]any) *matchPaginateArgs {
 	args := &matchPaginateArgs{}
 	if rv == nil {
 		return args
@@ -579,9 +737,14 @@ func (pl *PlayerQuery) CollectFields(ctx context.Context, satisfies ...string) (
 	return pl, nil
 }
 
-func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (pl *PlayerQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(player.Columns))
+		selectedFields = []string{player.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "owner":
 			var (
@@ -589,7 +752,7 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 				path  = append(path, alias)
 				query = (&UserClient{config: pl.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			pl.withOwner = query
@@ -599,7 +762,7 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 				path  = append(path, alias)
 				query = (&UserClient{config: pl.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			pl.WithNamedSupervisors(alias, func(wq *UserQuery) {
@@ -611,7 +774,7 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 				path  = append(path, alias)
 				query = (&PlayerSupervisionRequestClient{config: pl.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			pl.WithNamedSupervisionRequests(alias, func(wq *PlayerSupervisionRequestQuery) {
@@ -623,13 +786,25 @@ func (pl *PlayerQuery) collectField(ctx context.Context, op *graphql.OperationCo
 				path  = append(path, alias)
 				query = (&MatchClient{config: pl.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			pl.WithNamedMatches(alias, func(wq *MatchQuery) {
 				*wq = *query
 			})
+		case "name":
+			if _, ok := fieldSeen[player.FieldName]; !ok {
+				selectedFields = append(selectedFields, player.FieldName)
+				fieldSeen[player.FieldName] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		pl.Select(selectedFields...)
 	}
 	return nil
 }
@@ -640,7 +815,7 @@ type playerPaginateArgs struct {
 	opts          []PlayerPaginateOption
 }
 
-func newPlayerPaginateArgs(rv map[string]interface{}) *playerPaginateArgs {
+func newPlayerPaginateArgs(rv map[string]any) *playerPaginateArgs {
 	args := &playerPaginateArgs{}
 	if rv == nil {
 		return args
@@ -675,9 +850,14 @@ func (psr *PlayerSupervisionRequestQuery) CollectFields(ctx context.Context, sat
 	return psr, nil
 }
 
-func (psr *PlayerSupervisionRequestQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (psr *PlayerSupervisionRequestQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(playersupervisionrequest.Columns))
+		selectedFields = []string{playersupervisionrequest.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "sender":
 			var (
@@ -685,7 +865,7 @@ func (psr *PlayerSupervisionRequestQuery) collectField(ctx context.Context, op *
 				path  = append(path, alias)
 				query = (&UserClient{config: psr.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			psr.withSender = query
@@ -695,7 +875,7 @@ func (psr *PlayerSupervisionRequestQuery) collectField(ctx context.Context, op *
 				path  = append(path, alias)
 				query = (&PlayerClient{config: psr.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			psr.withPlayer = query
@@ -705,13 +885,25 @@ func (psr *PlayerSupervisionRequestQuery) collectField(ctx context.Context, op *
 				path  = append(path, alias)
 				query = (&PlayerSupervisionRequestApprovalClient{config: psr.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			psr.WithNamedApprovals(alias, func(wq *PlayerSupervisionRequestApprovalQuery) {
 				*wq = *query
 			})
+		case "message":
+			if _, ok := fieldSeen[playersupervisionrequest.FieldMessage]; !ok {
+				selectedFields = append(selectedFields, playersupervisionrequest.FieldMessage)
+				fieldSeen[playersupervisionrequest.FieldMessage] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		psr.Select(selectedFields...)
 	}
 	return nil
 }
@@ -722,7 +914,7 @@ type playersupervisionrequestPaginateArgs struct {
 	opts          []PlayerSupervisionRequestPaginateOption
 }
 
-func newPlayerSupervisionRequestPaginateArgs(rv map[string]interface{}) *playersupervisionrequestPaginateArgs {
+func newPlayerSupervisionRequestPaginateArgs(rv map[string]any) *playersupervisionrequestPaginateArgs {
 	args := &playersupervisionrequestPaginateArgs{}
 	if rv == nil {
 		return args
@@ -757,9 +949,14 @@ func (psra *PlayerSupervisionRequestApprovalQuery) CollectFields(ctx context.Con
 	return psra, nil
 }
 
-func (psra *PlayerSupervisionRequestApprovalQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (psra *PlayerSupervisionRequestApprovalQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(playersupervisionrequestapproval.Columns))
+		selectedFields = []string{playersupervisionrequestapproval.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "approver":
 			var (
@@ -767,7 +964,7 @@ func (psra *PlayerSupervisionRequestApprovalQuery) collectField(ctx context.Cont
 				path  = append(path, alias)
 				query = (&UserClient{config: psra.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			psra.withApprover = query
@@ -777,11 +974,23 @@ func (psra *PlayerSupervisionRequestApprovalQuery) collectField(ctx context.Cont
 				path  = append(path, alias)
 				query = (&PlayerSupervisionRequestClient{config: psra.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			psra.withSupervisionRequest = query
+		case "approved":
+			if _, ok := fieldSeen[playersupervisionrequestapproval.FieldApproved]; !ok {
+				selectedFields = append(selectedFields, playersupervisionrequestapproval.FieldApproved)
+				fieldSeen[playersupervisionrequestapproval.FieldApproved] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		psra.Select(selectedFields...)
 	}
 	return nil
 }
@@ -792,7 +1001,7 @@ type playersupervisionrequestapprovalPaginateArgs struct {
 	opts          []PlayerSupervisionRequestApprovalPaginateOption
 }
 
-func newPlayerSupervisionRequestApprovalPaginateArgs(rv map[string]interface{}) *playersupervisionrequestapprovalPaginateArgs {
+func newPlayerSupervisionRequestApprovalPaginateArgs(rv map[string]any) *playersupervisionrequestapprovalPaginateArgs {
 	args := &playersupervisionrequestapprovalPaginateArgs{}
 	if rv == nil {
 		return args
@@ -827,8 +1036,49 @@ func (sd *StatDescriptionQuery) CollectFields(ctx context.Context, satisfies ...
 	return sd, nil
 }
 
-func (sd *StatDescriptionQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (sd *StatDescriptionQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(statdescription.Columns))
+		selectedFields = []string{statdescription.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "type":
+			if _, ok := fieldSeen[statdescription.FieldType]; !ok {
+				selectedFields = append(selectedFields, statdescription.FieldType)
+				fieldSeen[statdescription.FieldType] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[statdescription.FieldName]; !ok {
+				selectedFields = append(selectedFields, statdescription.FieldName)
+				fieldSeen[statdescription.FieldName] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[statdescription.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, statdescription.FieldDescription)
+				fieldSeen[statdescription.FieldDescription] = struct{}{}
+			}
+		case "metadata":
+			if _, ok := fieldSeen[statdescription.FieldMetadata]; !ok {
+				selectedFields = append(selectedFields, statdescription.FieldMetadata)
+				fieldSeen[statdescription.FieldMetadata] = struct{}{}
+			}
+		case "orderNumber":
+			if _, ok := fieldSeen[statdescription.FieldOrderNumber]; !ok {
+				selectedFields = append(selectedFields, statdescription.FieldOrderNumber)
+				fieldSeen[statdescription.FieldOrderNumber] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		sd.Select(selectedFields...)
+	}
 	return nil
 }
 
@@ -838,7 +1088,7 @@ type statdescriptionPaginateArgs struct {
 	opts          []StatDescriptionPaginateOption
 }
 
-func newStatDescriptionPaginateArgs(rv map[string]interface{}) *statdescriptionPaginateArgs {
+func newStatDescriptionPaginateArgs(rv map[string]any) *statdescriptionPaginateArgs {
 	args := &statdescriptionPaginateArgs{}
 	if rv == nil {
 		return args
@@ -870,9 +1120,14 @@ func (s *StatisticQuery) CollectFields(ctx context.Context, satisfies ...string)
 	return s, nil
 }
 
-func (s *StatisticQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (s *StatisticQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(statistic.Columns))
+		selectedFields = []string{statistic.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "match":
 			var (
@@ -880,7 +1135,7 @@ func (s *StatisticQuery) collectField(ctx context.Context, op *graphql.Operation
 				path  = append(path, alias)
 				query = (&MatchClient{config: s.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			s.withMatch = query
@@ -890,7 +1145,7 @@ func (s *StatisticQuery) collectField(ctx context.Context, op *graphql.Operation
 				path  = append(path, alias)
 				query = (&StatDescriptionClient{config: s.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			s.withStatDescription = query
@@ -900,11 +1155,23 @@ func (s *StatisticQuery) collectField(ctx context.Context, op *graphql.Operation
 				path  = append(path, alias)
 				query = (&PlayerClient{config: s.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			s.withPlayer = query
+		case "value":
+			if _, ok := fieldSeen[statistic.FieldValue]; !ok {
+				selectedFields = append(selectedFields, statistic.FieldValue)
+				fieldSeen[statistic.FieldValue] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		s.Select(selectedFields...)
 	}
 	return nil
 }
@@ -915,7 +1182,7 @@ type statisticPaginateArgs struct {
 	opts          []StatisticPaginateOption
 }
 
-func newStatisticPaginateArgs(rv map[string]interface{}) *statisticPaginateArgs {
+func newStatisticPaginateArgs(rv map[string]any) *statisticPaginateArgs {
 	args := &statisticPaginateArgs{}
 	if rv == nil {
 		return args
@@ -947,9 +1214,14 @@ func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) (*Us
 	return u, nil
 }
 
-func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationContext, field graphql.CollectedField, path []string, satisfies ...string) error {
+func (u *UserQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
-	for _, field := range graphql.CollectFields(op, field.Selections, satisfies) {
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(user.Columns))
+		selectedFields = []string{user.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 		case "players":
 			var (
@@ -957,7 +1229,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				path  = append(path, alias)
 				query = (&PlayerClient{config: u.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			u.WithNamedPlayers(alias, func(wq *PlayerQuery) {
@@ -969,7 +1241,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				path  = append(path, alias)
 				query = (&PlayerClient{config: u.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			u.withMainPlayer = query
@@ -979,7 +1251,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				path  = append(path, alias)
 				query = (&GroupMembershipClient{config: u.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			u.WithNamedGroupMemberships(alias, func(wq *GroupMembershipQuery) {
@@ -991,7 +1263,7 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				path  = append(path, alias)
 				query = (&GroupMembershipApplicationClient{config: u.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			u.WithNamedGroupMembershipApplications(alias, func(wq *GroupMembershipApplicationQuery) {
@@ -1003,13 +1275,35 @@ func (u *UserQuery) collectField(ctx context.Context, op *graphql.OperationConte
 				path  = append(path, alias)
 				query = (&GameClient{config: u.config}).Query()
 			)
-			if err := query.collectField(ctx, op, field, path, satisfies...); err != nil {
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
 			}
 			u.WithNamedGames(alias, func(wq *GameQuery) {
 				*wq = *query
 			})
+		case "name":
+			if _, ok := fieldSeen[user.FieldName]; !ok {
+				selectedFields = append(selectedFields, user.FieldName)
+				fieldSeen[user.FieldName] = struct{}{}
+			}
+		case "email":
+			if _, ok := fieldSeen[user.FieldEmail]; !ok {
+				selectedFields = append(selectedFields, user.FieldEmail)
+				fieldSeen[user.FieldEmail] = struct{}{}
+			}
+		case "avatarURL":
+			if _, ok := fieldSeen[user.FieldAvatarURL]; !ok {
+				selectedFields = append(selectedFields, user.FieldAvatarURL)
+				fieldSeen[user.FieldAvatarURL] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		u.Select(selectedFields...)
 	}
 	return nil
 }
@@ -1020,7 +1314,7 @@ type userPaginateArgs struct {
 	opts          []UserPaginateOption
 }
 
-func newUserPaginateArgs(rv map[string]interface{}) *userPaginateArgs {
+func newUserPaginateArgs(rv map[string]any) *userPaginateArgs {
 	args := &userPaginateArgs{}
 	if rv == nil {
 		return args
@@ -1054,35 +1348,18 @@ const (
 	whereField     = "where"
 )
 
-func fieldArgs(ctx context.Context, whereInput interface{}, path ...string) map[string]interface{} {
-	fc := graphql.GetFieldContext(ctx)
-	if fc == nil {
+func fieldArgs(ctx context.Context, whereInput any, path ...string) map[string]any {
+	field := collectedField(ctx, path...)
+	if field == nil || field.Arguments == nil {
 		return nil
 	}
 	oc := graphql.GetOperationContext(ctx)
-	for _, name := range path {
-		var field *graphql.CollectedField
-		for _, f := range graphql.CollectFields(oc, fc.Field.Selections, nil) {
-			if f.Alias == name {
-				field = &f
-				break
-			}
-		}
-		if field == nil {
-			return nil
-		}
-		cf, err := fc.Child(ctx, *field)
-		if err != nil {
-			args := field.ArgumentMap(oc.Variables)
-			return unmarshalArgs(ctx, whereInput, args)
-		}
-		fc = cf
-	}
-	return fc.Args
+	args := field.ArgumentMap(oc.Variables)
+	return unmarshalArgs(ctx, whereInput, args)
 }
 
 // unmarshalArgs allows extracting the field arguments from their raw representation.
-func unmarshalArgs(ctx context.Context, whereInput interface{}, args map[string]interface{}) map[string]interface{} {
+func unmarshalArgs(ctx context.Context, whereInput any, args map[string]any) map[string]any {
 	for _, k := range []string{firstField, lastField} {
 		v, ok := args[k]
 		if !ok {
@@ -1133,4 +1410,18 @@ func limitRows(partitionBy string, limit int, orderBy ...sql.Querier) func(s *sq
 			Where(sql.LTE(t.C("row_number"), limit)).
 			Prefix(with)
 	}
+}
+
+// mayAddCondition appends another type condition to the satisfies list
+// if condition is enabled (Node/Nodes) and it does not exist in the list.
+func mayAddCondition(satisfies []string, typeCond string) []string {
+	if len(satisfies) == 0 {
+		return satisfies
+	}
+	for _, s := range satisfies {
+		if typeCond == s {
+			return satisfies
+		}
+	}
+	return append(satisfies, typeCond)
 }

@@ -138,11 +138,7 @@ func HasMatch() predicate.Statistic {
 // HasMatchWith applies the HasEdge predicate on the "match" edge with a given conditions (other predicates).
 func HasMatchWith(preds ...predicate.Match) predicate.Statistic {
 	return predicate.Statistic(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(MatchInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, MatchTable, MatchColumn),
-		)
+		step := newMatchStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -165,11 +161,7 @@ func HasStatDescription() predicate.Statistic {
 // HasStatDescriptionWith applies the HasEdge predicate on the "stat_description" edge with a given conditions (other predicates).
 func HasStatDescriptionWith(preds ...predicate.StatDescription) predicate.Statistic {
 	return predicate.Statistic(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatDescriptionInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, StatDescriptionTable, StatDescriptionColumn),
-		)
+		step := newStatDescriptionStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -192,11 +184,7 @@ func HasPlayer() predicate.Statistic {
 // HasPlayerWith applies the HasEdge predicate on the "player" edge with a given conditions (other predicates).
 func HasPlayerWith(preds ...predicate.Player) predicate.Statistic {
 	return predicate.Statistic(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(PlayerInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, PlayerTable, PlayerColumn),
-		)
+		step := newPlayerStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

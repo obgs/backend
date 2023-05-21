@@ -103,7 +103,7 @@ func (su *StatisticUpdate) ClearPlayer() *StatisticUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (su *StatisticUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, StatisticMutation](ctx, su.sqlSave, su.mutation, su.hooks)
+	return withHooks(ctx, su.sqlSave, su.mutation, su.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -349,7 +349,7 @@ func (suo *StatisticUpdateOne) Select(field string, fields ...string) *Statistic
 
 // Save executes the query and returns the updated Statistic entity.
 func (suo *StatisticUpdateOne) Save(ctx context.Context) (*Statistic, error) {
-	return withHooks[*Statistic, StatisticMutation](ctx, suo.sqlSave, suo.mutation, suo.hooks)
+	return withHooks(ctx, suo.sqlSave, suo.mutation, suo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

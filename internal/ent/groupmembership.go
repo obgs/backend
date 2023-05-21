@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
@@ -26,6 +27,7 @@ type GroupMembership struct {
 	Edges                  GroupMembershipEdges `json:"edges"`
 	group_members          *guidgql.GUID
 	user_group_memberships *guidgql.GUID
+	selectValues           sql.SelectValues
 }
 
 // GroupMembershipEdges holds the relations/edges for other nodes in the graph.
@@ -81,7 +83,7 @@ func (*GroupMembership) scanValues(columns []string) ([]any, error) {
 		case groupmembership.ForeignKeys[1]: // user_group_memberships
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type GroupMembership", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -121,9 +123,17 @@ func (gm *GroupMembership) assignValues(columns []string, values []any) error {
 				gm.user_group_memberships = new(guidgql.GUID)
 				*gm.user_group_memberships = *value.S.(*guidgql.GUID)
 			}
+		default:
+			gm.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the GroupMembership.
+// This includes values selected through modifiers, order, etc.
+func (gm *GroupMembership) Value(name string) (ent.Value, error) {
+	return gm.selectValues.Get(name)
 }
 
 // QueryGroup queries the "group" edge of the GroupMembership entity.

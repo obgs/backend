@@ -53,7 +53,7 @@ func (gr *Group) Members(
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := gr.Edges.totalCount[1][alias]
 	if nodes, err := gr.NamedMembers(alias); err == nil || hasTotalCount {
-		pager, err := newGroupMembershipPager(opts)
+		pager, err := newGroupMembershipPager(opts, last != nil)
 		if err != nil {
 			return nil, err
 		}

@@ -83,7 +83,7 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) Mutation() *PlayerSupervisi
 // Save creates the PlayerSupervisionRequestApproval in the database.
 func (psrac *PlayerSupervisionRequestApprovalCreate) Save(ctx context.Context) (*PlayerSupervisionRequestApproval, error) {
 	psrac.defaults()
-	return withHooks[*PlayerSupervisionRequestApproval, PlayerSupervisionRequestApprovalMutation](ctx, psrac.sqlSave, psrac.mutation, psrac.hooks)
+	return withHooks(ctx, psrac.sqlSave, psrac.mutation, psrac.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -400,8 +400,8 @@ func (psracb *PlayerSupervisionRequestApprovalCreateBulk) Save(ctx context.Conte
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, psracb.builders[i+1].mutation)
 				} else {

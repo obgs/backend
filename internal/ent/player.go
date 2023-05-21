@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -23,6 +24,7 @@ type Player struct {
 	// The values are being populated by the PlayerQuery when eager-loading is set.
 	Edges            PlayerEdges `json:"edges"`
 	user_main_player *guidgql.GUID
+	selectValues     sql.SelectValues
 }
 
 // PlayerEdges holds the relations/edges for other nodes in the graph.
@@ -110,7 +112,7 @@ func (*Player) scanValues(columns []string) ([]any, error) {
 		case player.ForeignKeys[0]: // user_main_player
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Player", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -143,9 +145,17 @@ func (pl *Player) assignValues(columns []string, values []any) error {
 				pl.user_main_player = new(guidgql.GUID)
 				*pl.user_main_player = *value.S.(*guidgql.GUID)
 			}
+		default:
+			pl.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Player.
+// This includes values selected through modifiers, order, etc.
+func (pl *Player) Value(name string) (ent.Value, error) {
+	return pl.selectValues.Get(name)
 }
 
 // QueryOwner queries the "owner" edge of the Player entity.

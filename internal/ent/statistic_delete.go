@@ -27,7 +27,7 @@ func (sd *StatisticDelete) Where(ps ...predicate.Statistic) *StatisticDelete {
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (sd *StatisticDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, StatisticMutation](ctx, sd.sqlExec, sd.mutation, sd.hooks)
+	return withHooks(ctx, sd.sqlExec, sd.mutation, sd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

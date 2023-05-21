@@ -23,7 +23,7 @@ import (
 type GameVersionQuery struct {
 	config
 	ctx                       *QueryContext
-	order                     []OrderFunc
+	order                     []gameversion.OrderOption
 	inters                    []Interceptor
 	predicates                []predicate.GameVersion
 	withGame                  *GameQuery
@@ -65,7 +65,7 @@ func (gvq *GameVersionQuery) Unique(unique bool) *GameVersionQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (gvq *GameVersionQuery) Order(o ...OrderFunc) *GameVersionQuery {
+func (gvq *GameVersionQuery) Order(o ...gameversion.OrderOption) *GameVersionQuery {
 	gvq.order = append(gvq.order, o...)
 	return gvq
 }
@@ -325,7 +325,7 @@ func (gvq *GameVersionQuery) Clone() *GameVersionQuery {
 	return &GameVersionQuery{
 		config:               gvq.config,
 		ctx:                  gvq.ctx.Clone(),
-		order:                append([]OrderFunc{}, gvq.order...),
+		order:                append([]gameversion.OrderOption{}, gvq.order...),
 		inters:               append([]Interceptor{}, gvq.inters...),
 		predicates:           append([]predicate.GameVersion{}, gvq.predicates...),
 		withGame:             gvq.withGame.Clone(),
@@ -631,7 +631,7 @@ func (gvq *GameVersionQuery) loadMatches(ctx context.Context, query *MatchQuery,
 	}
 	query.withFKs = true
 	query.Where(predicate.Match(func(s *sql.Selector) {
-		s.Where(sql.InValues(gameversion.MatchesColumn, fks...))
+		s.Where(sql.InValues(s.C(gameversion.MatchesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -644,7 +644,7 @@ func (gvq *GameVersionQuery) loadMatches(ctx context.Context, query *MatchQuery,
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "game_version_matches" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "game_version_matches" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

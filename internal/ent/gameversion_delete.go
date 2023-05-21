@@ -27,7 +27,7 @@ func (gvd *GameVersionDelete) Where(ps ...predicate.GameVersion) *GameVersionDel
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (gvd *GameVersionDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, GameVersionMutation](ctx, gvd.sqlExec, gvd.mutation, gvd.hooks)
+	return withHooks(ctx, gvd.sqlExec, gvd.mutation, gvd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

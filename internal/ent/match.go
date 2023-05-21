@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
@@ -21,6 +22,7 @@ type Match struct {
 	// The values are being populated by the MatchQuery when eager-loading is set.
 	Edges                MatchEdges `json:"edges"`
 	game_version_matches *guidgql.GUID
+	selectValues         sql.SelectValues
 }
 
 // MatchEdges holds the relations/edges for other nodes in the graph.
@@ -82,7 +84,7 @@ func (*Match) scanValues(columns []string) ([]any, error) {
 		case match.ForeignKeys[0]: // game_version_matches
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Match", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -109,9 +111,17 @@ func (m *Match) assignValues(columns []string, values []any) error {
 				m.game_version_matches = new(guidgql.GUID)
 				*m.game_version_matches = *value.S.(*guidgql.GUID)
 			}
+		default:
+			m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Match.
+// This includes values selected through modifiers, order, etc.
+func (m *Match) Value(name string) (ent.Value, error) {
+	return m.selectValues.Get(name)
 }
 
 // QueryGameVersion queries the "game_version" edge of the Match entity.

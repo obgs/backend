@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
@@ -27,6 +28,7 @@ type Statistic struct {
 	match_stats            *guidgql.GUID
 	player_stats           *guidgql.GUID
 	stat_description_stats *guidgql.GUID
+	selectValues           sql.SelectValues
 }
 
 // StatisticEdges holds the relations/edges for other nodes in the graph.
@@ -99,7 +101,7 @@ func (*Statistic) scanValues(columns []string) ([]any, error) {
 		case statistic.ForeignKeys[2]: // stat_description_stats
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Statistic", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -146,9 +148,17 @@ func (s *Statistic) assignValues(columns []string, values []any) error {
 				s.stat_description_stats = new(guidgql.GUID)
 				*s.stat_description_stats = *value.S.(*guidgql.GUID)
 			}
+		default:
+			s.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// GetValue returns the ent.Value that was dynamically selected and assigned to the Statistic.
+// This includes values selected through modifiers, order, etc.
+func (s *Statistic) GetValue(name string) (ent.Value, error) {
+	return s.selectValues.Get(name)
 }
 
 // QueryMatch queries the "match" edge of the Statistic entity.

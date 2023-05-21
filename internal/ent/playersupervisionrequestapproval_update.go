@@ -91,7 +91,7 @@ func (psrau *PlayerSupervisionRequestApprovalUpdate) ClearSupervisionRequest() *
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (psrau *PlayerSupervisionRequestApprovalUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, PlayerSupervisionRequestApprovalMutation](ctx, psrau.sqlSave, psrau.mutation, psrau.hooks)
+	return withHooks(ctx, psrau.sqlSave, psrau.mutation, psrau.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -297,7 +297,7 @@ func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) Select(field string, fi
 
 // Save executes the query and returns the updated PlayerSupervisionRequestApproval entity.
 func (psrauo *PlayerSupervisionRequestApprovalUpdateOne) Save(ctx context.Context) (*PlayerSupervisionRequestApproval, error) {
-	return withHooks[*PlayerSupervisionRequestApproval, PlayerSupervisionRequestApprovalMutation](ctx, psrauo.sqlSave, psrauo.mutation, psrauo.hooks)
+	return withHooks(ctx, psrauo.sqlSave, psrauo.mutation, psrauo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

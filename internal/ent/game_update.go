@@ -215,7 +215,7 @@ func (gu *GameUpdate) RemoveVersions(g ...*GameVersion) *GameUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gu *GameUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, GameMutation](ctx, gu.sqlSave, gu.mutation, gu.hooks)
+	return withHooks(ctx, gu.sqlSave, gu.mutation, gu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -628,7 +628,7 @@ func (guo *GameUpdateOne) Select(field string, fields ...string) *GameUpdateOne 
 
 // Save executes the query and returns the updated Game entity.
 func (guo *GameUpdateOne) Save(ctx context.Context) (*Game, error) {
-	return withHooks[*Game, GameMutation](ctx, guo.sqlSave, guo.mutation, guo.hooks)
+	return withHooks(ctx, guo.sqlSave, guo.mutation, guo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

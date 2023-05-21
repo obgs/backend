@@ -27,7 +27,7 @@ func (psrd *PlayerSupervisionRequestDelete) Where(ps ...predicate.PlayerSupervis
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (psrd *PlayerSupervisionRequestDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, PlayerSupervisionRequestMutation](ctx, psrd.sqlExec, psrd.mutation, psrd.hooks)
+	return withHooks(ctx, psrd.sqlExec, psrd.mutation, psrd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

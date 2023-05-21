@@ -3,6 +3,8 @@
 package playersupervisionrequestapproval
 
 import (
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
@@ -67,3 +69,44 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() guidgql.GUID
 )
+
+// OrderOption defines the ordering options for the PlayerSupervisionRequestApproval queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByApproved orders the results by the approved field.
+func ByApproved(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldApproved, opts...).ToFunc()
+}
+
+// ByApproverField orders the results by approver field.
+func ByApproverField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newApproverStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// BySupervisionRequestField orders the results by supervision_request field.
+func BySupervisionRequestField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSupervisionRequestStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newApproverStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ApproverInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, ApproverTable, ApproverColumn),
+	)
+}
+func newSupervisionRequestStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SupervisionRequestInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, SupervisionRequestTable, SupervisionRequestColumn),
+	)
+}
