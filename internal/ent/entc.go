@@ -25,6 +25,7 @@ func main() {
 		Features: []gen.Feature{
 			gen.FeatureVersionedMigration,
 			gen.FeatureUpsert,
+			gen.FeatureExecQuery,
 		},
 	}, entc.Extensions(ex)); err != nil {
 		log.Fatalf("running ent codegen: %v", err)
