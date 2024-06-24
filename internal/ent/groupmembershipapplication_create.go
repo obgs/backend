@@ -372,12 +372,16 @@ func (u *GroupMembershipApplicationUpsertOne) IDX(ctx context.Context) guidgql.G
 // GroupMembershipApplicationCreateBulk is the builder for creating many GroupMembershipApplication entities in bulk.
 type GroupMembershipApplicationCreateBulk struct {
 	config
+	err      error
 	builders []*GroupMembershipApplicationCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the GroupMembershipApplication entities in the database.
 func (gmacb *GroupMembershipApplicationCreateBulk) Save(ctx context.Context) ([]*GroupMembershipApplication, error) {
+	if gmacb.err != nil {
+		return nil, gmacb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gmacb.builders))
 	nodes := make([]*GroupMembershipApplication, len(gmacb.builders))
 	mutators := make([]Mutator, len(gmacb.builders))
@@ -558,6 +562,9 @@ func (u *GroupMembershipApplicationUpsertBulk) UpdateMessage() *GroupMembershipA
 
 // Exec executes the query.
 func (u *GroupMembershipApplicationUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GroupMembershipApplicationCreateBulk instead", i)

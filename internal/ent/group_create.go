@@ -491,12 +491,16 @@ func (u *GroupUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // GroupCreateBulk is the builder for creating many Group entities in bulk.
 type GroupCreateBulk struct {
 	config
+	err      error
 	builders []*GroupCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the Group entities in the database.
 func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
+	if gcb.err != nil {
+		return nil, gcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gcb.builders))
 	nodes := make([]*Group, len(gcb.builders))
 	mutators := make([]Mutator, len(gcb.builders))
@@ -705,6 +709,9 @@ func (u *GroupUpsertBulk) UpdateLogoURL() *GroupUpsertBulk {
 
 // Exec executes the query.
 func (u *GroupUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GroupCreateBulk instead", i)

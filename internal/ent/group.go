@@ -51,12 +51,10 @@ type GroupEdges struct {
 // SettingsOrErr returns the Settings value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e GroupEdges) SettingsOrErr() (*GroupSettings, error) {
-	if e.loadedTypes[0] {
-		if e.Settings == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: groupsettings.Label}
-		}
+	if e.Settings != nil {
 		return e.Settings, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: groupsettings.Label}
 	}
 	return nil, &NotLoadedError{edge: "settings"}
 }

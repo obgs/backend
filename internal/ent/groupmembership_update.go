@@ -37,6 +37,14 @@ func (gmu *GroupMembershipUpdate) SetRole(e enums.Role) *GroupMembershipUpdate {
 	return gmu
 }
 
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (gmu *GroupMembershipUpdate) SetNillableRole(e *enums.Role) *GroupMembershipUpdate {
+	if e != nil {
+		gmu.SetRole(*e)
+	}
+	return gmu
+}
+
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (gmu *GroupMembershipUpdate) SetGroupID(id guidgql.GUID) *GroupMembershipUpdate {
 	gmu.mutation.SetGroupID(id)
@@ -215,6 +223,14 @@ type GroupMembershipUpdateOne struct {
 // SetRole sets the "role" field.
 func (gmuo *GroupMembershipUpdateOne) SetRole(e enums.Role) *GroupMembershipUpdateOne {
 	gmuo.mutation.SetRole(e)
+	return gmuo
+}
+
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (gmuo *GroupMembershipUpdateOne) SetNillableRole(e *enums.Role) *GroupMembershipUpdateOne {
+	if e != nil {
+		gmuo.SetRole(*e)
+	}
 	return gmuo
 }
 

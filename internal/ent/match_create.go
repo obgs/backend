@@ -350,12 +350,16 @@ func (u *MatchUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // MatchCreateBulk is the builder for creating many Match entities in bulk.
 type MatchCreateBulk struct {
 	config
+	err      error
 	builders []*MatchCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the Match entities in the database.
 func (mcb *MatchCreateBulk) Save(ctx context.Context) ([]*Match, error) {
+	if mcb.err != nil {
+		return nil, mcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(mcb.builders))
 	nodes := make([]*Match, len(mcb.builders))
 	mutators := make([]Mutator, len(mcb.builders))
@@ -517,6 +521,9 @@ func (u *MatchUpsertBulk) Update(set func(*MatchUpsert)) *MatchUpsertBulk {
 
 // Exec executes the query.
 func (u *MatchUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the MatchCreateBulk instead", i)

@@ -77,12 +77,10 @@ func (e UserEdges) PlayersOrErr() ([]*Player, error) {
 // MainPlayerOrErr returns the MainPlayer value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e UserEdges) MainPlayerOrErr() (*Player, error) {
-	if e.loadedTypes[1] {
-		if e.MainPlayer == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: player.Label}
-		}
+	if e.MainPlayer != nil {
 		return e.MainPlayer, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: player.Label}
 	}
 	return nil, &NotLoadedError{edge: "main_player"}
 }

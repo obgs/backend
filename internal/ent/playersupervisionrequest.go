@@ -49,12 +49,10 @@ type PlayerSupervisionRequestEdges struct {
 // SenderOrErr returns the Sender value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PlayerSupervisionRequestEdges) SenderOrErr() (*User, error) {
-	if e.loadedTypes[0] {
-		if e.Sender == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: user.Label}
-		}
+	if e.Sender != nil {
 		return e.Sender, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "sender"}
 }
@@ -62,12 +60,10 @@ func (e PlayerSupervisionRequestEdges) SenderOrErr() (*User, error) {
 // PlayerOrErr returns the Player value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PlayerSupervisionRequestEdges) PlayerOrErr() (*Player, error) {
-	if e.loadedTypes[1] {
-		if e.Player == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: player.Label}
-		}
+	if e.Player != nil {
 		return e.Player, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: player.Label}
 	}
 	return nil, &NotLoadedError{edge: "player"}
 }

@@ -45,12 +45,10 @@ type PlayerSupervisionRequestApprovalEdges struct {
 // ApproverOrErr returns the Approver value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PlayerSupervisionRequestApprovalEdges) ApproverOrErr() (*User, error) {
-	if e.loadedTypes[0] {
-		if e.Approver == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: user.Label}
-		}
+	if e.Approver != nil {
 		return e.Approver, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "approver"}
 }
@@ -58,12 +56,10 @@ func (e PlayerSupervisionRequestApprovalEdges) ApproverOrErr() (*User, error) {
 // SupervisionRequestOrErr returns the SupervisionRequest value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PlayerSupervisionRequestApprovalEdges) SupervisionRequestOrErr() (*PlayerSupervisionRequest, error) {
-	if e.loadedTypes[1] {
-		if e.SupervisionRequest == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: playersupervisionrequest.Label}
-		}
+	if e.SupervisionRequest != nil {
 		return e.SupervisionRequest, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: playersupervisionrequest.Label}
 	}
 	return nil, &NotLoadedError{edge: "supervision_request"}
 }

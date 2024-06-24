@@ -1,5 +1,5 @@
-directive @goField(forceResolver: Boolean, name: String) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
-directive @goModel(model: String, models: [String!]) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
+directive @goField(forceResolver: Boolean, name: String, omittable: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+directive @goModel(model: String, models: [String!], forceGenerate: Boolean) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
 """
 Define a Relay Cursor type:
 https://relay.dev/graphql/connections.htm#sec-Cursor
@@ -14,20 +14,34 @@ type Game implements Node {
   boardgamegeekURL: String
   author: User!
 }
-"""A connection to a list of items."""
+"""
+A connection to a list of items.
+"""
 type GameConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [GameEdge]
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
-"""An edge in a connection."""
+"""
+An edge in a connection.
+"""
 type GameEdge {
-  """The item at the end of the edge."""
+  """
+  The item at the end of the edge.
+  """
   node: Game
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: Cursor!
 }
 type GameVersion implements Node {
@@ -44,7 +58,9 @@ input GameVersionWhereInput {
   not: GameVersionWhereInput
   and: [GameVersionWhereInput!]
   or: [GameVersionWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -53,7 +69,9 @@ input GameVersionWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """version_number field predicates"""
+  """
+  version_number field predicates
+  """
   versionNumber: Int
   versionNumberNEQ: Int
   versionNumberIn: [Int!]
@@ -62,7 +80,9 @@ input GameVersionWhereInput {
   versionNumberGTE: Int
   versionNumberLT: Int
   versionNumberLTE: Int
-  """game edge predicates"""
+  """
+  game edge predicates
+  """
   hasGame: Boolean
   hasGameWith: [GameWhereInput!]
 }
@@ -74,7 +94,9 @@ input GameWhereInput {
   not: GameWhereInput
   and: [GameWhereInput!]
   or: [GameWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -83,7 +105,9 @@ input GameWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """name field predicates"""
+  """
+  name field predicates
+  """
   name: String
   nameNEQ: String
   nameIn: [String!]
@@ -97,7 +121,9 @@ input GameWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
-  """min_players field predicates"""
+  """
+  min_players field predicates
+  """
   minPlayers: Int
   minPlayersNEQ: Int
   minPlayersIn: [Int!]
@@ -106,7 +132,9 @@ input GameWhereInput {
   minPlayersGTE: Int
   minPlayersLT: Int
   minPlayersLTE: Int
-  """max_players field predicates"""
+  """
+  max_players field predicates
+  """
   maxPlayers: Int
   maxPlayersNEQ: Int
   maxPlayersIn: [Int!]
@@ -115,7 +143,9 @@ input GameWhereInput {
   maxPlayersGTE: Int
   maxPlayersLT: Int
   maxPlayersLTE: Int
-  """author edge predicates"""
+  """
+  author edge predicates
+  """
   hasAuthor: Boolean
   hasAuthorWith: [UserWhereInput!]
 }
@@ -126,37 +156,61 @@ type Group implements Node {
   logoURL: String!
   settings: GroupSettings!
   members(
-    """Returns the elements in the list that come after the specified cursor."""
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
     after: Cursor
 
-    """Returns the first _n_ elements from the list."""
+    """
+    Returns the first _n_ elements from the list.
+    """
     first: Int
 
-    """Returns the elements in the list that come before the specified cursor."""
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
     before: Cursor
 
-    """Returns the last _n_ elements from the list."""
+    """
+    Returns the last _n_ elements from the list.
+    """
     last: Int
 
-    """Filtering options for GroupMemberships returned from the connection."""
+    """
+    Filtering options for GroupMemberships returned from the connection.
+    """
     where: GroupMembershipWhereInput
   ): GroupMembershipConnection!
   applications: [GroupMembershipApplication!]
 }
-"""A connection to a list of items."""
+"""
+A connection to a list of items.
+"""
 type GroupConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [GroupEdge]
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
-"""An edge in a connection."""
+"""
+An edge in a connection.
+"""
 type GroupEdge {
-  """The item at the end of the edge."""
+  """
+  The item at the end of the edge.
+  """
   node: Group
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: Cursor!
 }
 type GroupMembership implements Node {
@@ -171,23 +225,39 @@ type GroupMembershipApplication implements Node {
   user: User!
   group: Group!
 }
-"""A connection to a list of items."""
+"""
+A connection to a list of items.
+"""
 type GroupMembershipConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [GroupMembershipEdge]
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
-"""An edge in a connection."""
+"""
+An edge in a connection.
+"""
 type GroupMembershipEdge {
-  """The item at the end of the edge."""
+  """
+  The item at the end of the edge.
+  """
   node: GroupMembership
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: Cursor!
 }
-"""GroupMembershipRole is enum for the field role"""
+"""
+GroupMembershipRole is enum for the field role
+"""
 enum GroupMembershipRole @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/enums.Role") {
   owner
   admin
@@ -201,7 +271,9 @@ input GroupMembershipWhereInput {
   not: GroupMembershipWhereInput
   and: [GroupMembershipWhereInput!]
   or: [GroupMembershipWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -210,15 +282,21 @@ input GroupMembershipWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """role field predicates"""
+  """
+  role field predicates
+  """
   role: GroupMembershipRole
   roleNEQ: GroupMembershipRole
   roleIn: [GroupMembershipRole!]
   roleNotIn: [GroupMembershipRole!]
-  """group edge predicates"""
+  """
+  group edge predicates
+  """
   hasGroup: Boolean
   hasGroupWith: [GroupWhereInput!]
-  """user edge predicates"""
+  """
+  user edge predicates
+  """
   hasUser: Boolean
   hasUserWith: [UserWhereInput!]
 }
@@ -228,14 +306,18 @@ type GroupSettings implements Node {
   joinPolicy: GroupSettingsJoinPolicy!
   minimumRoleToInvite: GroupMembershipRole
 }
-"""GroupSettingsJoinPolicy is enum for the field join_policy"""
+"""
+GroupSettingsJoinPolicy is enum for the field join_policy
+"""
 enum GroupSettingsJoinPolicy @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/groupsettings.JoinPolicy") {
   OPEN
   INVITE_ONLY
   APPLICATION_ONLY
   INVITE_OR_APPLICATION
 }
-"""GroupSettingsVisibility is enum for the field visibility"""
+"""
+GroupSettingsVisibility is enum for the field visibility
+"""
 enum GroupSettingsVisibility @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/groupsettings.Visibility") {
   PUBLIC
   PRIVATE
@@ -248,7 +330,9 @@ input GroupSettingsWhereInput {
   not: GroupSettingsWhereInput
   and: [GroupSettingsWhereInput!]
   or: [GroupSettingsWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -257,12 +341,16 @@ input GroupSettingsWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """visibility field predicates"""
+  """
+  visibility field predicates
+  """
   visibility: GroupSettingsVisibility
   visibilityNEQ: GroupSettingsVisibility
   visibilityIn: [GroupSettingsVisibility!]
   visibilityNotIn: [GroupSettingsVisibility!]
-  """join_policy field predicates"""
+  """
+  join_policy field predicates
+  """
   joinPolicy: GroupSettingsJoinPolicy
   joinPolicyNEQ: GroupSettingsJoinPolicy
   joinPolicyIn: [GroupSettingsJoinPolicy!]
@@ -276,7 +364,9 @@ input GroupWhereInput {
   not: GroupWhereInput
   and: [GroupWhereInput!]
   or: [GroupWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -285,7 +375,9 @@ input GroupWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """name field predicates"""
+  """
+  name field predicates
+  """
   name: String
   nameNEQ: String
   nameIn: [String!]
@@ -299,10 +391,14 @@ input GroupWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
-  """settings edge predicates"""
+  """
+  settings edge predicates
+  """
   hasSettings: Boolean
   hasSettingsWith: [GroupSettingsWhereInput!]
-  """members edge predicates"""
+  """
+  members edge predicates
+  """
   hasMembers: Boolean
   hasMembersWith: [GroupMembershipWhereInput!]
 }
@@ -312,20 +408,34 @@ type Match implements Node {
   players: [Player!]!
   stats: [Statistic!]
 }
-"""A connection to a list of items."""
+"""
+A connection to a list of items.
+"""
 type MatchConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [MatchEdge]
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
-"""An edge in a connection."""
+"""
+An edge in a connection.
+"""
 type MatchEdge {
-  """The item at the end of the edge."""
+  """
+  The item at the end of the edge.
+  """
   node: Match
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: Cursor!
 }
 """
@@ -336,7 +446,9 @@ input MatchWhereInput {
   not: MatchWhereInput
   and: [MatchWhereInput!]
   or: [MatchWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -345,10 +457,14 @@ input MatchWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """game_version edge predicates"""
+  """
+  game_version edge predicates
+  """
   hasGameVersion: Boolean
   hasGameVersionWith: [GameVersionWhereInput!]
-  """players edge predicates"""
+  """
+  players edge predicates
+  """
   hasPlayers: Boolean
   hasPlayersWith: [PlayerWhereInput!]
 }
@@ -357,14 +473,22 @@ An object with an ID.
 Follows the [Relay Global Object Identification Specification](https://relay.dev/graphql/objectidentification.htm)
 """
 interface Node @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent.Noder") {
-  """The id of the object."""
+  """
+  The id of the object.
+  """
   id: ID!
 }
-"""Possible directions in which to order a list of items when provided an `orderBy` argument."""
+"""
+Possible directions in which to order a list of items when provided an `orderBy` argument.
+"""
 enum OrderDirection {
-  """Specifies an ascending order for a given `orderBy` argument."""
+  """
+  Specifies an ascending order for a given `orderBy` argument.
+  """
   ASC
-  """Specifies a descending order for a given `orderBy` argument."""
+  """
+  Specifies a descending order for a given `orderBy` argument.
+  """
   DESC
 }
 """
@@ -372,13 +496,21 @@ Information about pagination in a connection.
 https://relay.dev/graphql/connections.htm#sec-undefined.PageInfo
 """
 type PageInfo {
-  """When paginating forwards, are there more items?"""
+  """
+  When paginating forwards, are there more items?
+  """
   hasNextPage: Boolean!
-  """When paginating backwards, are there more items?"""
+  """
+  When paginating backwards, are there more items?
+  """
   hasPreviousPage: Boolean!
-  """When paginating backwards, the cursor to continue."""
+  """
+  When paginating backwards, the cursor to continue.
+  """
   startCursor: Cursor
-  """When paginating forwards, the cursor to continue."""
+  """
+  When paginating forwards, the cursor to continue.
+  """
   endCursor: Cursor
 }
 type Player implements Node {
@@ -389,20 +521,34 @@ type Player implements Node {
   supervisionRequests: [PlayerSupervisionRequest!]
   matches: [Match!]
 }
-"""A connection to a list of items."""
+"""
+A connection to a list of items.
+"""
 type PlayerConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [PlayerEdge]
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
-"""An edge in a connection."""
+"""
+An edge in a connection.
+"""
 type PlayerEdge {
-  """The item at the end of the edge."""
+  """
+  The item at the end of the edge.
+  """
   node: Player
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: Cursor!
 }
 type PlayerSupervisionRequest implements Node {
@@ -426,7 +572,9 @@ input PlayerSupervisionRequestApprovalWhereInput {
   not: PlayerSupervisionRequestApprovalWhereInput
   and: [PlayerSupervisionRequestApprovalWhereInput!]
   or: [PlayerSupervisionRequestApprovalWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -435,15 +583,21 @@ input PlayerSupervisionRequestApprovalWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """approved field predicates"""
+  """
+  approved field predicates
+  """
   approved: Boolean
   approvedNEQ: Boolean
   approvedIsNil: Boolean
   approvedNotNil: Boolean
-  """approver edge predicates"""
+  """
+  approver edge predicates
+  """
   hasApprover: Boolean
   hasApproverWith: [UserWhereInput!]
-  """supervision_request edge predicates"""
+  """
+  supervision_request edge predicates
+  """
   hasSupervisionRequest: Boolean
   hasSupervisionRequestWith: [PlayerSupervisionRequestWhereInput!]
 }
@@ -455,7 +609,9 @@ input PlayerSupervisionRequestWhereInput {
   not: PlayerSupervisionRequestWhereInput
   and: [PlayerSupervisionRequestWhereInput!]
   or: [PlayerSupervisionRequestWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -464,13 +620,19 @@ input PlayerSupervisionRequestWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """sender edge predicates"""
+  """
+  sender edge predicates
+  """
   hasSender: Boolean
   hasSenderWith: [UserWhereInput!]
-  """player edge predicates"""
+  """
+  player edge predicates
+  """
   hasPlayer: Boolean
   hasPlayerWith: [PlayerWhereInput!]
-  """approvals edge predicates"""
+  """
+  approvals edge predicates
+  """
   hasApprovals: Boolean
   hasApprovalsWith: [PlayerSupervisionRequestApprovalWhereInput!]
 }
@@ -482,7 +644,9 @@ input PlayerWhereInput {
   not: PlayerWhereInput
   and: [PlayerWhereInput!]
   or: [PlayerWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -491,7 +655,9 @@ input PlayerWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """name field predicates"""
+  """
+  name field predicates
+  """
   name: String
   nameNEQ: String
   nameIn: [String!]
@@ -505,105 +671,169 @@ input PlayerWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
-  """owner edge predicates"""
+  """
+  owner edge predicates
+  """
   hasOwner: Boolean
   hasOwnerWith: [UserWhereInput!]
-  """supervisors edge predicates"""
+  """
+  supervisors edge predicates
+  """
   hasSupervisors: Boolean
   hasSupervisorsWith: [UserWhereInput!]
-  """supervision_requests edge predicates"""
+  """
+  supervision_requests edge predicates
+  """
   hasSupervisionRequests: Boolean
   hasSupervisionRequestsWith: [PlayerSupervisionRequestWhereInput!]
 }
 type Query {
-  """Fetches an object given its ID."""
+  """
+  Fetches an object given its ID.
+  """
   node(
-    """ID of the object."""
+    """
+    ID of the object.
+    """
     id: ID!
   ): Node
-  """Lookup nodes by a list of IDs."""
+  """
+  Lookup nodes by a list of IDs.
+  """
   nodes(
-    """The list of node IDs."""
+    """
+    The list of node IDs.
+    """
     ids: [ID!]!
   ): [Node]!
   games(
-    """Returns the elements in the list that come after the specified cursor."""
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
     after: Cursor
 
-    """Returns the first _n_ elements from the list."""
+    """
+    Returns the first _n_ elements from the list.
+    """
     first: Int
 
-    """Returns the elements in the list that come before the specified cursor."""
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
     before: Cursor
 
-    """Returns the last _n_ elements from the list."""
+    """
+    Returns the last _n_ elements from the list.
+    """
     last: Int
 
-    """Filtering options for Games returned from the connection."""
+    """
+    Filtering options for Games returned from the connection.
+    """
     where: GameWhereInput
   ): GameConnection!
   groups(
-    """Returns the elements in the list that come after the specified cursor."""
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
     after: Cursor
 
-    """Returns the first _n_ elements from the list."""
+    """
+    Returns the first _n_ elements from the list.
+    """
     first: Int
 
-    """Returns the elements in the list that come before the specified cursor."""
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
     before: Cursor
 
-    """Returns the last _n_ elements from the list."""
+    """
+    Returns the last _n_ elements from the list.
+    """
     last: Int
 
-    """Filtering options for Groups returned from the connection."""
+    """
+    Filtering options for Groups returned from the connection.
+    """
     where: GroupWhereInput
   ): GroupConnection!
   matches(
-    """Returns the elements in the list that come after the specified cursor."""
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
     after: Cursor
 
-    """Returns the first _n_ elements from the list."""
+    """
+    Returns the first _n_ elements from the list.
+    """
     first: Int
 
-    """Returns the elements in the list that come before the specified cursor."""
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
     before: Cursor
 
-    """Returns the last _n_ elements from the list."""
+    """
+    Returns the last _n_ elements from the list.
+    """
     last: Int
 
-    """Filtering options for Matches returned from the connection."""
+    """
+    Filtering options for Matches returned from the connection.
+    """
     where: MatchWhereInput
   ): MatchConnection!
   players(
-    """Returns the elements in the list that come after the specified cursor."""
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
     after: Cursor
 
-    """Returns the first _n_ elements from the list."""
+    """
+    Returns the first _n_ elements from the list.
+    """
     first: Int
 
-    """Returns the elements in the list that come before the specified cursor."""
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
     before: Cursor
 
-    """Returns the last _n_ elements from the list."""
+    """
+    Returns the last _n_ elements from the list.
+    """
     last: Int
 
-    """Filtering options for Players returned from the connection."""
+    """
+    Filtering options for Players returned from the connection.
+    """
     where: PlayerWhereInput
   ): PlayerConnection!
   users(
-    """Returns the elements in the list that come after the specified cursor."""
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
     after: Cursor
 
-    """Returns the first _n_ elements from the list."""
+    """
+    Returns the first _n_ elements from the list.
+    """
     first: Int
 
-    """Returns the elements in the list that come before the specified cursor."""
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
     before: Cursor
 
-    """Returns the last _n_ elements from the list."""
+    """
+    Returns the last _n_ elements from the list.
+    """
     last: Int
 
-    """Filtering options for Users returned from the connection."""
+    """
+    Filtering options for Users returned from the connection.
+    """
     where: UserWhereInput
   ): UserConnection!
 }
@@ -615,7 +845,9 @@ type StatDescription implements Node {
   metadata: String
   orderNumber: Int!
 }
-"""StatDescriptionStatType is enum for the field type"""
+"""
+StatDescriptionStatType is enum for the field type
+"""
 enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
   numeric
   enum
@@ -653,20 +885,34 @@ type User implements Node {
   groupMembershipApplications: [GroupMembershipApplication!]
   games: [Game!]
 }
-"""A connection to a list of items."""
+"""
+A connection to a list of items.
+"""
 type UserConnection {
-  """A list of edges."""
+  """
+  A list of edges.
+  """
   edges: [UserEdge]
-  """Information to aid in pagination."""
+  """
+  Information to aid in pagination.
+  """
   pageInfo: PageInfo!
-  """Identifies the total count of items in the connection."""
+  """
+  Identifies the total count of items in the connection.
+  """
   totalCount: Int!
 }
-"""An edge in a connection."""
+"""
+An edge in a connection.
+"""
 type UserEdge {
-  """The item at the end of the edge."""
+  """
+  The item at the end of the edge.
+  """
   node: User
-  """A cursor for use in pagination."""
+  """
+  A cursor for use in pagination.
+  """
   cursor: Cursor!
 }
 """
@@ -677,7 +923,9 @@ input UserWhereInput {
   not: UserWhereInput
   and: [UserWhereInput!]
   or: [UserWhereInput!]
-  """id field predicates"""
+  """
+  id field predicates
+  """
   id: ID
   idNEQ: ID
   idIn: [ID!]
@@ -686,7 +934,9 @@ input UserWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """name field predicates"""
+  """
+  name field predicates
+  """
   name: String
   nameNEQ: String
   nameIn: [String!]
@@ -700,7 +950,9 @@ input UserWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
-  """email field predicates"""
+  """
+  email field predicates
+  """
   email: String
   emailNEQ: String
   emailIn: [String!]
@@ -714,16 +966,24 @@ input UserWhereInput {
   emailHasSuffix: String
   emailEqualFold: String
   emailContainsFold: String
-  """players edge predicates"""
+  """
+  players edge predicates
+  """
   hasPlayers: Boolean
   hasPlayersWith: [PlayerWhereInput!]
-  """main_player edge predicates"""
+  """
+  main_player edge predicates
+  """
   hasMainPlayer: Boolean
   hasMainPlayerWith: [PlayerWhereInput!]
-  """group_memberships edge predicates"""
+  """
+  group_memberships edge predicates
+  """
   hasGroupMemberships: Boolean
   hasGroupMembershipsWith: [GroupMembershipWhereInput!]
-  """games edge predicates"""
+  """
+  games edge predicates
+  """
   hasGames: Boolean
   hasGamesWith: [GameWhereInput!]
 }

@@ -410,12 +410,16 @@ func (u *PlayerSupervisionRequestUpsertOne) IDX(ctx context.Context) guidgql.GUI
 // PlayerSupervisionRequestCreateBulk is the builder for creating many PlayerSupervisionRequest entities in bulk.
 type PlayerSupervisionRequestCreateBulk struct {
 	config
+	err      error
 	builders []*PlayerSupervisionRequestCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the PlayerSupervisionRequest entities in the database.
 func (psrcb *PlayerSupervisionRequestCreateBulk) Save(ctx context.Context) ([]*PlayerSupervisionRequest, error) {
+	if psrcb.err != nil {
+		return nil, psrcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(psrcb.builders))
 	nodes := make([]*PlayerSupervisionRequest, len(psrcb.builders))
 	mutators := make([]Mutator, len(psrcb.builders))
@@ -603,6 +607,9 @@ func (u *PlayerSupervisionRequestUpsertBulk) ClearMessage() *PlayerSupervisionRe
 
 // Exec executes the query.
 func (u *PlayerSupervisionRequestUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the PlayerSupervisionRequestCreateBulk instead", i)

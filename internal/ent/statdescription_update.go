@@ -37,9 +37,25 @@ func (sdu *StatDescriptionUpdate) SetType(st stat.StatType) *StatDescriptionUpda
 	return sdu
 }
 
+// SetNillableType sets the "type" field if the given value is not nil.
+func (sdu *StatDescriptionUpdate) SetNillableType(st *stat.StatType) *StatDescriptionUpdate {
+	if st != nil {
+		sdu.SetType(*st)
+	}
+	return sdu
+}
+
 // SetName sets the "name" field.
 func (sdu *StatDescriptionUpdate) SetName(s string) *StatDescriptionUpdate {
 	sdu.mutation.SetName(s)
+	return sdu
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (sdu *StatDescriptionUpdate) SetNillableName(s *string) *StatDescriptionUpdate {
+	if s != nil {
+		sdu.SetName(*s)
+	}
 	return sdu
 }
 
@@ -87,6 +103,14 @@ func (sdu *StatDescriptionUpdate) ClearMetadata() *StatDescriptionUpdate {
 func (sdu *StatDescriptionUpdate) SetOrderNumber(i int) *StatDescriptionUpdate {
 	sdu.mutation.ResetOrderNumber()
 	sdu.mutation.SetOrderNumber(i)
+	return sdu
+}
+
+// SetNillableOrderNumber sets the "order_number" field if the given value is not nil.
+func (sdu *StatDescriptionUpdate) SetNillableOrderNumber(i *int) *StatDescriptionUpdate {
+	if i != nil {
+		sdu.SetOrderNumber(*i)
+	}
 	return sdu
 }
 
@@ -367,9 +391,25 @@ func (sduo *StatDescriptionUpdateOne) SetType(st stat.StatType) *StatDescription
 	return sduo
 }
 
+// SetNillableType sets the "type" field if the given value is not nil.
+func (sduo *StatDescriptionUpdateOne) SetNillableType(st *stat.StatType) *StatDescriptionUpdateOne {
+	if st != nil {
+		sduo.SetType(*st)
+	}
+	return sduo
+}
+
 // SetName sets the "name" field.
 func (sduo *StatDescriptionUpdateOne) SetName(s string) *StatDescriptionUpdateOne {
 	sduo.mutation.SetName(s)
+	return sduo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (sduo *StatDescriptionUpdateOne) SetNillableName(s *string) *StatDescriptionUpdateOne {
+	if s != nil {
+		sduo.SetName(*s)
+	}
 	return sduo
 }
 
@@ -417,6 +457,14 @@ func (sduo *StatDescriptionUpdateOne) ClearMetadata() *StatDescriptionUpdateOne 
 func (sduo *StatDescriptionUpdateOne) SetOrderNumber(i int) *StatDescriptionUpdateOne {
 	sduo.mutation.ResetOrderNumber()
 	sduo.mutation.SetOrderNumber(i)
+	return sduo
+}
+
+// SetNillableOrderNumber sets the "order_number" field if the given value is not nil.
+func (sduo *StatDescriptionUpdateOne) SetNillableOrderNumber(i *int) *StatDescriptionUpdateOne {
+	if i != nil {
+		sduo.SetOrderNumber(*i)
+	}
 	return sduo
 }
 

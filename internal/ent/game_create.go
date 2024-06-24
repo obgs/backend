@@ -643,12 +643,16 @@ func (u *GameUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // GameCreateBulk is the builder for creating many Game entities in bulk.
 type GameCreateBulk struct {
 	config
+	err      error
 	builders []*GameCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the Game entities in the database.
 func (gcb *GameCreateBulk) Save(ctx context.Context) ([]*Game, error) {
+	if gcb.err != nil {
+		return nil, gcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gcb.builders))
 	nodes := make([]*Game, len(gcb.builders))
 	mutators := make([]Mutator, len(gcb.builders))
@@ -913,6 +917,9 @@ func (u *GameUpsertBulk) ClearBoardgamegeekURL() *GameUpsertBulk {
 
 // Exec executes the query.
 func (u *GameUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GameCreateBulk instead", i)

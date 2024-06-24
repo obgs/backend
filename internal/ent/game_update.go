@@ -37,6 +37,14 @@ func (gu *GameUpdate) SetName(s string) *GameUpdate {
 	return gu
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (gu *GameUpdate) SetNillableName(s *string) *GameUpdate {
+	if s != nil {
+		gu.SetName(*s)
+	}
+	return gu
+}
+
 // SetMinPlayers sets the "min_players" field.
 func (gu *GameUpdate) SetMinPlayers(i int) *GameUpdate {
 	gu.mutation.ResetMinPlayers()
@@ -434,6 +442,14 @@ type GameUpdateOne struct {
 // SetName sets the "name" field.
 func (guo *GameUpdateOne) SetName(s string) *GameUpdateOne {
 	guo.mutation.SetName(s)
+	return guo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (guo *GameUpdateOne) SetNillableName(s *string) *GameUpdateOne {
+	if s != nil {
+		guo.SetName(*s)
+	}
 	return guo
 }
 

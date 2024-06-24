@@ -580,12 +580,16 @@ func (u *StatDescriptionUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // StatDescriptionCreateBulk is the builder for creating many StatDescription entities in bulk.
 type StatDescriptionCreateBulk struct {
 	config
+	err      error
 	builders []*StatDescriptionCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the StatDescription entities in the database.
 func (sdcb *StatDescriptionCreateBulk) Save(ctx context.Context) ([]*StatDescription, error) {
+	if sdcb.err != nil {
+		return nil, sdcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(sdcb.builders))
 	nodes := make([]*StatDescription, len(sdcb.builders))
 	mutators := make([]Mutator, len(sdcb.builders))
@@ -843,6 +847,9 @@ func (u *StatDescriptionUpsertBulk) UpdateOrderNumber() *StatDescriptionUpsertBu
 
 // Exec executes the query.
 func (u *StatDescriptionUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the StatDescriptionCreateBulk instead", i)

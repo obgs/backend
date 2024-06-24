@@ -49,12 +49,10 @@ type StatisticEdges struct {
 // MatchOrErr returns the Match value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e StatisticEdges) MatchOrErr() (*Match, error) {
-	if e.loadedTypes[0] {
-		if e.Match == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: match.Label}
-		}
+	if e.Match != nil {
 		return e.Match, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: match.Label}
 	}
 	return nil, &NotLoadedError{edge: "match"}
 }
@@ -62,12 +60,10 @@ func (e StatisticEdges) MatchOrErr() (*Match, error) {
 // StatDescriptionOrErr returns the StatDescription value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e StatisticEdges) StatDescriptionOrErr() (*StatDescription, error) {
-	if e.loadedTypes[1] {
-		if e.StatDescription == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: statdescription.Label}
-		}
+	if e.StatDescription != nil {
 		return e.StatDescription, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: statdescription.Label}
 	}
 	return nil, &NotLoadedError{edge: "stat_description"}
 }
@@ -75,12 +71,10 @@ func (e StatisticEdges) StatDescriptionOrErr() (*StatDescription, error) {
 // PlayerOrErr returns the Player value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e StatisticEdges) PlayerOrErr() (*Player, error) {
-	if e.loadedTypes[2] {
-		if e.Player == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: player.Label}
-		}
+	if e.Player != nil {
 		return e.Player, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: player.Label}
 	}
 	return nil, &NotLoadedError{edge: "player"}
 }

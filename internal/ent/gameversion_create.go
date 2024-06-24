@@ -420,12 +420,16 @@ func (u *GameVersionUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // GameVersionCreateBulk is the builder for creating many GameVersion entities in bulk.
 type GameVersionCreateBulk struct {
 	config
+	err      error
 	builders []*GameVersionCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the GameVersion entities in the database.
 func (gvcb *GameVersionCreateBulk) Save(ctx context.Context) ([]*GameVersion, error) {
+	if gvcb.err != nil {
+		return nil, gvcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gvcb.builders))
 	nodes := make([]*GameVersion, len(gvcb.builders))
 	mutators := make([]Mutator, len(gvcb.builders))
@@ -613,6 +617,9 @@ func (u *GameVersionUpsertBulk) UpdateVersionNumber() *GameVersionUpsertBulk {
 
 // Exec executes the query.
 func (u *GameVersionUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GameVersionCreateBulk instead", i)

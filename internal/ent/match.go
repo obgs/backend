@@ -46,12 +46,10 @@ type MatchEdges struct {
 // GameVersionOrErr returns the GameVersion value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e MatchEdges) GameVersionOrErr() (*GameVersion, error) {
-	if e.loadedTypes[0] {
-		if e.GameVersion == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: gameversion.Label}
-		}
+	if e.GameVersion != nil {
 		return e.GameVersion, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: gameversion.Label}
 	}
 	return nil, &NotLoadedError{edge: "game_version"}
 }
