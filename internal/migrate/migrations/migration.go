@@ -8,5 +8,5 @@ import (
 
 type Migration interface {
 	Name() string
-	Run(context.Context, *ent.Client) error
+	Run(ctx context.Context, client *ent.Client) error
 }

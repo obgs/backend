@@ -23,6 +23,7 @@ issues:
     - path: "internal/ent/migrate/seed/*.*.go"
       linters:
         - gomnd
+        - mnd
         - funlen
 
 linters:
@@ -30,12 +31,10 @@ linters:
   disable:
     - wsl
     - godot
-    - nosnakecase
     - gochecknoglobals
     - gochecknoinits
     - gci
-    - ifshort
-    - scopelint
+    - depguard
 
   fast: true
 

@@ -22,7 +22,7 @@ type FileStorageService struct {
 	minioClient     *minio.Client
 }
 
-const BUCKET_CORS_MAX_AGE_SECONDS = 3000
+const BUCKET_CORS_MAX_AGE_SECONDS int32 = 3000
 
 // NewFileStorageService creates a new FileStorageService
 func NewFileStorageService(accessKeyID,
@@ -122,10 +122,10 @@ func (s *FileStorageService) CreateBucket(ctx context.Context) error {
 			Bucket: aws.String(s.bucket),
 			ACL:    types.BucketCannedACLPublicRead,
 		})
-
 		if err != nil {
 			return err
 		}
+		corsMaxAgeSeconds := BUCKET_CORS_MAX_AGE_SECONDS
 		_, err = s.s3Client.PutBucketCors(ctx, &s3.PutBucketCorsInput{
 			Bucket: aws.String(s.bucket),
 			CORSConfiguration: &types.CORSConfiguration{
@@ -135,7 +135,7 @@ func (s *FileStorageService) CreateBucket(ctx context.Context) error {
 						AllowedMethods: []string{"GET", "PUT", "POST", "DELETE"},
 						AllowedOrigins: []string{"*"},
 						ExposeHeaders:  []string{"ETag"},
-						MaxAgeSeconds:  BUCKET_CORS_MAX_AGE_SECONDS,
+						MaxAgeSeconds:  &corsMaxAgeSeconds,
 					},
 				},
 			},
