@@ -37,6 +37,14 @@ func (gu *GroupUpdate) SetName(s string) *GroupUpdate {
 	return gu
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (gu *GroupUpdate) SetNillableName(s *string) *GroupUpdate {
+	if s != nil {
+		gu.SetName(*s)
+	}
+	return gu
+}
+
 // SetDescription sets the "description" field.
 func (gu *GroupUpdate) SetDescription(s string) *GroupUpdate {
 	gu.mutation.SetDescription(s)
@@ -54,6 +62,14 @@ func (gu *GroupUpdate) SetNillableDescription(s *string) *GroupUpdate {
 // SetLogoURL sets the "logo_url" field.
 func (gu *GroupUpdate) SetLogoURL(s string) *GroupUpdate {
 	gu.mutation.SetLogoURL(s)
+	return gu
+}
+
+// SetNillableLogoURL sets the "logo_url" field if the given value is not nil.
+func (gu *GroupUpdate) SetNillableLogoURL(s *string) *GroupUpdate {
+	if s != nil {
+		gu.SetLogoURL(*s)
+	}
 	return gu
 }
 
@@ -153,7 +169,7 @@ func (gu *GroupUpdate) RemoveApplications(g ...*GroupMembershipApplication) *Gro
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gu *GroupUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, GroupMutation](ctx, gu.sqlSave, gu.mutation, gu.hooks)
+	return withHooks(ctx, gu.sqlSave, gu.mutation, gu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -362,6 +378,14 @@ func (guo *GroupUpdateOne) SetName(s string) *GroupUpdateOne {
 	return guo
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (guo *GroupUpdateOne) SetNillableName(s *string) *GroupUpdateOne {
+	if s != nil {
+		guo.SetName(*s)
+	}
+	return guo
+}
+
 // SetDescription sets the "description" field.
 func (guo *GroupUpdateOne) SetDescription(s string) *GroupUpdateOne {
 	guo.mutation.SetDescription(s)
@@ -379,6 +403,14 @@ func (guo *GroupUpdateOne) SetNillableDescription(s *string) *GroupUpdateOne {
 // SetLogoURL sets the "logo_url" field.
 func (guo *GroupUpdateOne) SetLogoURL(s string) *GroupUpdateOne {
 	guo.mutation.SetLogoURL(s)
+	return guo
+}
+
+// SetNillableLogoURL sets the "logo_url" field if the given value is not nil.
+func (guo *GroupUpdateOne) SetNillableLogoURL(s *string) *GroupUpdateOne {
+	if s != nil {
+		guo.SetLogoURL(*s)
+	}
 	return guo
 }
 
@@ -491,7 +523,7 @@ func (guo *GroupUpdateOne) Select(field string, fields ...string) *GroupUpdateOn
 
 // Save executes the query and returns the updated Group entity.
 func (guo *GroupUpdateOne) Save(ctx context.Context) (*Group, error) {
-	return withHooks[*Group, GroupMutation](ctx, guo.sqlSave, guo.mutation, guo.hooks)
+	return withHooks(ctx, guo.sqlSave, guo.mutation, guo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

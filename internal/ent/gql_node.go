@@ -10,6 +10,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/hashicorp/go-multierror"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -29,41 +30,70 @@ type Noder interface {
 	IsNode()
 }
 
-// IsNode implements the Node interface check for GQLGen.
-func (n *Game) IsNode() {}
+var gameImplementors = []string{"Game", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *Group) IsNode() {}
+func (*Game) IsNode() {}
+
+var gameversionImplementors = []string{"GameVersion", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *GroupMembership) IsNode() {}
+func (*GameVersion) IsNode() {}
+
+var groupImplementors = []string{"Group", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *GroupMembershipApplication) IsNode() {}
+func (*Group) IsNode() {}
+
+var groupmembershipImplementors = []string{"GroupMembership", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *GroupSettings) IsNode() {}
+func (*GroupMembership) IsNode() {}
+
+var groupmembershipapplicationImplementors = []string{"GroupMembershipApplication", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *Match) IsNode() {}
+func (*GroupMembershipApplication) IsNode() {}
+
+var groupsettingsImplementors = []string{"GroupSettings", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *Player) IsNode() {}
+func (*GroupSettings) IsNode() {}
+
+var matchImplementors = []string{"Match", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *PlayerSupervisionRequest) IsNode() {}
+func (*Match) IsNode() {}
+
+var playerImplementors = []string{"Player", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *PlayerSupervisionRequestApproval) IsNode() {}
+func (*Player) IsNode() {}
+
+var playersupervisionrequestImplementors = []string{"PlayerSupervisionRequest", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *StatDescription) IsNode() {}
+func (*PlayerSupervisionRequest) IsNode() {}
+
+var playersupervisionrequestapprovalImplementors = []string{"PlayerSupervisionRequestApproval", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *Statistic) IsNode() {}
+func (*PlayerSupervisionRequestApproval) IsNode() {}
+
+var statdescriptionImplementors = []string{"StatDescription", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
-func (n *User) IsNode() {}
+func (*StatDescription) IsNode() {}
+
+var statisticImplementors = []string{"Statistic", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Statistic) IsNode() {}
+
+var userImplementors = []string{"User", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*User) IsNode() {}
 
 var errNodeInvalidID = &NotFoundError{"node"}
 
@@ -130,15 +160,25 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.Game.Query().
 			Where(game.ID(uid))
-		query, err := query.CollectFields(ctx, "Game")
-		if err != nil {
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, gameImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case gameversion.Table:
+		var uid guidgql.GUID
+		if err := uid.UnmarshalGQL(id); err != nil {
 			return nil, err
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
+		query := c.GameVersion.Query().
+			Where(gameversion.ID(uid))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, gameversionImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		return n, nil
+		return query.Only(ctx)
 	case group.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -146,15 +186,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.Group.Query().
 			Where(group.ID(uid))
-		query, err := query.CollectFields(ctx, "Group")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, groupImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case groupmembership.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -162,15 +199,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.GroupMembership.Query().
 			Where(groupmembership.ID(uid))
-		query, err := query.CollectFields(ctx, "GroupMembership")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, groupmembershipImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case groupmembershipapplication.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -178,15 +212,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.GroupMembershipApplication.Query().
 			Where(groupmembershipapplication.ID(uid))
-		query, err := query.CollectFields(ctx, "GroupMembershipApplication")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, groupmembershipapplicationImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case groupsettings.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -194,15 +225,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.GroupSettings.Query().
 			Where(groupsettings.ID(uid))
-		query, err := query.CollectFields(ctx, "GroupSettings")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, groupsettingsImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case match.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -210,15 +238,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.Match.Query().
 			Where(match.ID(uid))
-		query, err := query.CollectFields(ctx, "Match")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, matchImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case player.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -226,15 +251,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.Player.Query().
 			Where(player.ID(uid))
-		query, err := query.CollectFields(ctx, "Player")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, playerImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case playersupervisionrequest.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -242,15 +264,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.PlayerSupervisionRequest.Query().
 			Where(playersupervisionrequest.ID(uid))
-		query, err := query.CollectFields(ctx, "PlayerSupervisionRequest")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, playersupervisionrequestImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case playersupervisionrequestapproval.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -258,15 +277,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.PlayerSupervisionRequestApproval.Query().
 			Where(playersupervisionrequestapproval.ID(uid))
-		query, err := query.CollectFields(ctx, "PlayerSupervisionRequestApproval")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, playersupervisionrequestapprovalImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case statdescription.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -274,15 +290,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.StatDescription.Query().
 			Where(statdescription.ID(uid))
-		query, err := query.CollectFields(ctx, "StatDescription")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, statdescriptionImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case statistic.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -290,15 +303,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.Statistic.Query().
 			Where(statistic.ID(uid))
-		query, err := query.CollectFields(ctx, "Statistic")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, statisticImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	case user.Table:
 		var uid guidgql.GUID
 		if err := uid.UnmarshalGQL(id); err != nil {
@@ -306,15 +316,12 @@ func (c *Client) noder(ctx context.Context, table string, id guidgql.GUID) (Node
 		}
 		query := c.User.Query().
 			Where(user.ID(uid))
-		query, err := query.CollectFields(ctx, "User")
-		if err != nil {
-			return nil, err
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, userImplementors...); err != nil {
+				return nil, err
+			}
 		}
-		n, err := query.Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
+		return query.Only(ctx)
 	default:
 		return nil, fmt.Errorf("cannot resolve noder from table %q: %w", table, errNodeInvalidID)
 	}
@@ -391,7 +398,23 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case game.Table:
 		query := c.Game.Query().
 			Where(game.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "Game")
+		query, err := query.CollectFields(ctx, gameImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case gameversion.Table:
+		query := c.GameVersion.Query().
+			Where(gameversion.IDIn(ids...))
+		query, err := query.CollectFields(ctx, gameversionImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -407,7 +430,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case group.Table:
 		query := c.Group.Query().
 			Where(group.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "Group")
+		query, err := query.CollectFields(ctx, groupImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -423,7 +446,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case groupmembership.Table:
 		query := c.GroupMembership.Query().
 			Where(groupmembership.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "GroupMembership")
+		query, err := query.CollectFields(ctx, groupmembershipImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -439,7 +462,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case groupmembershipapplication.Table:
 		query := c.GroupMembershipApplication.Query().
 			Where(groupmembershipapplication.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "GroupMembershipApplication")
+		query, err := query.CollectFields(ctx, groupmembershipapplicationImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -455,7 +478,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case groupsettings.Table:
 		query := c.GroupSettings.Query().
 			Where(groupsettings.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "GroupSettings")
+		query, err := query.CollectFields(ctx, groupsettingsImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -471,7 +494,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case match.Table:
 		query := c.Match.Query().
 			Where(match.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "Match")
+		query, err := query.CollectFields(ctx, matchImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -487,7 +510,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case player.Table:
 		query := c.Player.Query().
 			Where(player.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "Player")
+		query, err := query.CollectFields(ctx, playerImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -503,7 +526,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case playersupervisionrequest.Table:
 		query := c.PlayerSupervisionRequest.Query().
 			Where(playersupervisionrequest.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "PlayerSupervisionRequest")
+		query, err := query.CollectFields(ctx, playersupervisionrequestImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -519,7 +542,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case playersupervisionrequestapproval.Table:
 		query := c.PlayerSupervisionRequestApproval.Query().
 			Where(playersupervisionrequestapproval.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "PlayerSupervisionRequestApproval")
+		query, err := query.CollectFields(ctx, playersupervisionrequestapprovalImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -535,7 +558,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case statdescription.Table:
 		query := c.StatDescription.Query().
 			Where(statdescription.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "StatDescription")
+		query, err := query.CollectFields(ctx, statdescriptionImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -551,7 +574,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case statistic.Table:
 		query := c.Statistic.Query().
 			Where(statistic.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "Statistic")
+		query, err := query.CollectFields(ctx, statisticImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -567,7 +590,7 @@ func (c *Client) noders(ctx context.Context, table string, ids []guidgql.GUID) (
 	case user.Table:
 		query := c.User.Query().
 			Where(user.IDIn(ids...))
-		query, err := query.CollectFields(ctx, "User")
+		query, err := query.CollectFields(ctx, userImplementors...)
 		if err != nil {
 			return nil, err
 		}

@@ -23,7 +23,7 @@ import (
 type PlayerSupervisionRequestQuery struct {
 	config
 	ctx                *QueryContext
-	order              []OrderFunc
+	order              []playersupervisionrequest.OrderOption
 	inters             []Interceptor
 	predicates         []predicate.PlayerSupervisionRequest
 	withSender         *UserQuery
@@ -64,7 +64,7 @@ func (psrq *PlayerSupervisionRequestQuery) Unique(unique bool) *PlayerSupervisio
 }
 
 // Order specifies how the records should be ordered.
-func (psrq *PlayerSupervisionRequestQuery) Order(o ...OrderFunc) *PlayerSupervisionRequestQuery {
+func (psrq *PlayerSupervisionRequestQuery) Order(o ...playersupervisionrequest.OrderOption) *PlayerSupervisionRequestQuery {
 	psrq.order = append(psrq.order, o...)
 	return psrq
 }
@@ -324,7 +324,7 @@ func (psrq *PlayerSupervisionRequestQuery) Clone() *PlayerSupervisionRequestQuer
 	return &PlayerSupervisionRequestQuery{
 		config:        psrq.config,
 		ctx:           psrq.ctx.Clone(),
-		order:         append([]OrderFunc{}, psrq.order...),
+		order:         append([]playersupervisionrequest.OrderOption{}, psrq.order...),
 		inters:        append([]Interceptor{}, psrq.inters...),
 		predicates:    append([]predicate.PlayerSupervisionRequest{}, psrq.predicates...),
 		withSender:    psrq.withSender.Clone(),
@@ -595,7 +595,7 @@ func (psrq *PlayerSupervisionRequestQuery) loadApprovals(ctx context.Context, qu
 	}
 	query.withFKs = true
 	query.Where(predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.InValues(playersupervisionrequest.ApprovalsColumn, fks...))
+		s.Where(sql.InValues(s.C(playersupervisionrequest.ApprovalsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -608,7 +608,7 @@ func (psrq *PlayerSupervisionRequestQuery) loadApprovals(ctx context.Context, qu
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "player_supervision_request_approvals" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "player_supervision_request_approvals" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -37,6 +37,14 @@ func (gmu *GroupMembershipUpdate) SetRole(e enums.Role) *GroupMembershipUpdate {
 	return gmu
 }
 
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (gmu *GroupMembershipUpdate) SetNillableRole(e *enums.Role) *GroupMembershipUpdate {
+	if e != nil {
+		gmu.SetRole(*e)
+	}
+	return gmu
+}
+
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (gmu *GroupMembershipUpdate) SetGroupID(id guidgql.GUID) *GroupMembershipUpdate {
 	gmu.mutation.SetGroupID(id)
@@ -78,7 +86,7 @@ func (gmu *GroupMembershipUpdate) ClearUser() *GroupMembershipUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gmu *GroupMembershipUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, GroupMembershipMutation](ctx, gmu.sqlSave, gmu.mutation, gmu.hooks)
+	return withHooks(ctx, gmu.sqlSave, gmu.mutation, gmu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -218,6 +226,14 @@ func (gmuo *GroupMembershipUpdateOne) SetRole(e enums.Role) *GroupMembershipUpda
 	return gmuo
 }
 
+// SetNillableRole sets the "role" field if the given value is not nil.
+func (gmuo *GroupMembershipUpdateOne) SetNillableRole(e *enums.Role) *GroupMembershipUpdateOne {
+	if e != nil {
+		gmuo.SetRole(*e)
+	}
+	return gmuo
+}
+
 // SetGroupID sets the "group" edge to the Group entity by ID.
 func (gmuo *GroupMembershipUpdateOne) SetGroupID(id guidgql.GUID) *GroupMembershipUpdateOne {
 	gmuo.mutation.SetGroupID(id)
@@ -272,7 +288,7 @@ func (gmuo *GroupMembershipUpdateOne) Select(field string, fields ...string) *Gr
 
 // Save executes the query and returns the updated GroupMembership entity.
 func (gmuo *GroupMembershipUpdateOne) Save(ctx context.Context) (*GroupMembership, error) {
-	return withHooks[*GroupMembership, GroupMembershipMutation](ctx, gmuo.sqlSave, gmuo.mutation, gmuo.hooks)
+	return withHooks(ctx, gmuo.sqlSave, gmuo.mutation, gmuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

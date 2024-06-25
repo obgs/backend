@@ -278,11 +278,7 @@ func HasSettings() predicate.Group {
 // HasSettingsWith applies the HasEdge predicate on the "settings" edge with a given conditions (other predicates).
 func HasSettingsWith(preds ...predicate.GroupSettings) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SettingsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, SettingsTable, SettingsColumn),
-		)
+		step := newSettingsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -305,11 +301,7 @@ func HasMembers() predicate.Group {
 // HasMembersWith applies the HasEdge predicate on the "members" edge with a given conditions (other predicates).
 func HasMembersWith(preds ...predicate.GroupMembership) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(MembersInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, MembersTable, MembersColumn),
-		)
+		step := newMembersStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -332,11 +324,7 @@ func HasApplications() predicate.Group {
 // HasApplicationsWith applies the HasEdge predicate on the "applications" edge with a given conditions (other predicates).
 func HasApplicationsWith(preds ...predicate.GroupMembershipApplication) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ApplicationsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ApplicationsTable, ApplicationsColumn),
-		)
+		step := newApplicationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -347,32 +335,15 @@ func HasApplicationsWith(preds ...predicate.GroupMembershipApplication) predicat
 
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Group) predicate.Group {
-	return predicate.Group(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for _, p := range predicates {
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.Group(sql.AndPredicates(predicates...))
 }
 
 // Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.Group) predicate.Group {
-	return predicate.Group(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for i, p := range predicates {
-			if i > 0 {
-				s1.Or()
-			}
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.Group(sql.OrPredicates(predicates...))
 }
 
 // Not applies the not operator on the given predicate.
 func Not(p predicate.Group) predicate.Group {
-	return predicate.Group(func(s *sql.Selector) {
-		p(s.Not())
-	})
+	return predicate.Group(sql.NotPredicates(p))
 }

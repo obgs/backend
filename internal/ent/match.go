@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
@@ -19,14 +20,15 @@ type Match struct {
 	ID guidgql.GUID `json:"id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MatchQuery when eager-loading is set.
-	Edges        MatchEdges `json:"edges"`
-	game_matches *guidgql.GUID
+	Edges                MatchEdges `json:"edges"`
+	game_version_matches *guidgql.GUID
+	selectValues         sql.SelectValues
 }
 
 // MatchEdges holds the relations/edges for other nodes in the graph.
 type MatchEdges struct {
-	// Game holds the value of the game edge.
-	Game *Game `json:"game,omitempty"`
+	// GameVersion holds the value of the game_version edge.
+	GameVersion *GameVersion `json:"game_version,omitempty"`
 	// Players holds the value of the players edge.
 	Players []*Player `json:"players,omitempty"`
 	// Stats holds the value of the stats edge.
@@ -41,17 +43,15 @@ type MatchEdges struct {
 	namedStats   map[string][]*Statistic
 }
 
-// GameOrErr returns the Game value or an error if the edge
+// GameVersionOrErr returns the GameVersion value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e MatchEdges) GameOrErr() (*Game, error) {
-	if e.loadedTypes[0] {
-		if e.Game == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: game.Label}
-		}
-		return e.Game, nil
+func (e MatchEdges) GameVersionOrErr() (*GameVersion, error) {
+	if e.GameVersion != nil {
+		return e.GameVersion, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: gameversion.Label}
 	}
-	return nil, &NotLoadedError{edge: "game"}
+	return nil, &NotLoadedError{edge: "game_version"}
 }
 
 // PlayersOrErr returns the Players value or an error if the edge
@@ -79,10 +79,10 @@ func (*Match) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case match.FieldID:
 			values[i] = new(guidgql.GUID)
-		case match.ForeignKeys[0]: // game_matches
+		case match.ForeignKeys[0]: // game_version_matches
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Match", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -104,19 +104,27 @@ func (m *Match) assignValues(columns []string, values []any) error {
 			}
 		case match.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field game_matches", values[i])
+				return fmt.Errorf("unexpected type %T for field game_version_matches", values[i])
 			} else if value.Valid {
-				m.game_matches = new(guidgql.GUID)
-				*m.game_matches = *value.S.(*guidgql.GUID)
+				m.game_version_matches = new(guidgql.GUID)
+				*m.game_version_matches = *value.S.(*guidgql.GUID)
 			}
+		default:
+			m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
 }
 
-// QueryGame queries the "game" edge of the Match entity.
-func (m *Match) QueryGame() *GameQuery {
-	return NewMatchClient(m.config).QueryGame(m)
+// Value returns the ent.Value that was dynamically selected and assigned to the Match.
+// This includes values selected through modifiers, order, etc.
+func (m *Match) Value(name string) (ent.Value, error) {
+	return m.selectValues.Get(name)
+}
+
+// QueryGameVersion queries the "game_version" edge of the Match entity.
+func (m *Match) QueryGameVersion() *GameVersionQuery {
+	return NewMatchClient(m.config).QueryGameVersion(m)
 }
 
 // QueryPlayers queries the "players" edge of the Match entity.

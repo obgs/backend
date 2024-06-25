@@ -93,11 +93,7 @@ func HasApprover() predicate.PlayerSupervisionRequestApproval {
 // HasApproverWith applies the HasEdge predicate on the "approver" edge with a given conditions (other predicates).
 func HasApproverWith(preds ...predicate.User) predicate.PlayerSupervisionRequestApproval {
 	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ApproverInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, ApproverTable, ApproverColumn),
-		)
+		step := newApproverStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -120,11 +116,7 @@ func HasSupervisionRequest() predicate.PlayerSupervisionRequestApproval {
 // HasSupervisionRequestWith applies the HasEdge predicate on the "supervision_request" edge with a given conditions (other predicates).
 func HasSupervisionRequestWith(preds ...predicate.PlayerSupervisionRequest) predicate.PlayerSupervisionRequestApproval {
 	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SupervisionRequestInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, SupervisionRequestTable, SupervisionRequestColumn),
-		)
+		step := newSupervisionRequestStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -135,32 +127,15 @@ func HasSupervisionRequestWith(preds ...predicate.PlayerSupervisionRequest) pred
 
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.PlayerSupervisionRequestApproval) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for _, p := range predicates {
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.AndPredicates(predicates...))
 }
 
 // Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.PlayerSupervisionRequestApproval) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for i, p := range predicates {
-			if i > 0 {
-				s1.Or()
-			}
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.OrPredicates(predicates...))
 }
 
 // Not applies the not operator on the given predicate.
 func Not(p predicate.PlayerSupervisionRequestApproval) predicate.PlayerSupervisionRequestApproval {
-	return predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		p(s.Not())
-	})
+	return predicate.PlayerSupervisionRequestApproval(sql.NotPredicates(p))
 }

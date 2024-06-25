@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -27,7 +28,8 @@ type User struct {
 	AvatarURL string `json:"avatar_url,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
-	Edges UserEdges `json:"edges"`
+	Edges        UserEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // UserEdges holds the relations/edges for other nodes in the graph.
@@ -75,12 +77,10 @@ func (e UserEdges) PlayersOrErr() ([]*Player, error) {
 // MainPlayerOrErr returns the MainPlayer value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e UserEdges) MainPlayerOrErr() (*Player, error) {
-	if e.loadedTypes[1] {
-		if e.MainPlayer == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: player.Label}
-		}
+	if e.MainPlayer != nil {
 		return e.MainPlayer, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: player.Label}
 	}
 	return nil, &NotLoadedError{edge: "main_player"}
 }
@@ -149,7 +149,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		case user.FieldName, user.FieldEmail, user.FieldPassword, user.FieldAvatarURL:
 			values[i] = new(sql.NullString)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type User", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -193,9 +193,17 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.AvatarURL = value.String
 			}
+		default:
+			u.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the User.
+// This includes values selected through modifiers, order, etc.
+func (u *User) Value(name string) (ent.Value, error) {
+	return u.selectValues.Get(name)
 }
 
 // QueryPlayers queries the "players" edge of the User entity.

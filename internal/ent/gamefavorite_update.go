@@ -71,7 +71,7 @@ func (gfu *GameFavoriteUpdate) ClearUser() *GameFavoriteUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gfu *GameFavoriteUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, GameFavoriteMutation](ctx, gfu.sqlSave, gfu.mutation, gfu.hooks)
+	return withHooks(ctx, gfu.sqlSave, gfu.mutation, gfu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -251,7 +251,7 @@ func (gfuo *GameFavoriteUpdateOne) Select(field string, fields ...string) *GameF
 
 // Save executes the query and returns the updated GameFavorite entity.
 func (gfuo *GameFavoriteUpdateOne) Save(ctx context.Context) (*GameFavorite, error) {
-	return withHooks[*GameFavorite, GameFavoriteMutation](ctx, gfuo.sqlSave, gfuo.mutation, gfuo.hooks)
+	return withHooks(ctx, gfuo.sqlSave, gfuo.mutation, gfuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

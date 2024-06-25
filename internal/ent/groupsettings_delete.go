@@ -27,7 +27,7 @@ func (gsd *GroupSettingsDelete) Where(ps ...predicate.GroupSettings) *GroupSetti
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (gsd *GroupSettingsDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, GroupSettingsMutation](ctx, gsd.sqlExec, gsd.mutation, gsd.hooks)
+	return withHooks(ctx, gsd.sqlExec, gsd.mutation, gsd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

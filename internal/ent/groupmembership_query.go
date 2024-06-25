@@ -21,7 +21,7 @@ import (
 type GroupMembershipQuery struct {
 	config
 	ctx        *QueryContext
-	order      []OrderFunc
+	order      []groupmembership.OrderOption
 	inters     []Interceptor
 	predicates []predicate.GroupMembership
 	withGroup  *GroupQuery
@@ -60,7 +60,7 @@ func (gmq *GroupMembershipQuery) Unique(unique bool) *GroupMembershipQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (gmq *GroupMembershipQuery) Order(o ...OrderFunc) *GroupMembershipQuery {
+func (gmq *GroupMembershipQuery) Order(o ...groupmembership.OrderOption) *GroupMembershipQuery {
 	gmq.order = append(gmq.order, o...)
 	return gmq
 }
@@ -298,7 +298,7 @@ func (gmq *GroupMembershipQuery) Clone() *GroupMembershipQuery {
 	return &GroupMembershipQuery{
 		config:     gmq.config,
 		ctx:        gmq.ctx.Clone(),
-		order:      append([]OrderFunc{}, gmq.order...),
+		order:      append([]groupmembership.OrderOption{}, gmq.order...),
 		inters:     append([]Interceptor{}, gmq.inters...),
 		predicates: append([]predicate.GroupMembership{}, gmq.predicates...),
 		withGroup:  gmq.withGroup.Clone(),

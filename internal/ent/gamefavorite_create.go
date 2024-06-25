@@ -69,7 +69,7 @@ func (gfc *GameFavoriteCreate) Mutation() *GameFavoriteMutation {
 // Save creates the GameFavorite in the database.
 func (gfc *GameFavoriteCreate) Save(ctx context.Context) (*GameFavorite, error) {
 	gfc.defaults()
-	return withHooks[*GameFavorite, GameFavoriteMutation](ctx, gfc.sqlSave, gfc.mutation, gfc.hooks)
+	return withHooks(ctx, gfc.sqlSave, gfc.mutation, gfc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -315,12 +315,16 @@ func (u *GameFavoriteUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // GameFavoriteCreateBulk is the builder for creating many GameFavorite entities in bulk.
 type GameFavoriteCreateBulk struct {
 	config
+	err      error
 	builders []*GameFavoriteCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the GameFavorite entities in the database.
 func (gfcb *GameFavoriteCreateBulk) Save(ctx context.Context) ([]*GameFavorite, error) {
+	if gfcb.err != nil {
+		return nil, gfcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gfcb.builders))
 	nodes := make([]*GameFavorite, len(gfcb.builders))
 	mutators := make([]Mutator, len(gfcb.builders))
@@ -337,8 +341,8 @@ func (gfcb *GameFavoriteCreateBulk) Save(ctx context.Context) ([]*GameFavorite, 
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gfcb.builders[i+1].mutation)
 				} else {
@@ -482,6 +486,9 @@ func (u *GameFavoriteUpsertBulk) Update(set func(*GameFavoriteUpsert)) *GameFavo
 
 // Exec executes the query.
 func (u *GameFavoriteUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GameFavoriteCreateBulk instead", i)

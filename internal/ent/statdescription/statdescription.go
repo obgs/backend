@@ -5,6 +5,8 @@ package statdescription
 import (
 	"fmt"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
@@ -25,17 +27,17 @@ const (
 	FieldMetadata = "metadata"
 	// FieldOrderNumber holds the string denoting the order_number field in the database.
 	FieldOrderNumber = "order_number"
-	// EdgeGame holds the string denoting the game edge name in mutations.
-	EdgeGame = "game"
+	// EdgeGameVersion holds the string denoting the game_version edge name in mutations.
+	EdgeGameVersion = "game_version"
 	// EdgeStats holds the string denoting the stats edge name in mutations.
 	EdgeStats = "stats"
 	// Table holds the table name of the statdescription in the database.
 	Table = "stat_descriptions"
-	// GameTable is the table that holds the game relation/edge. The primary key declared below.
-	GameTable = "stat_description_game"
-	// GameInverseTable is the table name for the Game entity.
-	// It exists in this package in order to avoid circular dependency with the "game" package.
-	GameInverseTable = "games"
+	// GameVersionTable is the table that holds the game_version relation/edge. The primary key declared below.
+	GameVersionTable = "stat_description_game_version"
+	// GameVersionInverseTable is the table name for the GameVersion entity.
+	// It exists in this package in order to avoid circular dependency with the "gameversion" package.
+	GameVersionInverseTable = "game_versions"
 	// StatsTable is the table that holds the stats relation/edge.
 	StatsTable = "statistics"
 	// StatsInverseTable is the table name for the Statistic entity.
@@ -56,9 +58,9 @@ var Columns = []string{
 }
 
 var (
-	// GamePrimaryKey and GameColumn2 are the table columns denoting the
-	// primary key for the game relation (M2M).
-	GamePrimaryKey = []string{"stat_description_id", "game_id"}
+	// GameVersionPrimaryKey and GameVersionColumn2 are the table columns denoting the
+	// primary key for the game_version relation (M2M).
+	GameVersionPrimaryKey = []string{"stat_description_id", "game_version_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -88,6 +90,81 @@ func TypeValidator(_type stat.StatType) error {
 	default:
 		return fmt.Errorf("statdescription: invalid enum value for type field: %q", _type)
 	}
+}
+
+// OrderOption defines the ordering options for the StatDescription queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByType orders the results by the type field.
+func ByType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldType, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByMetadata orders the results by the metadata field.
+func ByMetadata(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMetadata, opts...).ToFunc()
+}
+
+// ByOrderNumber orders the results by the order_number field.
+func ByOrderNumber(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrderNumber, opts...).ToFunc()
+}
+
+// ByGameVersionCount orders the results by game_version count.
+func ByGameVersionCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGameVersionStep(), opts...)
+	}
+}
+
+// ByGameVersion orders the results by game_version terms.
+func ByGameVersion(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGameVersionStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByStatsCount orders the results by stats count.
+func ByStatsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newStatsStep(), opts...)
+	}
+}
+
+// ByStats orders the results by stats terms.
+func ByStats(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newStatsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newGameVersionStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GameVersionInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, GameVersionTable, GameVersionPrimaryKey...),
+	)
+}
+func newStatsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(StatsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, StatsTable, StatsColumn),
+	)
 }
 
 var (

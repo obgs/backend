@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
@@ -28,6 +29,7 @@ type GroupSettings struct {
 	// The values are being populated by the GroupSettingsQuery when eager-loading is set.
 	Edges          GroupSettingsEdges `json:"edges"`
 	group_settings *guidgql.GUID
+	selectValues   sql.SelectValues
 }
 
 // GroupSettingsEdges holds the relations/edges for other nodes in the graph.
@@ -42,12 +44,10 @@ type GroupSettingsEdges struct {
 // GroupOrErr returns the Group value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e GroupSettingsEdges) GroupOrErr() (*Group, error) {
-	if e.loadedTypes[0] {
-		if e.Group == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: group.Label}
-		}
+	if e.Group != nil {
 		return e.Group, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: group.Label}
 	}
 	return nil, &NotLoadedError{edge: "group"}
 }
@@ -64,7 +64,7 @@ func (*GroupSettings) scanValues(columns []string) ([]any, error) {
 		case groupsettings.ForeignKeys[0]: // group_settings
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type GroupSettings", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -110,9 +110,17 @@ func (gs *GroupSettings) assignValues(columns []string, values []any) error {
 				gs.group_settings = new(guidgql.GUID)
 				*gs.group_settings = *value.S.(*guidgql.GUID)
 			}
+		default:
+			gs.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the GroupSettings.
+// This includes values selected through modifiers, order, etc.
+func (gs *GroupSettings) Value(name string) (ent.Value, error) {
+	return gs.selectValues.Get(name)
 }
 
 // QueryGroup queries the "group" edge of the GroupSettings entity.

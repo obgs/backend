@@ -8,6 +8,7 @@ import (
 
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
@@ -285,6 +286,186 @@ func (i *GameWhereInput) P() (predicate.Game, error) {
 		return predicates[0], nil
 	default:
 		return game.And(predicates...), nil
+	}
+}
+
+// GameVersionWhereInput represents a where input for filtering GameVersion queries.
+type GameVersionWhereInput struct {
+	Predicates []predicate.GameVersion  `json:"-"`
+	Not        *GameVersionWhereInput   `json:"not,omitempty"`
+	Or         []*GameVersionWhereInput `json:"or,omitempty"`
+	And        []*GameVersionWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *guidgql.GUID  `json:"id,omitempty"`
+	IDNEQ   *guidgql.GUID  `json:"idNEQ,omitempty"`
+	IDIn    []guidgql.GUID `json:"idIn,omitempty"`
+	IDNotIn []guidgql.GUID `json:"idNotIn,omitempty"`
+	IDGT    *guidgql.GUID  `json:"idGT,omitempty"`
+	IDGTE   *guidgql.GUID  `json:"idGTE,omitempty"`
+	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
+	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
+
+	// "version_number" field predicates.
+	VersionNumber      *int  `json:"versionNumber,omitempty"`
+	VersionNumberNEQ   *int  `json:"versionNumberNEQ,omitempty"`
+	VersionNumberIn    []int `json:"versionNumberIn,omitempty"`
+	VersionNumberNotIn []int `json:"versionNumberNotIn,omitempty"`
+	VersionNumberGT    *int  `json:"versionNumberGT,omitempty"`
+	VersionNumberGTE   *int  `json:"versionNumberGTE,omitempty"`
+	VersionNumberLT    *int  `json:"versionNumberLT,omitempty"`
+	VersionNumberLTE   *int  `json:"versionNumberLTE,omitempty"`
+
+	// "game" edge predicates.
+	HasGame     *bool             `json:"hasGame,omitempty"`
+	HasGameWith []*GameWhereInput `json:"hasGameWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *GameVersionWhereInput) AddPredicates(predicates ...predicate.GameVersion) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the GameVersionWhereInput filter on the GameVersionQuery builder.
+func (i *GameVersionWhereInput) Filter(q *GameVersionQuery) (*GameVersionQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyGameVersionWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyGameVersionWhereInput is returned in case the GameVersionWhereInput is empty.
+var ErrEmptyGameVersionWhereInput = errors.New("ent: empty predicate GameVersionWhereInput")
+
+// P returns a predicate for filtering gameversions.
+// An error is returned if the input is empty or invalid.
+func (i *GameVersionWhereInput) P() (predicate.GameVersion, error) {
+	var predicates []predicate.GameVersion
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, gameversion.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.GameVersion, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, gameversion.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.GameVersion, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, gameversion.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, gameversion.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, gameversion.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, gameversion.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, gameversion.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, gameversion.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, gameversion.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, gameversion.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, gameversion.IDLTE(*i.IDLTE))
+	}
+	if i.VersionNumber != nil {
+		predicates = append(predicates, gameversion.VersionNumberEQ(*i.VersionNumber))
+	}
+	if i.VersionNumberNEQ != nil {
+		predicates = append(predicates, gameversion.VersionNumberNEQ(*i.VersionNumberNEQ))
+	}
+	if len(i.VersionNumberIn) > 0 {
+		predicates = append(predicates, gameversion.VersionNumberIn(i.VersionNumberIn...))
+	}
+	if len(i.VersionNumberNotIn) > 0 {
+		predicates = append(predicates, gameversion.VersionNumberNotIn(i.VersionNumberNotIn...))
+	}
+	if i.VersionNumberGT != nil {
+		predicates = append(predicates, gameversion.VersionNumberGT(*i.VersionNumberGT))
+	}
+	if i.VersionNumberGTE != nil {
+		predicates = append(predicates, gameversion.VersionNumberGTE(*i.VersionNumberGTE))
+	}
+	if i.VersionNumberLT != nil {
+		predicates = append(predicates, gameversion.VersionNumberLT(*i.VersionNumberLT))
+	}
+	if i.VersionNumberLTE != nil {
+		predicates = append(predicates, gameversion.VersionNumberLTE(*i.VersionNumberLTE))
+	}
+
+	if i.HasGame != nil {
+		p := gameversion.HasGame()
+		if !*i.HasGame {
+			p = gameversion.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasGameWith) > 0 {
+		with := make([]predicate.Game, 0, len(i.HasGameWith))
+		for _, w := range i.HasGameWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasGameWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, gameversion.HasGameWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyGameVersionWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return gameversion.And(predicates...), nil
 	}
 }
 
@@ -873,9 +1054,9 @@ type MatchWhereInput struct {
 	IDLT    *guidgql.GUID  `json:"idLT,omitempty"`
 	IDLTE   *guidgql.GUID  `json:"idLTE,omitempty"`
 
-	// "game" edge predicates.
-	HasGame     *bool             `json:"hasGame,omitempty"`
-	HasGameWith []*GameWhereInput `json:"hasGameWith,omitempty"`
+	// "game_version" edge predicates.
+	HasGameVersion     *bool                    `json:"hasGameVersion,omitempty"`
+	HasGameVersionWith []*GameVersionWhereInput `json:"hasGameVersionWith,omitempty"`
 
 	// "players" edge predicates.
 	HasPlayers     *bool               `json:"hasPlayers,omitempty"`
@@ -978,23 +1159,23 @@ func (i *MatchWhereInput) P() (predicate.Match, error) {
 		predicates = append(predicates, match.IDLTE(*i.IDLTE))
 	}
 
-	if i.HasGame != nil {
-		p := match.HasGame()
-		if !*i.HasGame {
+	if i.HasGameVersion != nil {
+		p := match.HasGameVersion()
+		if !*i.HasGameVersion {
 			p = match.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasGameWith) > 0 {
-		with := make([]predicate.Game, 0, len(i.HasGameWith))
-		for _, w := range i.HasGameWith {
+	if len(i.HasGameVersionWith) > 0 {
+		with := make([]predicate.GameVersion, 0, len(i.HasGameVersionWith))
+		for _, w := range i.HasGameVersionWith {
 			p, err := w.P()
 			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasGameWith'", err)
+				return nil, fmt.Errorf("%w: field 'HasGameVersionWith'", err)
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, match.HasGameWith(with...))
+		predicates = append(predicates, match.HasGameVersionWith(with...))
 	}
 	if i.HasPlayers != nil {
 		p := match.HasPlayers()

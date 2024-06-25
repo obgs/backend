@@ -9,7 +9,7 @@ extend type Game {
   Whether the current user has favorited this game
   """
   isFavorite: Boolean!
-  statDescriptions: [StatDescription!]!
+  versions: [GameVersion!]!
 }
 
 input CreateGameInput {

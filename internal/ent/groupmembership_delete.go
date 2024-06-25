@@ -27,7 +27,7 @@ func (gmd *GroupMembershipDelete) Where(ps ...predicate.GroupMembership) *GroupM
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (gmd *GroupMembershipDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, GroupMembershipMutation](ctx, gmd.sqlExec, gmd.mutation, gmd.hooks)
+	return withHooks(ctx, gmd.sqlExec, gmd.mutation, gmd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

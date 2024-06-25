@@ -8,7 +8,7 @@ input StatInput {
 }
 
 input CreateMatchInput {
-  gameId: ID!
+  gameVersionId: ID!
   playerIds: [ID!]!
   stats: [StatInput!]!
 }

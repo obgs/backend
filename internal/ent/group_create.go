@@ -115,7 +115,7 @@ func (gc *GroupCreate) Mutation() *GroupMutation {
 // Save creates the Group in the database.
 func (gc *GroupCreate) Save(ctx context.Context) (*Group, error) {
 	gc.defaults()
-	return withHooks[*Group, GroupMutation](ctx, gc.sqlSave, gc.mutation, gc.hooks)
+	return withHooks(ctx, gc.sqlSave, gc.mutation, gc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -491,12 +491,16 @@ func (u *GroupUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // GroupCreateBulk is the builder for creating many Group entities in bulk.
 type GroupCreateBulk struct {
 	config
+	err      error
 	builders []*GroupCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the Group entities in the database.
 func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
+	if gcb.err != nil {
+		return nil, gcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gcb.builders))
 	nodes := make([]*Group, len(gcb.builders))
 	mutators := make([]Mutator, len(gcb.builders))
@@ -513,8 +517,8 @@ func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gcb.builders[i+1].mutation)
 				} else {
@@ -705,6 +709,9 @@ func (u *GroupUpsertBulk) UpdateLogoURL() *GroupUpsertBulk {
 
 // Exec executes the query.
 func (u *GroupUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GroupCreateBulk instead", i)

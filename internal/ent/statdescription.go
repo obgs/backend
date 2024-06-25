@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
@@ -29,30 +30,31 @@ type StatDescription struct {
 	OrderNumber int `json:"order_number,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the StatDescriptionQuery when eager-loading is set.
-	Edges StatDescriptionEdges `json:"edges"`
+	Edges        StatDescriptionEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // StatDescriptionEdges holds the relations/edges for other nodes in the graph.
 type StatDescriptionEdges struct {
-	// Game holds the value of the game edge.
-	Game []*Game `json:"game,omitempty"`
+	// GameVersion holds the value of the game_version edge.
+	GameVersion []*GameVersion `json:"game_version,omitempty"`
 	// Stats holds the value of the stats edge.
 	Stats []*Statistic `json:"stats,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 
-	namedGame  map[string][]*Game
-	namedStats map[string][]*Statistic
+	namedGameVersion map[string][]*GameVersion
+	namedStats       map[string][]*Statistic
 }
 
-// GameOrErr returns the Game value or an error if the edge
+// GameVersionOrErr returns the GameVersion value or an error if the edge
 // was not loaded in eager-loading.
-func (e StatDescriptionEdges) GameOrErr() ([]*Game, error) {
+func (e StatDescriptionEdges) GameVersionOrErr() ([]*GameVersion, error) {
 	if e.loadedTypes[0] {
-		return e.Game, nil
+		return e.GameVersion, nil
 	}
-	return nil, &NotLoadedError{edge: "game"}
+	return nil, &NotLoadedError{edge: "game_version"}
 }
 
 // StatsOrErr returns the Stats value or an error if the edge
@@ -78,7 +80,7 @@ func (*StatDescription) scanValues(columns []string) ([]any, error) {
 		case statdescription.FieldType:
 			values[i] = new(stat.StatType)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type StatDescription", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -128,14 +130,22 @@ func (sd *StatDescription) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				sd.OrderNumber = int(value.Int64)
 			}
+		default:
+			sd.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
 }
 
-// QueryGame queries the "game" edge of the StatDescription entity.
-func (sd *StatDescription) QueryGame() *GameQuery {
-	return NewStatDescriptionClient(sd.config).QueryGame(sd)
+// Value returns the ent.Value that was dynamically selected and assigned to the StatDescription.
+// This includes values selected through modifiers, order, etc.
+func (sd *StatDescription) Value(name string) (ent.Value, error) {
+	return sd.selectValues.Get(name)
+}
+
+// QueryGameVersion queries the "game_version" edge of the StatDescription entity.
+func (sd *StatDescription) QueryGameVersion() *GameVersionQuery {
+	return NewStatDescriptionClient(sd.config).QueryGameVersion(sd)
 }
 
 // QueryStats queries the "stats" edge of the StatDescription entity.
@@ -184,27 +194,27 @@ func (sd *StatDescription) String() string {
 	return builder.String()
 }
 
-// NamedGame returns the Game named value or an error if the edge was not
+// NamedGameVersion returns the GameVersion named value or an error if the edge was not
 // loaded in eager-loading with this name.
-func (sd *StatDescription) NamedGame(name string) ([]*Game, error) {
-	if sd.Edges.namedGame == nil {
+func (sd *StatDescription) NamedGameVersion(name string) ([]*GameVersion, error) {
+	if sd.Edges.namedGameVersion == nil {
 		return nil, &NotLoadedError{edge: name}
 	}
-	nodes, ok := sd.Edges.namedGame[name]
+	nodes, ok := sd.Edges.namedGameVersion[name]
 	if !ok {
 		return nil, &NotLoadedError{edge: name}
 	}
 	return nodes, nil
 }
 
-func (sd *StatDescription) appendNamedGame(name string, edges ...*Game) {
-	if sd.Edges.namedGame == nil {
-		sd.Edges.namedGame = make(map[string][]*Game)
+func (sd *StatDescription) appendNamedGameVersion(name string, edges ...*GameVersion) {
+	if sd.Edges.namedGameVersion == nil {
+		sd.Edges.namedGameVersion = make(map[string][]*GameVersion)
 	}
 	if len(edges) == 0 {
-		sd.Edges.namedGame[name] = []*Game{}
+		sd.Edges.namedGameVersion[name] = []*GameVersion{}
 	} else {
-		sd.Edges.namedGame[name] = append(sd.Edges.namedGame[name], edges...)
+		sd.Edges.namedGameVersion[name] = append(sd.Edges.namedGameVersion[name], edges...)
 	}
 }
 

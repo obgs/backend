@@ -35,9 +35,9 @@ type CreateGameInput struct {
 }
 
 type CreateMatchInput struct {
-	GameID    guidgql.GUID    `json:"gameId"`
-	PlayerIds []*guidgql.GUID `json:"playerIds"`
-	Stats     []*StatInput    `json:"stats"`
+	GameVersionID guidgql.GUID    `json:"gameVersionId"`
+	PlayerIds     []*guidgql.GUID `json:"playerIds"`
+	Stats         []*StatInput    `json:"stats"`
 }
 
 type CreateOrUpdateGroupInput struct {

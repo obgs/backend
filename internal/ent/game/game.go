@@ -3,6 +3,8 @@
 package game
 
 import (
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
@@ -25,10 +27,8 @@ const (
 	EdgeAuthor = "author"
 	// EdgeFavorites holds the string denoting the favorites edge name in mutations.
 	EdgeFavorites = "favorites"
-	// EdgeStatDescriptions holds the string denoting the stat_descriptions edge name in mutations.
-	EdgeStatDescriptions = "stat_descriptions"
-	// EdgeMatches holds the string denoting the matches edge name in mutations.
-	EdgeMatches = "matches"
+	// EdgeVersions holds the string denoting the versions edge name in mutations.
+	EdgeVersions = "versions"
 	// Table holds the table name of the game in the database.
 	Table = "games"
 	// AuthorTable is the table that holds the author relation/edge.
@@ -45,18 +45,13 @@ const (
 	FavoritesInverseTable = "game_favorites"
 	// FavoritesColumn is the table column denoting the favorites relation/edge.
 	FavoritesColumn = "game_favorites"
-	// StatDescriptionsTable is the table that holds the stat_descriptions relation/edge. The primary key declared below.
-	StatDescriptionsTable = "stat_description_game"
-	// StatDescriptionsInverseTable is the table name for the StatDescription entity.
-	// It exists in this package in order to avoid circular dependency with the "statdescription" package.
-	StatDescriptionsInverseTable = "stat_descriptions"
-	// MatchesTable is the table that holds the matches relation/edge.
-	MatchesTable = "matches"
-	// MatchesInverseTable is the table name for the Match entity.
-	// It exists in this package in order to avoid circular dependency with the "match" package.
-	MatchesInverseTable = "matches"
-	// MatchesColumn is the table column denoting the matches relation/edge.
-	MatchesColumn = "game_matches"
+	// VersionsTable is the table that holds the versions relation/edge.
+	VersionsTable = "game_versions"
+	// VersionsInverseTable is the table name for the GameVersion entity.
+	// It exists in this package in order to avoid circular dependency with the "gameversion" package.
+	VersionsInverseTable = "game_versions"
+	// VersionsColumn is the table column denoting the versions relation/edge.
+	VersionsColumn = "game_version_game"
 )
 
 // Columns holds all SQL columns for game fields.
@@ -74,12 +69,6 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"user_games",
 }
-
-var (
-	// StatDescriptionsPrimaryKey and StatDescriptionsColumn2 are the table columns denoting the
-	// primary key for the stat_descriptions relation (M2M).
-	StatDescriptionsPrimaryKey = []string{"stat_description_id", "game_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -108,3 +97,92 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() guidgql.GUID
 )
+
+// OrderOption defines the ordering options for the Game queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByMinPlayers orders the results by the min_players field.
+func ByMinPlayers(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMinPlayers, opts...).ToFunc()
+}
+
+// ByMaxPlayers orders the results by the max_players field.
+func ByMaxPlayers(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMaxPlayers, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByBoardgamegeekURL orders the results by the boardgamegeek_url field.
+func ByBoardgamegeekURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBoardgamegeekURL, opts...).ToFunc()
+}
+
+// ByAuthorField orders the results by author field.
+func ByAuthorField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAuthorStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByFavoritesCount orders the results by favorites count.
+func ByFavoritesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newFavoritesStep(), opts...)
+	}
+}
+
+// ByFavorites orders the results by favorites terms.
+func ByFavorites(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFavoritesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByVersionsCount orders the results by versions count.
+func ByVersionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVersionsStep(), opts...)
+	}
+}
+
+// ByVersions orders the results by versions terms.
+func ByVersions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVersionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newAuthorStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AuthorInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, AuthorTable, AuthorColumn),
+	)
+}
+func newFavoritesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FavoritesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, FavoritesTable, FavoritesColumn),
+	)
+}
+func newVersionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VersionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, VersionsTable, VersionsColumn),
+	)
+}

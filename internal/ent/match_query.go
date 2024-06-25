@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
@@ -23,10 +23,10 @@ import (
 type MatchQuery struct {
 	config
 	ctx              *QueryContext
-	order            []OrderFunc
+	order            []match.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.Match
-	withGame         *GameQuery
+	withGameVersion  *GameVersionQuery
 	withPlayers      *PlayerQuery
 	withStats        *StatisticQuery
 	withFKs          bool
@@ -65,14 +65,14 @@ func (mq *MatchQuery) Unique(unique bool) *MatchQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (mq *MatchQuery) Order(o ...OrderFunc) *MatchQuery {
+func (mq *MatchQuery) Order(o ...match.OrderOption) *MatchQuery {
 	mq.order = append(mq.order, o...)
 	return mq
 }
 
-// QueryGame chains the current query on the "game" edge.
-func (mq *MatchQuery) QueryGame() *GameQuery {
-	query := (&GameClient{config: mq.config}).Query()
+// QueryGameVersion chains the current query on the "game_version" edge.
+func (mq *MatchQuery) QueryGameVersion() *GameVersionQuery {
+	query := (&GameVersionClient{config: mq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := mq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -83,8 +83,8 @@ func (mq *MatchQuery) QueryGame() *GameQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(match.Table, match.FieldID, selector),
-			sqlgraph.To(game.Table, game.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, match.GameTable, match.GameColumn),
+			sqlgraph.To(gameversion.Table, gameversion.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, match.GameVersionTable, match.GameVersionColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
 		return fromU, nil
@@ -323,28 +323,28 @@ func (mq *MatchQuery) Clone() *MatchQuery {
 		return nil
 	}
 	return &MatchQuery{
-		config:      mq.config,
-		ctx:         mq.ctx.Clone(),
-		order:       append([]OrderFunc{}, mq.order...),
-		inters:      append([]Interceptor{}, mq.inters...),
-		predicates:  append([]predicate.Match{}, mq.predicates...),
-		withGame:    mq.withGame.Clone(),
-		withPlayers: mq.withPlayers.Clone(),
-		withStats:   mq.withStats.Clone(),
+		config:          mq.config,
+		ctx:             mq.ctx.Clone(),
+		order:           append([]match.OrderOption{}, mq.order...),
+		inters:          append([]Interceptor{}, mq.inters...),
+		predicates:      append([]predicate.Match{}, mq.predicates...),
+		withGameVersion: mq.withGameVersion.Clone(),
+		withPlayers:     mq.withPlayers.Clone(),
+		withStats:       mq.withStats.Clone(),
 		// clone intermediate query.
 		sql:  mq.sql.Clone(),
 		path: mq.path,
 	}
 }
 
-// WithGame tells the query-builder to eager-load the nodes that are connected to
-// the "game" edge. The optional arguments are used to configure the query builder of the edge.
-func (mq *MatchQuery) WithGame(opts ...func(*GameQuery)) *MatchQuery {
-	query := (&GameClient{config: mq.config}).Query()
+// WithGameVersion tells the query-builder to eager-load the nodes that are connected to
+// the "game_version" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MatchQuery) WithGameVersion(opts ...func(*GameVersionQuery)) *MatchQuery {
+	query := (&GameVersionClient{config: mq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	mq.withGame = query
+	mq.withGameVersion = query
 	return mq
 }
 
@@ -428,12 +428,12 @@ func (mq *MatchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Match,
 		withFKs     = mq.withFKs
 		_spec       = mq.querySpec()
 		loadedTypes = [3]bool{
-			mq.withGame != nil,
+			mq.withGameVersion != nil,
 			mq.withPlayers != nil,
 			mq.withStats != nil,
 		}
 	)
-	if mq.withGame != nil {
+	if mq.withGameVersion != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -460,9 +460,9 @@ func (mq *MatchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Match,
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := mq.withGame; query != nil {
-		if err := mq.loadGame(ctx, query, nodes, nil,
-			func(n *Match, e *Game) { n.Edges.Game = e }); err != nil {
+	if query := mq.withGameVersion; query != nil {
+		if err := mq.loadGameVersion(ctx, query, nodes, nil,
+			func(n *Match, e *GameVersion) { n.Edges.GameVersion = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -502,14 +502,14 @@ func (mq *MatchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Match,
 	return nodes, nil
 }
 
-func (mq *MatchQuery) loadGame(ctx context.Context, query *GameQuery, nodes []*Match, init func(*Match), assign func(*Match, *Game)) error {
+func (mq *MatchQuery) loadGameVersion(ctx context.Context, query *GameVersionQuery, nodes []*Match, init func(*Match), assign func(*Match, *GameVersion)) error {
 	ids := make([]guidgql.GUID, 0, len(nodes))
 	nodeids := make(map[guidgql.GUID][]*Match)
 	for i := range nodes {
-		if nodes[i].game_matches == nil {
+		if nodes[i].game_version_matches == nil {
 			continue
 		}
-		fk := *nodes[i].game_matches
+		fk := *nodes[i].game_version_matches
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -518,7 +518,7 @@ func (mq *MatchQuery) loadGame(ctx context.Context, query *GameQuery, nodes []*M
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(game.IDIn(ids...))
+	query.Where(gameversion.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -526,7 +526,7 @@ func (mq *MatchQuery) loadGame(ctx context.Context, query *GameQuery, nodes []*M
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "game_matches" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "game_version_matches" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -607,7 +607,7 @@ func (mq *MatchQuery) loadStats(ctx context.Context, query *StatisticQuery, node
 	}
 	query.withFKs = true
 	query.Where(predicate.Statistic(func(s *sql.Selector) {
-		s.Where(sql.InValues(match.StatsColumn, fks...))
+		s.Where(sql.InValues(s.C(match.StatsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -620,7 +620,7 @@ func (mq *MatchQuery) loadStats(ctx context.Context, query *StatisticQuery, node
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "match_stats" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "match_stats" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

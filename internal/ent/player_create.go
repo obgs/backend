@@ -142,7 +142,7 @@ func (pc *PlayerCreate) Mutation() *PlayerMutation {
 // Save creates the Player in the database.
 func (pc *PlayerCreate) Save(ctx context.Context) (*Player, error) {
 	pc.defaults()
-	return withHooks[*Player, PlayerMutation](ctx, pc.sqlSave, pc.mutation, pc.hooks)
+	return withHooks(ctx, pc.sqlSave, pc.mutation, pc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -472,12 +472,16 @@ func (u *PlayerUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // PlayerCreateBulk is the builder for creating many Player entities in bulk.
 type PlayerCreateBulk struct {
 	config
+	err      error
 	builders []*PlayerCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the Player entities in the database.
 func (pcb *PlayerCreateBulk) Save(ctx context.Context) ([]*Player, error) {
+	if pcb.err != nil {
+		return nil, pcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(pcb.builders))
 	nodes := make([]*Player, len(pcb.builders))
 	mutators := make([]Mutator, len(pcb.builders))
@@ -494,8 +498,8 @@ func (pcb *PlayerCreateBulk) Save(ctx context.Context) ([]*Player, error) {
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, pcb.builders[i+1].mutation)
 				} else {
@@ -658,6 +662,9 @@ func (u *PlayerUpsertBulk) UpdateName() *PlayerUpsertBulk {
 
 // Exec executes the query.
 func (u *PlayerUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the PlayerCreateBulk instead", i)

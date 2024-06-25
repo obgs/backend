@@ -50,7 +50,7 @@ func UnmarshalGUID(src interface{}) (g GUID, err error) {
 		var s []byte
 		s, err = base62.DecodeString(v)
 		if err != nil {
-			return
+			return g, err
 		}
 		res := strings.Split(string(s), ",")
 		t, err := strconv.Atoi(res[0])
@@ -66,7 +66,7 @@ func UnmarshalGUID(src interface{}) (g GUID, err error) {
 		return v, nil
 	default:
 		err = fmt.Errorf("invalid type %T, expect []byte or string", src)
-		return
+		return g, err
 	}
 }
 

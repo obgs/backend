@@ -23,7 +23,7 @@ import (
 type GroupQuery struct {
 	config
 	ctx                   *QueryContext
-	order                 []OrderFunc
+	order                 []group.OrderOption
 	inters                []Interceptor
 	predicates            []predicate.Group
 	withSettings          *GroupSettingsQuery
@@ -64,7 +64,7 @@ func (gq *GroupQuery) Unique(unique bool) *GroupQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (gq *GroupQuery) Order(o ...OrderFunc) *GroupQuery {
+func (gq *GroupQuery) Order(o ...group.OrderOption) *GroupQuery {
 	gq.order = append(gq.order, o...)
 	return gq
 }
@@ -324,7 +324,7 @@ func (gq *GroupQuery) Clone() *GroupQuery {
 	return &GroupQuery{
 		config:           gq.config,
 		ctx:              gq.ctx.Clone(),
-		order:            append([]OrderFunc{}, gq.order...),
+		order:            append([]group.OrderOption{}, gq.order...),
 		inters:           append([]Interceptor{}, gq.inters...),
 		predicates:       append([]predicate.Group{}, gq.predicates...),
 		withSettings:     gq.withSettings.Clone(),
@@ -525,7 +525,7 @@ func (gq *GroupQuery) loadSettings(ctx context.Context, query *GroupSettingsQuer
 	}
 	query.withFKs = true
 	query.Where(predicate.GroupSettings(func(s *sql.Selector) {
-		s.Where(sql.InValues(group.SettingsColumn, fks...))
+		s.Where(sql.InValues(s.C(group.SettingsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -538,7 +538,7 @@ func (gq *GroupQuery) loadSettings(ctx context.Context, query *GroupSettingsQuer
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_settings" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_settings" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -556,7 +556,7 @@ func (gq *GroupQuery) loadMembers(ctx context.Context, query *GroupMembershipQue
 	}
 	query.withFKs = true
 	query.Where(predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.InValues(group.MembersColumn, fks...))
+		s.Where(sql.InValues(s.C(group.MembersColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -569,7 +569,7 @@ func (gq *GroupQuery) loadMembers(ctx context.Context, query *GroupMembershipQue
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_members" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_members" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -587,7 +587,7 @@ func (gq *GroupQuery) loadApplications(ctx context.Context, query *GroupMembersh
 	}
 	query.withFKs = true
 	query.Where(predicate.GroupMembershipApplication(func(s *sql.Selector) {
-		s.Where(sql.InValues(group.ApplicationsColumn, fks...))
+		s.Where(sql.InValues(s.C(group.ApplicationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -600,7 +600,7 @@ func (gq *GroupQuery) loadApplications(ctx context.Context, query *GroupMembersh
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_applications" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_applications" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -1,10 +1,8 @@
 run:
   timeout: "1m"
-  issue-exit-code: 1
   tests: true
-  skip-dirs-use-default: true
   allow-parallel-runners: false
-  go: "1.19"
+  go: "1.22.4"
 
 issues:
   exclude-use-default: true
@@ -25,6 +23,7 @@ issues:
     - path: "internal/ent/migrate/seed/*.*.go"
       linters:
         - gomnd
+        - mnd
         - funlen
 
 linters:
@@ -32,12 +31,10 @@ linters:
   disable:
     - wsl
     - godot
-    - nosnakecase
     - gochecknoglobals
     - gochecknoinits
     - gci
-    - ifshort
-    - scopelint
+    - depguard
 
   fast: true
 
@@ -48,7 +45,6 @@ linters-settings:
 output:
   print-issued-lines: true
   print-linter-name: true
-  unique-by-line: true
 
 severity:
   default-severity: error

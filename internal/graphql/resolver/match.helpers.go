@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
@@ -15,12 +15,12 @@ import (
 )
 
 func prepareAggregateStatCalculation(ctx context.Context, client *ent.Client, input []*model.StatInput, playerIds []guidgql.GUID, m *ent.Match) (map[guidgql.GUID]*ent.StatDescription, []*ent.StatDescription, map[guidgql.GUID]map[guidgql.GUID]*model.StatInput, error) {
-	g, err := m.Game(ctx)
+	g, err := m.GameVersion(ctx)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get game: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to get game version: %w", err)
 	}
 
-	statDescriptions, err := client.StatDescription.Query().Where(statdescription.HasGameWith(game.ID(g.ID))).All(ctx)
+	statDescriptions, err := client.StatDescription.Query().Where(statdescription.HasGameVersionWith(gameversion.ID(g.ID))).All(ctx)
 	if err != nil {
 		return nil, nil, nil, err
 	}

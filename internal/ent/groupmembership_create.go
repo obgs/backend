@@ -76,7 +76,7 @@ func (gmc *GroupMembershipCreate) Mutation() *GroupMembershipMutation {
 // Save creates the GroupMembership in the database.
 func (gmc *GroupMembershipCreate) Save(ctx context.Context) (*GroupMembership, error) {
 	gmc.defaults()
-	return withHooks[*GroupMembership, GroupMembershipMutation](ctx, gmc.sqlSave, gmc.mutation, gmc.hooks)
+	return withHooks(ctx, gmc.sqlSave, gmc.mutation, gmc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -366,12 +366,16 @@ func (u *GroupMembershipUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // GroupMembershipCreateBulk is the builder for creating many GroupMembership entities in bulk.
 type GroupMembershipCreateBulk struct {
 	config
+	err      error
 	builders []*GroupMembershipCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the GroupMembership entities in the database.
 func (gmcb *GroupMembershipCreateBulk) Save(ctx context.Context) ([]*GroupMembership, error) {
+	if gmcb.err != nil {
+		return nil, gmcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gmcb.builders))
 	nodes := make([]*GroupMembership, len(gmcb.builders))
 	mutators := make([]Mutator, len(gmcb.builders))
@@ -388,8 +392,8 @@ func (gmcb *GroupMembershipCreateBulk) Save(ctx context.Context) ([]*GroupMember
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gmcb.builders[i+1].mutation)
 				} else {
@@ -552,6 +556,9 @@ func (u *GroupMembershipUpsertBulk) UpdateRole() *GroupMembershipUpsertBulk {
 
 // Exec executes the query.
 func (u *GroupMembershipUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GroupMembershipCreateBulk instead", i)

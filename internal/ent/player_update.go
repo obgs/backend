@@ -222,7 +222,7 @@ func (pu *PlayerUpdate) RemoveStats(s ...*Statistic) *PlayerUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (pu *PlayerUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, PlayerMutation](ctx, pu.sqlSave, pu.mutation, pu.hooks)
+	return withHooks(ctx, pu.sqlSave, pu.mutation, pu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -691,7 +691,7 @@ func (puo *PlayerUpdateOne) Select(field string, fields ...string) *PlayerUpdate
 
 // Save executes the query and returns the updated Player entity.
 func (puo *PlayerUpdateOne) Save(ctx context.Context) (*Player, error) {
-	return withHooks[*Player, PlayerMutation](ctx, puo.sqlSave, puo.mutation, puo.hooks)
+	return withHooks(ctx, puo.sqlSave, puo.mutation, puo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
@@ -37,9 +37,25 @@ func (sdu *StatDescriptionUpdate) SetType(st stat.StatType) *StatDescriptionUpda
 	return sdu
 }
 
+// SetNillableType sets the "type" field if the given value is not nil.
+func (sdu *StatDescriptionUpdate) SetNillableType(st *stat.StatType) *StatDescriptionUpdate {
+	if st != nil {
+		sdu.SetType(*st)
+	}
+	return sdu
+}
+
 // SetName sets the "name" field.
 func (sdu *StatDescriptionUpdate) SetName(s string) *StatDescriptionUpdate {
 	sdu.mutation.SetName(s)
+	return sdu
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (sdu *StatDescriptionUpdate) SetNillableName(s *string) *StatDescriptionUpdate {
+	if s != nil {
+		sdu.SetName(*s)
+	}
 	return sdu
 }
 
@@ -90,25 +106,33 @@ func (sdu *StatDescriptionUpdate) SetOrderNumber(i int) *StatDescriptionUpdate {
 	return sdu
 }
 
+// SetNillableOrderNumber sets the "order_number" field if the given value is not nil.
+func (sdu *StatDescriptionUpdate) SetNillableOrderNumber(i *int) *StatDescriptionUpdate {
+	if i != nil {
+		sdu.SetOrderNumber(*i)
+	}
+	return sdu
+}
+
 // AddOrderNumber adds i to the "order_number" field.
 func (sdu *StatDescriptionUpdate) AddOrderNumber(i int) *StatDescriptionUpdate {
 	sdu.mutation.AddOrderNumber(i)
 	return sdu
 }
 
-// AddGameIDs adds the "game" edge to the Game entity by IDs.
-func (sdu *StatDescriptionUpdate) AddGameIDs(ids ...guidgql.GUID) *StatDescriptionUpdate {
-	sdu.mutation.AddGameIDs(ids...)
+// AddGameVersionIDs adds the "game_version" edge to the GameVersion entity by IDs.
+func (sdu *StatDescriptionUpdate) AddGameVersionIDs(ids ...guidgql.GUID) *StatDescriptionUpdate {
+	sdu.mutation.AddGameVersionIDs(ids...)
 	return sdu
 }
 
-// AddGame adds the "game" edges to the Game entity.
-func (sdu *StatDescriptionUpdate) AddGame(g ...*Game) *StatDescriptionUpdate {
+// AddGameVersion adds the "game_version" edges to the GameVersion entity.
+func (sdu *StatDescriptionUpdate) AddGameVersion(g ...*GameVersion) *StatDescriptionUpdate {
 	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
-	return sdu.AddGameIDs(ids...)
+	return sdu.AddGameVersionIDs(ids...)
 }
 
 // AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
@@ -131,25 +155,25 @@ func (sdu *StatDescriptionUpdate) Mutation() *StatDescriptionMutation {
 	return sdu.mutation
 }
 
-// ClearGame clears all "game" edges to the Game entity.
-func (sdu *StatDescriptionUpdate) ClearGame() *StatDescriptionUpdate {
-	sdu.mutation.ClearGame()
+// ClearGameVersion clears all "game_version" edges to the GameVersion entity.
+func (sdu *StatDescriptionUpdate) ClearGameVersion() *StatDescriptionUpdate {
+	sdu.mutation.ClearGameVersion()
 	return sdu
 }
 
-// RemoveGameIDs removes the "game" edge to Game entities by IDs.
-func (sdu *StatDescriptionUpdate) RemoveGameIDs(ids ...guidgql.GUID) *StatDescriptionUpdate {
-	sdu.mutation.RemoveGameIDs(ids...)
+// RemoveGameVersionIDs removes the "game_version" edge to GameVersion entities by IDs.
+func (sdu *StatDescriptionUpdate) RemoveGameVersionIDs(ids ...guidgql.GUID) *StatDescriptionUpdate {
+	sdu.mutation.RemoveGameVersionIDs(ids...)
 	return sdu
 }
 
-// RemoveGame removes "game" edges to Game entities.
-func (sdu *StatDescriptionUpdate) RemoveGame(g ...*Game) *StatDescriptionUpdate {
+// RemoveGameVersion removes "game_version" edges to GameVersion entities.
+func (sdu *StatDescriptionUpdate) RemoveGameVersion(g ...*GameVersion) *StatDescriptionUpdate {
 	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
-	return sdu.RemoveGameIDs(ids...)
+	return sdu.RemoveGameVersionIDs(ids...)
 }
 
 // ClearStats clears all "stats" edges to the Statistic entity.
@@ -175,7 +199,7 @@ func (sdu *StatDescriptionUpdate) RemoveStats(s ...*Statistic) *StatDescriptionU
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (sdu *StatDescriptionUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, StatDescriptionMutation](ctx, sdu.sqlSave, sdu.mutation, sdu.hooks)
+	return withHooks(ctx, sdu.sqlSave, sdu.mutation, sdu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -251,28 +275,28 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := sdu.mutation.AddedOrderNumber(); ok {
 		_spec.AddField(statdescription.FieldOrderNumber, field.TypeInt, value)
 	}
-	if sdu.mutation.GameCleared() {
+	if sdu.mutation.GameVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   statdescription.GameTable,
-			Columns: statdescription.GamePrimaryKey,
+			Table:   statdescription.GameVersionTable,
+			Columns: statdescription.GameVersionPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := sdu.mutation.RemovedGameIDs(); len(nodes) > 0 && !sdu.mutation.GameCleared() {
+	if nodes := sdu.mutation.RemovedGameVersionIDs(); len(nodes) > 0 && !sdu.mutation.GameVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   statdescription.GameTable,
-			Columns: statdescription.GamePrimaryKey,
+			Table:   statdescription.GameVersionTable,
+			Columns: statdescription.GameVersionPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -280,15 +304,15 @@ func (sdu *StatDescriptionUpdate) sqlSave(ctx context.Context) (n int, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := sdu.mutation.GameIDs(); len(nodes) > 0 {
+	if nodes := sdu.mutation.GameVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   statdescription.GameTable,
-			Columns: statdescription.GamePrimaryKey,
+			Table:   statdescription.GameVersionTable,
+			Columns: statdescription.GameVersionPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -367,9 +391,25 @@ func (sduo *StatDescriptionUpdateOne) SetType(st stat.StatType) *StatDescription
 	return sduo
 }
 
+// SetNillableType sets the "type" field if the given value is not nil.
+func (sduo *StatDescriptionUpdateOne) SetNillableType(st *stat.StatType) *StatDescriptionUpdateOne {
+	if st != nil {
+		sduo.SetType(*st)
+	}
+	return sduo
+}
+
 // SetName sets the "name" field.
 func (sduo *StatDescriptionUpdateOne) SetName(s string) *StatDescriptionUpdateOne {
 	sduo.mutation.SetName(s)
+	return sduo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (sduo *StatDescriptionUpdateOne) SetNillableName(s *string) *StatDescriptionUpdateOne {
+	if s != nil {
+		sduo.SetName(*s)
+	}
 	return sduo
 }
 
@@ -420,25 +460,33 @@ func (sduo *StatDescriptionUpdateOne) SetOrderNumber(i int) *StatDescriptionUpda
 	return sduo
 }
 
+// SetNillableOrderNumber sets the "order_number" field if the given value is not nil.
+func (sduo *StatDescriptionUpdateOne) SetNillableOrderNumber(i *int) *StatDescriptionUpdateOne {
+	if i != nil {
+		sduo.SetOrderNumber(*i)
+	}
+	return sduo
+}
+
 // AddOrderNumber adds i to the "order_number" field.
 func (sduo *StatDescriptionUpdateOne) AddOrderNumber(i int) *StatDescriptionUpdateOne {
 	sduo.mutation.AddOrderNumber(i)
 	return sduo
 }
 
-// AddGameIDs adds the "game" edge to the Game entity by IDs.
-func (sduo *StatDescriptionUpdateOne) AddGameIDs(ids ...guidgql.GUID) *StatDescriptionUpdateOne {
-	sduo.mutation.AddGameIDs(ids...)
+// AddGameVersionIDs adds the "game_version" edge to the GameVersion entity by IDs.
+func (sduo *StatDescriptionUpdateOne) AddGameVersionIDs(ids ...guidgql.GUID) *StatDescriptionUpdateOne {
+	sduo.mutation.AddGameVersionIDs(ids...)
 	return sduo
 }
 
-// AddGame adds the "game" edges to the Game entity.
-func (sduo *StatDescriptionUpdateOne) AddGame(g ...*Game) *StatDescriptionUpdateOne {
+// AddGameVersion adds the "game_version" edges to the GameVersion entity.
+func (sduo *StatDescriptionUpdateOne) AddGameVersion(g ...*GameVersion) *StatDescriptionUpdateOne {
 	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
-	return sduo.AddGameIDs(ids...)
+	return sduo.AddGameVersionIDs(ids...)
 }
 
 // AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
@@ -461,25 +509,25 @@ func (sduo *StatDescriptionUpdateOne) Mutation() *StatDescriptionMutation {
 	return sduo.mutation
 }
 
-// ClearGame clears all "game" edges to the Game entity.
-func (sduo *StatDescriptionUpdateOne) ClearGame() *StatDescriptionUpdateOne {
-	sduo.mutation.ClearGame()
+// ClearGameVersion clears all "game_version" edges to the GameVersion entity.
+func (sduo *StatDescriptionUpdateOne) ClearGameVersion() *StatDescriptionUpdateOne {
+	sduo.mutation.ClearGameVersion()
 	return sduo
 }
 
-// RemoveGameIDs removes the "game" edge to Game entities by IDs.
-func (sduo *StatDescriptionUpdateOne) RemoveGameIDs(ids ...guidgql.GUID) *StatDescriptionUpdateOne {
-	sduo.mutation.RemoveGameIDs(ids...)
+// RemoveGameVersionIDs removes the "game_version" edge to GameVersion entities by IDs.
+func (sduo *StatDescriptionUpdateOne) RemoveGameVersionIDs(ids ...guidgql.GUID) *StatDescriptionUpdateOne {
+	sduo.mutation.RemoveGameVersionIDs(ids...)
 	return sduo
 }
 
-// RemoveGame removes "game" edges to Game entities.
-func (sduo *StatDescriptionUpdateOne) RemoveGame(g ...*Game) *StatDescriptionUpdateOne {
+// RemoveGameVersion removes "game_version" edges to GameVersion entities.
+func (sduo *StatDescriptionUpdateOne) RemoveGameVersion(g ...*GameVersion) *StatDescriptionUpdateOne {
 	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
-	return sduo.RemoveGameIDs(ids...)
+	return sduo.RemoveGameVersionIDs(ids...)
 }
 
 // ClearStats clears all "stats" edges to the Statistic entity.
@@ -518,7 +566,7 @@ func (sduo *StatDescriptionUpdateOne) Select(field string, fields ...string) *St
 
 // Save executes the query and returns the updated StatDescription entity.
 func (sduo *StatDescriptionUpdateOne) Save(ctx context.Context) (*StatDescription, error) {
-	return withHooks[*StatDescription, StatDescriptionMutation](ctx, sduo.sqlSave, sduo.mutation, sduo.hooks)
+	return withHooks(ctx, sduo.sqlSave, sduo.mutation, sduo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -611,28 +659,28 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 	if value, ok := sduo.mutation.AddedOrderNumber(); ok {
 		_spec.AddField(statdescription.FieldOrderNumber, field.TypeInt, value)
 	}
-	if sduo.mutation.GameCleared() {
+	if sduo.mutation.GameVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   statdescription.GameTable,
-			Columns: statdescription.GamePrimaryKey,
+			Table:   statdescription.GameVersionTable,
+			Columns: statdescription.GameVersionPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := sduo.mutation.RemovedGameIDs(); len(nodes) > 0 && !sduo.mutation.GameCleared() {
+	if nodes := sduo.mutation.RemovedGameVersionIDs(); len(nodes) > 0 && !sduo.mutation.GameVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   statdescription.GameTable,
-			Columns: statdescription.GamePrimaryKey,
+			Table:   statdescription.GameVersionTable,
+			Columns: statdescription.GameVersionPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -640,15 +688,15 @@ func (sduo *StatDescriptionUpdateOne) sqlSave(ctx context.Context) (_node *StatD
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := sduo.mutation.GameIDs(); len(nodes) > 0 {
+	if nodes := sduo.mutation.GameVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   statdescription.GameTable,
-			Columns: statdescription.GamePrimaryKey,
+			Table:   statdescription.GameVersionTable,
+			Columns: statdescription.GameVersionPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

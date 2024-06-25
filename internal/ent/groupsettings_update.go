@@ -110,7 +110,7 @@ func (gsu *GroupSettingsUpdate) ClearGroup() *GroupSettingsUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gsu *GroupSettingsUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, GroupSettingsMutation](ctx, gsu.sqlSave, gsu.mutation, gsu.hooks)
+	return withHooks(ctx, gsu.sqlSave, gsu.mutation, gsu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -321,7 +321,7 @@ func (gsuo *GroupSettingsUpdateOne) Select(field string, fields ...string) *Grou
 
 // Save executes the query and returns the updated GroupSettings entity.
 func (gsuo *GroupSettingsUpdateOne) Save(ctx context.Context) (*GroupSettings, error) {
-	return withHooks[*GroupSettings, GroupSettingsMutation](ctx, gsuo.sqlSave, gsuo.mutation, gsuo.hooks)
+	return withHooks(ctx, gsuo.sqlSave, gsuo.mutation, gsuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

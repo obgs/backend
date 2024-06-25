@@ -148,11 +148,7 @@ func HasSender() predicate.PlayerSupervisionRequest {
 // HasSenderWith applies the HasEdge predicate on the "sender" edge with a given conditions (other predicates).
 func HasSenderWith(preds ...predicate.User) predicate.PlayerSupervisionRequest {
 	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SenderInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, SenderTable, SenderColumn),
-		)
+		step := newSenderStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -175,11 +171,7 @@ func HasPlayer() predicate.PlayerSupervisionRequest {
 // HasPlayerWith applies the HasEdge predicate on the "player" edge with a given conditions (other predicates).
 func HasPlayerWith(preds ...predicate.Player) predicate.PlayerSupervisionRequest {
 	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(PlayerInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, PlayerTable, PlayerColumn),
-		)
+		step := newPlayerStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -202,11 +194,7 @@ func HasApprovals() predicate.PlayerSupervisionRequest {
 // HasApprovalsWith applies the HasEdge predicate on the "approvals" edge with a given conditions (other predicates).
 func HasApprovalsWith(preds ...predicate.PlayerSupervisionRequestApproval) predicate.PlayerSupervisionRequest {
 	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ApprovalsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ApprovalsTable, ApprovalsColumn),
-		)
+		step := newApprovalsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -217,32 +205,15 @@ func HasApprovalsWith(preds ...predicate.PlayerSupervisionRequestApproval) predi
 
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.PlayerSupervisionRequest) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for _, p := range predicates {
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.PlayerSupervisionRequest(sql.AndPredicates(predicates...))
 }
 
 // Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.PlayerSupervisionRequest) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for i, p := range predicates {
-			if i > 0 {
-				s1.Or()
-			}
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.PlayerSupervisionRequest(sql.OrPredicates(predicates...))
 }
 
 // Not applies the not operator on the given predicate.
 func Not(p predicate.PlayerSupervisionRequest) predicate.PlayerSupervisionRequest {
-	return predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		p(s.Not())
-	})
+	return predicate.PlayerSupervisionRequest(sql.NotPredicates(p))
 }

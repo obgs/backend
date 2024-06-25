@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
@@ -25,6 +26,7 @@ type PlayerSupervisionRequest struct {
 	Edges                          PlayerSupervisionRequestEdges `json:"edges"`
 	player_supervision_requests    *guidgql.GUID
 	user_sent_supervision_requests *guidgql.GUID
+	selectValues                   sql.SelectValues
 }
 
 // PlayerSupervisionRequestEdges holds the relations/edges for other nodes in the graph.
@@ -47,12 +49,10 @@ type PlayerSupervisionRequestEdges struct {
 // SenderOrErr returns the Sender value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PlayerSupervisionRequestEdges) SenderOrErr() (*User, error) {
-	if e.loadedTypes[0] {
-		if e.Sender == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: user.Label}
-		}
+	if e.Sender != nil {
 		return e.Sender, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "sender"}
 }
@@ -60,12 +60,10 @@ func (e PlayerSupervisionRequestEdges) SenderOrErr() (*User, error) {
 // PlayerOrErr returns the Player value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PlayerSupervisionRequestEdges) PlayerOrErr() (*Player, error) {
-	if e.loadedTypes[1] {
-		if e.Player == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: player.Label}
-		}
+	if e.Player != nil {
 		return e.Player, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: player.Label}
 	}
 	return nil, &NotLoadedError{edge: "player"}
 }
@@ -93,7 +91,7 @@ func (*PlayerSupervisionRequest) scanValues(columns []string) ([]any, error) {
 		case playersupervisionrequest.ForeignKeys[1]: // user_sent_supervision_requests
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type PlayerSupervisionRequest", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -133,9 +131,17 @@ func (psr *PlayerSupervisionRequest) assignValues(columns []string, values []any
 				psr.user_sent_supervision_requests = new(guidgql.GUID)
 				*psr.user_sent_supervision_requests = *value.S.(*guidgql.GUID)
 			}
+		default:
+			psr.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the PlayerSupervisionRequest.
+// This includes values selected through modifiers, order, etc.
+func (psr *PlayerSupervisionRequest) Value(name string) (ent.Value, error) {
+	return psr.selectValues.Get(name)
 }
 
 // QuerySender queries the "sender" edge of the PlayerSupervisionRequest entity.

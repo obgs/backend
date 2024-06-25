@@ -27,7 +27,7 @@ func (gfd *GameFavoriteDelete) Where(ps ...predicate.GameFavorite) *GameFavorite
 
 // Exec executes the deletion query and returns how many vertices were deleted.
 func (gfd *GameFavoriteDelete) Exec(ctx context.Context) (int, error) {
-	return withHooks[int, GameFavoriteMutation](ctx, gfd.sqlExec, gfd.mutation, gfd.hooks)
+	return withHooks(ctx, gfd.sqlExec, gfd.mutation, gfd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.

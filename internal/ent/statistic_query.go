@@ -22,7 +22,7 @@ import (
 type StatisticQuery struct {
 	config
 	ctx                 *QueryContext
-	order               []OrderFunc
+	order               []statistic.OrderOption
 	inters              []Interceptor
 	predicates          []predicate.Statistic
 	withMatch           *MatchQuery
@@ -62,7 +62,7 @@ func (sq *StatisticQuery) Unique(unique bool) *StatisticQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (sq *StatisticQuery) Order(o ...OrderFunc) *StatisticQuery {
+func (sq *StatisticQuery) Order(o ...statistic.OrderOption) *StatisticQuery {
 	sq.order = append(sq.order, o...)
 	return sq
 }
@@ -322,7 +322,7 @@ func (sq *StatisticQuery) Clone() *StatisticQuery {
 	return &StatisticQuery{
 		config:              sq.config,
 		ctx:                 sq.ctx.Clone(),
-		order:               append([]OrderFunc{}, sq.order...),
+		order:               append([]statistic.OrderOption{}, sq.order...),
 		inters:              append([]Interceptor{}, sq.inters...),
 		predicates:          append([]predicate.Statistic{}, sq.predicates...),
 		withMatch:           sq.withMatch.Clone(),

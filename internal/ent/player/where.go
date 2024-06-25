@@ -138,11 +138,7 @@ func HasOwner() predicate.Player {
 // HasOwnerWith applies the HasEdge predicate on the "owner" edge with a given conditions (other predicates).
 func HasOwnerWith(preds ...predicate.User) predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(OwnerInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, OwnerTable, OwnerColumn),
-		)
+		step := newOwnerStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -165,11 +161,7 @@ func HasSupervisors() predicate.Player {
 // HasSupervisorsWith applies the HasEdge predicate on the "supervisors" edge with a given conditions (other predicates).
 func HasSupervisorsWith(preds ...predicate.User) predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SupervisorsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, SupervisorsTable, SupervisorsPrimaryKey...),
-		)
+		step := newSupervisorsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -192,11 +184,7 @@ func HasSupervisionRequests() predicate.Player {
 // HasSupervisionRequestsWith applies the HasEdge predicate on the "supervision_requests" edge with a given conditions (other predicates).
 func HasSupervisionRequestsWith(preds ...predicate.PlayerSupervisionRequest) predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(SupervisionRequestsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, SupervisionRequestsTable, SupervisionRequestsColumn),
-		)
+		step := newSupervisionRequestsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -219,11 +207,7 @@ func HasMatches() predicate.Player {
 // HasMatchesWith applies the HasEdge predicate on the "matches" edge with a given conditions (other predicates).
 func HasMatchesWith(preds ...predicate.Match) predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(MatchesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, MatchesTable, MatchesPrimaryKey...),
-		)
+		step := newMatchesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -246,11 +230,7 @@ func HasStats() predicate.Player {
 // HasStatsWith applies the HasEdge predicate on the "stats" edge with a given conditions (other predicates).
 func HasStatsWith(preds ...predicate.Statistic) predicate.Player {
 	return predicate.Player(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, StatsTable, StatsColumn),
-		)
+		step := newStatsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -261,32 +241,15 @@ func HasStatsWith(preds ...predicate.Statistic) predicate.Player {
 
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Player) predicate.Player {
-	return predicate.Player(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for _, p := range predicates {
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.Player(sql.AndPredicates(predicates...))
 }
 
 // Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.Player) predicate.Player {
-	return predicate.Player(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for i, p := range predicates {
-			if i > 0 {
-				s1.Or()
-			}
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.Player(sql.OrPredicates(predicates...))
 }
 
 // Not applies the not operator on the given predicate.
 func Not(p predicate.Player) predicate.Player {
-	return predicate.Player(func(s *sql.Selector) {
-		p(s.Not())
-	})
+	return predicate.Player(sql.NotPredicates(p))
 }

@@ -16,6 +16,7 @@ const (
 	StatDescription
 	Match
 	Statistic
+	GameVersion
 )
 
 var TableNames = map[Table]string{
@@ -32,4 +33,5 @@ var TableNames = map[Table]string{
 	StatDescription:                  "stat_descriptions",
 	Match:                            "matches",
 	Statistic:                        "statistics",
+	GameVersion:                      "game_versions",
 }

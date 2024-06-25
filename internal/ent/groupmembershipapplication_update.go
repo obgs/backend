@@ -85,7 +85,7 @@ func (gmau *GroupMembershipApplicationUpdate) ClearGroup() *GroupMembershipAppli
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gmau *GroupMembershipApplicationUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, GroupMembershipApplicationMutation](ctx, gmau.sqlSave, gmau.mutation, gmau.hooks)
+	return withHooks(ctx, gmau.sqlSave, gmau.mutation, gmau.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -282,7 +282,7 @@ func (gmauo *GroupMembershipApplicationUpdateOne) Select(field string, fields ..
 
 // Save executes the query and returns the updated GroupMembershipApplication entity.
 func (gmauo *GroupMembershipApplicationUpdateOne) Save(ctx context.Context) (*GroupMembershipApplication, error) {
-	return withHooks[*GroupMembershipApplication, GroupMembershipApplicationMutation](ctx, gmauo.sqlSave, gmauo.mutation, gmauo.hooks)
+	return withHooks(ctx, gmauo.sqlSave, gmauo.mutation, gmauo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.

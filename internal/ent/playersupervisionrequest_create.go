@@ -99,7 +99,7 @@ func (psrc *PlayerSupervisionRequestCreate) Mutation() *PlayerSupervisionRequest
 // Save creates the PlayerSupervisionRequest in the database.
 func (psrc *PlayerSupervisionRequestCreate) Save(ctx context.Context) (*PlayerSupervisionRequest, error) {
 	psrc.defaults()
-	return withHooks[*PlayerSupervisionRequest, PlayerSupervisionRequestMutation](ctx, psrc.sqlSave, psrc.mutation, psrc.hooks)
+	return withHooks(ctx, psrc.sqlSave, psrc.mutation, psrc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -410,12 +410,16 @@ func (u *PlayerSupervisionRequestUpsertOne) IDX(ctx context.Context) guidgql.GUI
 // PlayerSupervisionRequestCreateBulk is the builder for creating many PlayerSupervisionRequest entities in bulk.
 type PlayerSupervisionRequestCreateBulk struct {
 	config
+	err      error
 	builders []*PlayerSupervisionRequestCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the PlayerSupervisionRequest entities in the database.
 func (psrcb *PlayerSupervisionRequestCreateBulk) Save(ctx context.Context) ([]*PlayerSupervisionRequest, error) {
+	if psrcb.err != nil {
+		return nil, psrcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(psrcb.builders))
 	nodes := make([]*PlayerSupervisionRequest, len(psrcb.builders))
 	mutators := make([]Mutator, len(psrcb.builders))
@@ -432,8 +436,8 @@ func (psrcb *PlayerSupervisionRequestCreateBulk) Save(ctx context.Context) ([]*P
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, psrcb.builders[i+1].mutation)
 				} else {
@@ -603,6 +607,9 @@ func (u *PlayerSupervisionRequestUpsertBulk) ClearMessage() *PlayerSupervisionRe
 
 // Exec executes the query.
 func (u *PlayerSupervisionRequestUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the PlayerSupervisionRequestCreateBulk instead", i)

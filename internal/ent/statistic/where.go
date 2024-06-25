@@ -138,11 +138,7 @@ func HasMatch() predicate.Statistic {
 // HasMatchWith applies the HasEdge predicate on the "match" edge with a given conditions (other predicates).
 func HasMatchWith(preds ...predicate.Match) predicate.Statistic {
 	return predicate.Statistic(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(MatchInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, MatchTable, MatchColumn),
-		)
+		step := newMatchStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -165,11 +161,7 @@ func HasStatDescription() predicate.Statistic {
 // HasStatDescriptionWith applies the HasEdge predicate on the "stat_description" edge with a given conditions (other predicates).
 func HasStatDescriptionWith(preds ...predicate.StatDescription) predicate.Statistic {
 	return predicate.Statistic(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(StatDescriptionInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, StatDescriptionTable, StatDescriptionColumn),
-		)
+		step := newStatDescriptionStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -192,11 +184,7 @@ func HasPlayer() predicate.Statistic {
 // HasPlayerWith applies the HasEdge predicate on the "player" edge with a given conditions (other predicates).
 func HasPlayerWith(preds ...predicate.Player) predicate.Statistic {
 	return predicate.Statistic(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(PlayerInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, PlayerTable, PlayerColumn),
-		)
+		step := newPlayerStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -207,32 +195,15 @@ func HasPlayerWith(preds ...predicate.Player) predicate.Statistic {
 
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Statistic) predicate.Statistic {
-	return predicate.Statistic(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for _, p := range predicates {
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.Statistic(sql.AndPredicates(predicates...))
 }
 
 // Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.Statistic) predicate.Statistic {
-	return predicate.Statistic(func(s *sql.Selector) {
-		s1 := s.Clone().SetP(nil)
-		for i, p := range predicates {
-			if i > 0 {
-				s1.Or()
-			}
-			p(s1)
-		}
-		s.Where(s1.P())
-	})
+	return predicate.Statistic(sql.OrPredicates(predicates...))
 }
 
 // Not applies the not operator on the given predicate.
 func Not(p predicate.Statistic) predicate.Statistic {
-	return predicate.Statistic(func(s *sql.Selector) {
-		p(s.Not())
-	})
+	return predicate.Statistic(sql.NotPredicates(p))
 }

@@ -83,7 +83,7 @@ func (psrac *PlayerSupervisionRequestApprovalCreate) Mutation() *PlayerSupervisi
 // Save creates the PlayerSupervisionRequestApproval in the database.
 func (psrac *PlayerSupervisionRequestApprovalCreate) Save(ctx context.Context) (*PlayerSupervisionRequestApproval, error) {
 	psrac.defaults()
-	return withHooks[*PlayerSupervisionRequestApproval, PlayerSupervisionRequestApprovalMutation](ctx, psrac.sqlSave, psrac.mutation, psrac.hooks)
+	return withHooks(ctx, psrac.sqlSave, psrac.mutation, psrac.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -378,12 +378,16 @@ func (u *PlayerSupervisionRequestApprovalUpsertOne) IDX(ctx context.Context) gui
 // PlayerSupervisionRequestApprovalCreateBulk is the builder for creating many PlayerSupervisionRequestApproval entities in bulk.
 type PlayerSupervisionRequestApprovalCreateBulk struct {
 	config
+	err      error
 	builders []*PlayerSupervisionRequestApprovalCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the PlayerSupervisionRequestApproval entities in the database.
 func (psracb *PlayerSupervisionRequestApprovalCreateBulk) Save(ctx context.Context) ([]*PlayerSupervisionRequestApproval, error) {
+	if psracb.err != nil {
+		return nil, psracb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(psracb.builders))
 	nodes := make([]*PlayerSupervisionRequestApproval, len(psracb.builders))
 	mutators := make([]Mutator, len(psracb.builders))
@@ -400,8 +404,8 @@ func (psracb *PlayerSupervisionRequestApprovalCreateBulk) Save(ctx context.Conte
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, psracb.builders[i+1].mutation)
 				} else {
@@ -571,6 +575,9 @@ func (u *PlayerSupervisionRequestApprovalUpsertBulk) ClearApproved() *PlayerSupe
 
 // Exec executes the query.
 func (u *PlayerSupervisionRequestApprovalUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the PlayerSupervisionRequestApprovalCreateBulk instead", i)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -25,6 +26,7 @@ type PlayerSupervisionRequestApproval struct {
 	Edges                                PlayerSupervisionRequestApprovalEdges `json:"edges"`
 	player_supervision_request_approvals *guidgql.GUID
 	user_supervision_request_approvals   *guidgql.GUID
+	selectValues                         sql.SelectValues
 }
 
 // PlayerSupervisionRequestApprovalEdges holds the relations/edges for other nodes in the graph.
@@ -43,12 +45,10 @@ type PlayerSupervisionRequestApprovalEdges struct {
 // ApproverOrErr returns the Approver value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PlayerSupervisionRequestApprovalEdges) ApproverOrErr() (*User, error) {
-	if e.loadedTypes[0] {
-		if e.Approver == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: user.Label}
-		}
+	if e.Approver != nil {
 		return e.Approver, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "approver"}
 }
@@ -56,12 +56,10 @@ func (e PlayerSupervisionRequestApprovalEdges) ApproverOrErr() (*User, error) {
 // SupervisionRequestOrErr returns the SupervisionRequest value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PlayerSupervisionRequestApprovalEdges) SupervisionRequestOrErr() (*PlayerSupervisionRequest, error) {
-	if e.loadedTypes[1] {
-		if e.SupervisionRequest == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: playersupervisionrequest.Label}
-		}
+	if e.SupervisionRequest != nil {
 		return e.SupervisionRequest, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: playersupervisionrequest.Label}
 	}
 	return nil, &NotLoadedError{edge: "supervision_request"}
 }
@@ -80,7 +78,7 @@ func (*PlayerSupervisionRequestApproval) scanValues(columns []string) ([]any, er
 		case playersupervisionrequestapproval.ForeignKeys[1]: // user_supervision_request_approvals
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type PlayerSupervisionRequestApproval", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -121,9 +119,17 @@ func (psra *PlayerSupervisionRequestApproval) assignValues(columns []string, val
 				psra.user_supervision_request_approvals = new(guidgql.GUID)
 				*psra.user_supervision_request_approvals = *value.S.(*guidgql.GUID)
 			}
+		default:
+			psra.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the PlayerSupervisionRequestApproval.
+// This includes values selected through modifiers, order, etc.
+func (psra *PlayerSupervisionRequestApproval) Value(name string) (ent.Value, error) {
+	return psra.selectValues.Get(name)
 }
 
 // QueryApprover queries the "approver" edge of the PlayerSupervisionRequestApproval entity.

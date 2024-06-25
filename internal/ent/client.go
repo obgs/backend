@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 
 	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -17,6 +18,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/group"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
@@ -28,6 +30,8 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
+
+	stdsql "database/sql"
 )
 
 // Client is the client that holds all ent builders.
@@ -39,6 +43,8 @@ type Client struct {
 	Game *GameClient
 	// GameFavorite is the client for interacting with the GameFavorite builders.
 	GameFavorite *GameFavoriteClient
+	// GameVersion is the client for interacting with the GameVersion builders.
+	GameVersion *GameVersionClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// GroupMembership is the client for interacting with the GroupMembership builders.
@@ -65,9 +71,7 @@ type Client struct {
 
 // NewClient creates a new client configured with the given options.
 func NewClient(opts ...Option) *Client {
-	cfg := config{log: log.Println, hooks: &hooks{}, inters: &inters{}}
-	cfg.options(opts...)
-	client := &Client{config: cfg}
+	client := &Client{config: newConfig(opts...)}
 	client.init()
 	return client
 }
@@ -76,6 +80,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Game = NewGameClient(c.config)
 	c.GameFavorite = NewGameFavoriteClient(c.config)
+	c.GameVersion = NewGameVersionClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.GroupMembership = NewGroupMembershipClient(c.config)
 	c.GroupMembershipApplication = NewGroupMembershipApplicationClient(c.config)
@@ -106,6 +111,13 @@ type (
 	// Option function to configure the client.
 	Option func(*config)
 )
+
+// newConfig creates a new config for the client.
+func newConfig(opts ...Option) config {
+	cfg := config{log: log.Println, hooks: &hooks{}, inters: &inters{}}
+	cfg.options(opts...)
+	return cfg
+}
 
 // options applies the options on the config object.
 func (c *config) options(opts ...Option) {
@@ -154,11 +166,14 @@ func Open(driverName, dataSourceName string, options ...Option) (*Client, error)
 	}
 }
 
+// ErrTxStarted is returned when trying to start a new transaction from a transactional client.
+var ErrTxStarted = errors.New("ent: cannot start a transaction within a transaction")
+
 // Tx returns a new transactional client. The provided context
 // is used until the transaction is committed or rolled back.
 func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	if _, ok := c.driver.(*txDriver); ok {
-		return nil, errors.New("ent: cannot start a transaction within a transaction")
+		return nil, ErrTxStarted
 	}
 	tx, err := newTx(ctx, c.driver)
 	if err != nil {
@@ -171,6 +186,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		config:                           cfg,
 		Game:                             NewGameClient(cfg),
 		GameFavorite:                     NewGameFavoriteClient(cfg),
+		GameVersion:                      NewGameVersionClient(cfg),
 		Group:                            NewGroupClient(cfg),
 		GroupMembership:                  NewGroupMembershipClient(cfg),
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
@@ -203,6 +219,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		config:                           cfg,
 		Game:                             NewGameClient(cfg),
 		GameFavorite:                     NewGameFavoriteClient(cfg),
+		GameVersion:                      NewGameVersionClient(cfg),
 		Group:                            NewGroupClient(cfg),
 		GroupMembership:                  NewGroupMembershipClient(cfg),
 		GroupMembershipApplication:       NewGroupMembershipApplicationClient(cfg),
@@ -243,7 +260,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Game, c.GameFavorite, c.Group, c.GroupMembership,
+		c.Game, c.GameFavorite, c.GameVersion, c.Group, c.GroupMembership,
 		c.GroupMembershipApplication, c.GroupSettings, c.Match, c.Player,
 		c.PlayerSupervisionRequest, c.PlayerSupervisionRequestApproval,
 		c.StatDescription, c.Statistic, c.User,
@@ -256,7 +273,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Game, c.GameFavorite, c.Group, c.GroupMembership,
+		c.Game, c.GameFavorite, c.GameVersion, c.Group, c.GroupMembership,
 		c.GroupMembershipApplication, c.GroupSettings, c.Match, c.Player,
 		c.PlayerSupervisionRequest, c.PlayerSupervisionRequestApproval,
 		c.StatDescription, c.Statistic, c.User,
@@ -272,6 +289,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Game.mutate(ctx, m)
 	case *GameFavoriteMutation:
 		return c.GameFavorite.mutate(ctx, m)
+	case *GameVersionMutation:
+		return c.GameVersion.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *GroupMembershipMutation:
@@ -329,6 +348,21 @@ func (c *GameClient) Create() *GameCreate {
 
 // CreateBulk returns a builder for creating a bulk of Game entities.
 func (c *GameClient) CreateBulk(builders ...*GameCreate) *GameCreateBulk {
+	return &GameCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GameClient) MapCreateBulk(slice any, setFunc func(*GameCreate, int)) *GameCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GameCreateBulk{err: fmt.Errorf("calling to GameClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GameCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
 	return &GameCreateBulk{config: c.config, builders: builders}
 }
 
@@ -424,31 +458,15 @@ func (c *GameClient) QueryFavorites(ga *Game) *GameFavoriteQuery {
 	return query
 }
 
-// QueryStatDescriptions queries the stat_descriptions edge of a Game.
-func (c *GameClient) QueryStatDescriptions(ga *Game) *StatDescriptionQuery {
-	query := (&StatDescriptionClient{config: c.config}).Query()
+// QueryVersions queries the versions edge of a Game.
+func (c *GameClient) QueryVersions(ga *Game) *GameVersionQuery {
+	query := (&GameVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := ga.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(game.Table, game.FieldID, id),
-			sqlgraph.To(statdescription.Table, statdescription.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, game.StatDescriptionsTable, game.StatDescriptionsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryMatches queries the matches edge of a Game.
-func (c *GameClient) QueryMatches(ga *Game) *MatchQuery {
-	query := (&MatchClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ga.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(game.Table, game.FieldID, id),
-			sqlgraph.To(match.Table, match.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, game.MatchesTable, game.MatchesColumn),
+			sqlgraph.To(gameversion.Table, gameversion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, game.VersionsTable, game.VersionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(ga.driver.Dialect(), step)
 		return fromV, nil
@@ -511,6 +529,21 @@ func (c *GameFavoriteClient) Create() *GameFavoriteCreate {
 
 // CreateBulk returns a builder for creating a bulk of GameFavorite entities.
 func (c *GameFavoriteClient) CreateBulk(builders ...*GameFavoriteCreate) *GameFavoriteCreateBulk {
+	return &GameFavoriteCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GameFavoriteClient) MapCreateBulk(slice any, setFunc func(*GameFavoriteCreate, int)) *GameFavoriteCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GameFavoriteCreateBulk{err: fmt.Errorf("calling to GameFavoriteClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GameFavoriteCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
 	return &GameFavoriteCreateBulk{config: c.config, builders: builders}
 }
 
@@ -631,6 +664,187 @@ func (c *GameFavoriteClient) mutate(ctx context.Context, m *GameFavoriteMutation
 	}
 }
 
+// GameVersionClient is a client for the GameVersion schema.
+type GameVersionClient struct {
+	config
+}
+
+// NewGameVersionClient returns a client for the GameVersion from the given config.
+func NewGameVersionClient(c config) *GameVersionClient {
+	return &GameVersionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `gameversion.Hooks(f(g(h())))`.
+func (c *GameVersionClient) Use(hooks ...Hook) {
+	c.hooks.GameVersion = append(c.hooks.GameVersion, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `gameversion.Intercept(f(g(h())))`.
+func (c *GameVersionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GameVersion = append(c.inters.GameVersion, interceptors...)
+}
+
+// Create returns a builder for creating a GameVersion entity.
+func (c *GameVersionClient) Create() *GameVersionCreate {
+	mutation := newGameVersionMutation(c.config, OpCreate)
+	return &GameVersionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GameVersion entities.
+func (c *GameVersionClient) CreateBulk(builders ...*GameVersionCreate) *GameVersionCreateBulk {
+	return &GameVersionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GameVersionClient) MapCreateBulk(slice any, setFunc func(*GameVersionCreate, int)) *GameVersionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GameVersionCreateBulk{err: fmt.Errorf("calling to GameVersionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GameVersionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GameVersionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GameVersion.
+func (c *GameVersionClient) Update() *GameVersionUpdate {
+	mutation := newGameVersionMutation(c.config, OpUpdate)
+	return &GameVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GameVersionClient) UpdateOne(gv *GameVersion) *GameVersionUpdateOne {
+	mutation := newGameVersionMutation(c.config, OpUpdateOne, withGameVersion(gv))
+	return &GameVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GameVersionClient) UpdateOneID(id guidgql.GUID) *GameVersionUpdateOne {
+	mutation := newGameVersionMutation(c.config, OpUpdateOne, withGameVersionID(id))
+	return &GameVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GameVersion.
+func (c *GameVersionClient) Delete() *GameVersionDelete {
+	mutation := newGameVersionMutation(c.config, OpDelete)
+	return &GameVersionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GameVersionClient) DeleteOne(gv *GameVersion) *GameVersionDeleteOne {
+	return c.DeleteOneID(gv.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GameVersionClient) DeleteOneID(id guidgql.GUID) *GameVersionDeleteOne {
+	builder := c.Delete().Where(gameversion.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GameVersionDeleteOne{builder}
+}
+
+// Query returns a query builder for GameVersion.
+func (c *GameVersionClient) Query() *GameVersionQuery {
+	return &GameVersionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGameVersion},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GameVersion entity by its id.
+func (c *GameVersionClient) Get(ctx context.Context, id guidgql.GUID) (*GameVersion, error) {
+	return c.Query().Where(gameversion.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GameVersionClient) GetX(ctx context.Context, id guidgql.GUID) *GameVersion {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGame queries the game edge of a GameVersion.
+func (c *GameVersionClient) QueryGame(gv *GameVersion) *GameQuery {
+	query := (&GameClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gameversion.Table, gameversion.FieldID, id),
+			sqlgraph.To(game.Table, game.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, gameversion.GameTable, gameversion.GameColumn),
+		)
+		fromV = sqlgraph.Neighbors(gv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryStatDescriptions queries the stat_descriptions edge of a GameVersion.
+func (c *GameVersionClient) QueryStatDescriptions(gv *GameVersion) *StatDescriptionQuery {
+	query := (&StatDescriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gameversion.Table, gameversion.FieldID, id),
+			sqlgraph.To(statdescription.Table, statdescription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, gameversion.StatDescriptionsTable, gameversion.StatDescriptionsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(gv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMatches queries the matches edge of a GameVersion.
+func (c *GameVersionClient) QueryMatches(gv *GameVersion) *MatchQuery {
+	query := (&MatchClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(gameversion.Table, gameversion.FieldID, id),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, gameversion.MatchesTable, gameversion.MatchesColumn),
+		)
+		fromV = sqlgraph.Neighbors(gv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GameVersionClient) Hooks() []Hook {
+	return c.hooks.GameVersion
+}
+
+// Interceptors returns the client interceptors.
+func (c *GameVersionClient) Interceptors() []Interceptor {
+	return c.inters.GameVersion
+}
+
+func (c *GameVersionClient) mutate(ctx context.Context, m *GameVersionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GameVersionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GameVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GameVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GameVersionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GameVersion mutation op: %q", m.Op())
+	}
+}
+
 // GroupClient is a client for the Group schema.
 type GroupClient struct {
 	config
@@ -661,6 +875,21 @@ func (c *GroupClient) Create() *GroupCreate {
 
 // CreateBulk returns a builder for creating a bulk of Group entities.
 func (c *GroupClient) CreateBulk(builders ...*GroupCreate) *GroupCreateBulk {
+	return &GroupCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GroupClient) MapCreateBulk(slice any, setFunc func(*GroupCreate, int)) *GroupCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GroupCreateBulk{err: fmt.Errorf("calling to GroupClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GroupCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
 	return &GroupCreateBulk{config: c.config, builders: builders}
 }
 
@@ -830,6 +1059,21 @@ func (c *GroupMembershipClient) CreateBulk(builders ...*GroupMembershipCreate) *
 	return &GroupMembershipCreateBulk{config: c.config, builders: builders}
 }
 
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GroupMembershipClient) MapCreateBulk(slice any, setFunc func(*GroupMembershipCreate, int)) *GroupMembershipCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GroupMembershipCreateBulk{err: fmt.Errorf("calling to GroupMembershipClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GroupMembershipCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GroupMembershipCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for GroupMembership.
 func (c *GroupMembershipClient) Update() *GroupMembershipUpdate {
 	mutation := newGroupMembershipMutation(c.config, OpUpdate)
@@ -977,6 +1221,21 @@ func (c *GroupMembershipApplicationClient) Create() *GroupMembershipApplicationC
 
 // CreateBulk returns a builder for creating a bulk of GroupMembershipApplication entities.
 func (c *GroupMembershipApplicationClient) CreateBulk(builders ...*GroupMembershipApplicationCreate) *GroupMembershipApplicationCreateBulk {
+	return &GroupMembershipApplicationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GroupMembershipApplicationClient) MapCreateBulk(slice any, setFunc func(*GroupMembershipApplicationCreate, int)) *GroupMembershipApplicationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GroupMembershipApplicationCreateBulk{err: fmt.Errorf("calling to GroupMembershipApplicationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GroupMembershipApplicationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
 	return &GroupMembershipApplicationCreateBulk{config: c.config, builders: builders}
 }
 
@@ -1130,6 +1389,21 @@ func (c *GroupSettingsClient) CreateBulk(builders ...*GroupSettingsCreate) *Grou
 	return &GroupSettingsCreateBulk{config: c.config, builders: builders}
 }
 
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GroupSettingsClient) MapCreateBulk(slice any, setFunc func(*GroupSettingsCreate, int)) *GroupSettingsCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GroupSettingsCreateBulk{err: fmt.Errorf("calling to GroupSettingsClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GroupSettingsCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GroupSettingsCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for GroupSettings.
 func (c *GroupSettingsClient) Update() *GroupSettingsUpdate {
 	mutation := newGroupSettingsMutation(c.config, OpUpdate)
@@ -1264,6 +1538,21 @@ func (c *MatchClient) CreateBulk(builders ...*MatchCreate) *MatchCreateBulk {
 	return &MatchCreateBulk{config: c.config, builders: builders}
 }
 
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MatchClient) MapCreateBulk(slice any, setFunc func(*MatchCreate, int)) *MatchCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MatchCreateBulk{err: fmt.Errorf("calling to MatchClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MatchCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MatchCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for Match.
 func (c *MatchClient) Update() *MatchUpdate {
 	mutation := newMatchMutation(c.config, OpUpdate)
@@ -1324,15 +1613,15 @@ func (c *MatchClient) GetX(ctx context.Context, id guidgql.GUID) *Match {
 	return obj
 }
 
-// QueryGame queries the game edge of a Match.
-func (c *MatchClient) QueryGame(m *Match) *GameQuery {
-	query := (&GameClient{config: c.config}).Query()
+// QueryGameVersion queries the game_version edge of a Match.
+func (c *MatchClient) QueryGameVersion(m *Match) *GameVersionQuery {
+	query := (&GameVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(match.Table, match.FieldID, id),
-			sqlgraph.To(game.Table, game.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, match.GameTable, match.GameColumn),
+			sqlgraph.To(gameversion.Table, gameversion.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, match.GameVersionTable, match.GameVersionColumn),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil
@@ -1427,6 +1716,21 @@ func (c *PlayerClient) Create() *PlayerCreate {
 
 // CreateBulk returns a builder for creating a bulk of Player entities.
 func (c *PlayerClient) CreateBulk(builders ...*PlayerCreate) *PlayerCreateBulk {
+	return &PlayerCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PlayerClient) MapCreateBulk(slice any, setFunc func(*PlayerCreate, int)) *PlayerCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PlayerCreateBulk{err: fmt.Errorf("calling to PlayerClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PlayerCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
 	return &PlayerCreateBulk{config: c.config, builders: builders}
 }
 
@@ -1628,6 +1932,21 @@ func (c *PlayerSupervisionRequestClient) CreateBulk(builders ...*PlayerSupervisi
 	return &PlayerSupervisionRequestCreateBulk{config: c.config, builders: builders}
 }
 
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PlayerSupervisionRequestClient) MapCreateBulk(slice any, setFunc func(*PlayerSupervisionRequestCreate, int)) *PlayerSupervisionRequestCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PlayerSupervisionRequestCreateBulk{err: fmt.Errorf("calling to PlayerSupervisionRequestClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PlayerSupervisionRequestCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PlayerSupervisionRequestCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for PlayerSupervisionRequest.
 func (c *PlayerSupervisionRequestClient) Update() *PlayerSupervisionRequestUpdate {
 	mutation := newPlayerSupervisionRequestMutation(c.config, OpUpdate)
@@ -1794,6 +2113,21 @@ func (c *PlayerSupervisionRequestApprovalClient) CreateBulk(builders ...*PlayerS
 	return &PlayerSupervisionRequestApprovalCreateBulk{config: c.config, builders: builders}
 }
 
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PlayerSupervisionRequestApprovalClient) MapCreateBulk(slice any, setFunc func(*PlayerSupervisionRequestApprovalCreate, int)) *PlayerSupervisionRequestApprovalCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PlayerSupervisionRequestApprovalCreateBulk{err: fmt.Errorf("calling to PlayerSupervisionRequestApprovalClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PlayerSupervisionRequestApprovalCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PlayerSupervisionRequestApprovalCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for PlayerSupervisionRequestApproval.
 func (c *PlayerSupervisionRequestApprovalClient) Update() *PlayerSupervisionRequestApprovalUpdate {
 	mutation := newPlayerSupervisionRequestApprovalMutation(c.config, OpUpdate)
@@ -1944,6 +2278,21 @@ func (c *StatDescriptionClient) CreateBulk(builders ...*StatDescriptionCreate) *
 	return &StatDescriptionCreateBulk{config: c.config, builders: builders}
 }
 
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *StatDescriptionClient) MapCreateBulk(slice any, setFunc func(*StatDescriptionCreate, int)) *StatDescriptionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &StatDescriptionCreateBulk{err: fmt.Errorf("calling to StatDescriptionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*StatDescriptionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &StatDescriptionCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for StatDescription.
 func (c *StatDescriptionClient) Update() *StatDescriptionUpdate {
 	mutation := newStatDescriptionMutation(c.config, OpUpdate)
@@ -2004,15 +2353,15 @@ func (c *StatDescriptionClient) GetX(ctx context.Context, id guidgql.GUID) *Stat
 	return obj
 }
 
-// QueryGame queries the game edge of a StatDescription.
-func (c *StatDescriptionClient) QueryGame(sd *StatDescription) *GameQuery {
-	query := (&GameClient{config: c.config}).Query()
+// QueryGameVersion queries the game_version edge of a StatDescription.
+func (c *StatDescriptionClient) QueryGameVersion(sd *StatDescription) *GameVersionQuery {
+	query := (&GameVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := sd.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(statdescription.Table, statdescription.FieldID, id),
-			sqlgraph.To(game.Table, game.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, statdescription.GameTable, statdescription.GamePrimaryKey...),
+			sqlgraph.To(gameversion.Table, gameversion.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, statdescription.GameVersionTable, statdescription.GameVersionPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(sd.driver.Dialect(), step)
 		return fromV, nil
@@ -2091,6 +2440,21 @@ func (c *StatisticClient) Create() *StatisticCreate {
 
 // CreateBulk returns a builder for creating a bulk of Statistic entities.
 func (c *StatisticClient) CreateBulk(builders ...*StatisticCreate) *StatisticCreateBulk {
+	return &StatisticCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *StatisticClient) MapCreateBulk(slice any, setFunc func(*StatisticCreate, int)) *StatisticCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &StatisticCreateBulk{err: fmt.Errorf("calling to StatisticClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*StatisticCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
 	return &StatisticCreateBulk{config: c.config, builders: builders}
 }
 
@@ -2257,6 +2621,21 @@ func (c *UserClient) Create() *UserCreate {
 
 // CreateBulk returns a builder for creating a bulk of User entities.
 func (c *UserClient) CreateBulk(builders ...*UserCreate) *UserCreateBulk {
+	return &UserCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserClient) MapCreateBulk(slice any, setFunc func(*UserCreate, int)) *UserCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserCreateBulk{err: fmt.Errorf("calling to UserClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
 	return &UserCreateBulk{config: c.config, builders: builders}
 }
 
@@ -2476,14 +2855,39 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Game, GameFavorite, Group, GroupMembership, GroupMembershipApplication,
-		GroupSettings, Match, Player, PlayerSupervisionRequest,
-		PlayerSupervisionRequestApproval, StatDescription, Statistic, User []ent.Hook
+		Game, GameFavorite, GameVersion, Group, GroupMembership,
+		GroupMembershipApplication, GroupSettings, Match, Player,
+		PlayerSupervisionRequest, PlayerSupervisionRequestApproval, StatDescription,
+		Statistic, User []ent.Hook
 	}
 	inters struct {
-		Game, GameFavorite, Group, GroupMembership, GroupMembershipApplication,
-		GroupSettings, Match, Player, PlayerSupervisionRequest,
-		PlayerSupervisionRequestApproval, StatDescription, Statistic,
-		User []ent.Interceptor
+		Game, GameFavorite, GameVersion, Group, GroupMembership,
+		GroupMembershipApplication, GroupSettings, Match, Player,
+		PlayerSupervisionRequest, PlayerSupervisionRequestApproval, StatDescription,
+		Statistic, User []ent.Interceptor
 	}
 )
+
+// ExecContext allows calling the underlying ExecContext method of the driver if it is supported by it.
+// See, database/sql#DB.ExecContext for more information.
+func (c *config) ExecContext(ctx context.Context, query string, args ...any) (stdsql.Result, error) {
+	ex, ok := c.driver.(interface {
+		ExecContext(context.Context, string, ...any) (stdsql.Result, error)
+	})
+	if !ok {
+		return nil, fmt.Errorf("Driver.ExecContext is not supported")
+	}
+	return ex.ExecContext(ctx, query, args...)
+}
+
+// QueryContext allows calling the underlying QueryContext method of the driver if it is supported by it.
+// See, database/sql#DB.QueryContext for more information.
+func (c *config) QueryContext(ctx context.Context, query string, args ...any) (*stdsql.Rows, error) {
+	q, ok := c.driver.(interface {
+		QueryContext(context.Context, string, ...any) (*stdsql.Rows, error)
+	})
+	if !ok {
+		return nil, fmt.Errorf("Driver.QueryContext is not supported")
+	}
+	return q.QueryContext(ctx, query, args...)
+}

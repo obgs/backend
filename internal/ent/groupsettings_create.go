@@ -108,7 +108,7 @@ func (gsc *GroupSettingsCreate) Mutation() *GroupSettingsMutation {
 // Save creates the GroupSettings in the database.
 func (gsc *GroupSettingsCreate) Save(ctx context.Context) (*GroupSettings, error) {
 	gsc.defaults()
-	return withHooks[*GroupSettings, GroupSettingsMutation](ctx, gsc.sqlSave, gsc.mutation, gsc.hooks)
+	return withHooks(ctx, gsc.sqlSave, gsc.mutation, gsc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -469,12 +469,16 @@ func (u *GroupSettingsUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // GroupSettingsCreateBulk is the builder for creating many GroupSettings entities in bulk.
 type GroupSettingsCreateBulk struct {
 	config
+	err      error
 	builders []*GroupSettingsCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the GroupSettings entities in the database.
 func (gscb *GroupSettingsCreateBulk) Save(ctx context.Context) ([]*GroupSettings, error) {
+	if gscb.err != nil {
+		return nil, gscb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gscb.builders))
 	nodes := make([]*GroupSettings, len(gscb.builders))
 	mutators := make([]Mutator, len(gscb.builders))
@@ -491,8 +495,8 @@ func (gscb *GroupSettingsCreateBulk) Save(ctx context.Context) ([]*GroupSettings
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gscb.builders[i+1].mutation)
 				} else {
@@ -690,6 +694,9 @@ func (u *GroupSettingsUpsertBulk) ClearMinimumRoleToInvite() *GroupSettingsUpser
 
 // Exec executes the query.
 func (u *GroupSettingsUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GroupSettingsCreateBulk instead", i)

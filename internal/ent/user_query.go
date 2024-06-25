@@ -27,7 +27,7 @@ import (
 type UserQuery struct {
 	config
 	ctx                                  *QueryContext
-	order                                []OrderFunc
+	order                                []user.OrderOption
 	inters                               []Interceptor
 	predicates                           []predicate.User
 	withPlayers                          *PlayerQuery
@@ -78,7 +78,7 @@ func (uq *UserQuery) Unique(unique bool) *UserQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (uq *UserQuery) Order(o ...OrderFunc) *UserQuery {
+func (uq *UserQuery) Order(o ...user.OrderOption) *UserQuery {
 	uq.order = append(uq.order, o...)
 	return uq
 }
@@ -448,7 +448,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 	return &UserQuery{
 		config:                          uq.config,
 		ctx:                             uq.ctx.Clone(),
-		order:                           append([]OrderFunc{}, uq.order...),
+		order:                           append([]user.OrderOption{}, uq.order...),
 		inters:                          append([]Interceptor{}, uq.inters...),
 		predicates:                      append([]predicate.User{}, uq.predicates...),
 		withPlayers:                     uq.withPlayers.Clone(),
@@ -851,7 +851,7 @@ func (uq *UserQuery) loadMainPlayer(ctx context.Context, query *PlayerQuery, nod
 	}
 	query.withFKs = true
 	query.Where(predicate.Player(func(s *sql.Selector) {
-		s.Where(sql.InValues(user.MainPlayerColumn, fks...))
+		s.Where(sql.InValues(s.C(user.MainPlayerColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -864,7 +864,7 @@ func (uq *UserQuery) loadMainPlayer(ctx context.Context, query *PlayerQuery, nod
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_main_player" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_main_player" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -882,7 +882,7 @@ func (uq *UserQuery) loadSentSupervisionRequests(ctx context.Context, query *Pla
 	}
 	query.withFKs = true
 	query.Where(predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.InValues(user.SentSupervisionRequestsColumn, fks...))
+		s.Where(sql.InValues(s.C(user.SentSupervisionRequestsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -895,7 +895,7 @@ func (uq *UserQuery) loadSentSupervisionRequests(ctx context.Context, query *Pla
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_sent_supervision_requests" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_sent_supervision_requests" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -913,7 +913,7 @@ func (uq *UserQuery) loadSupervisionRequestApprovals(ctx context.Context, query 
 	}
 	query.withFKs = true
 	query.Where(predicate.PlayerSupervisionRequestApproval(func(s *sql.Selector) {
-		s.Where(sql.InValues(user.SupervisionRequestApprovalsColumn, fks...))
+		s.Where(sql.InValues(s.C(user.SupervisionRequestApprovalsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -926,7 +926,7 @@ func (uq *UserQuery) loadSupervisionRequestApprovals(ctx context.Context, query 
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_supervision_request_approvals" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_supervision_request_approvals" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -944,7 +944,7 @@ func (uq *UserQuery) loadGroupMemberships(ctx context.Context, query *GroupMembe
 	}
 	query.withFKs = true
 	query.Where(predicate.GroupMembership(func(s *sql.Selector) {
-		s.Where(sql.InValues(user.GroupMembershipsColumn, fks...))
+		s.Where(sql.InValues(s.C(user.GroupMembershipsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -957,7 +957,7 @@ func (uq *UserQuery) loadGroupMemberships(ctx context.Context, query *GroupMembe
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_group_memberships" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_group_memberships" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -975,7 +975,7 @@ func (uq *UserQuery) loadGroupMembershipApplications(ctx context.Context, query 
 	}
 	query.withFKs = true
 	query.Where(predicate.GroupMembershipApplication(func(s *sql.Selector) {
-		s.Where(sql.InValues(user.GroupMembershipApplicationsColumn, fks...))
+		s.Where(sql.InValues(s.C(user.GroupMembershipApplicationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -988,7 +988,7 @@ func (uq *UserQuery) loadGroupMembershipApplications(ctx context.Context, query 
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_group_membership_applications" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_group_membership_applications" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -1006,7 +1006,7 @@ func (uq *UserQuery) loadGames(ctx context.Context, query *GameQuery, nodes []*U
 	}
 	query.withFKs = true
 	query.Where(predicate.Game(func(s *sql.Selector) {
-		s.Where(sql.InValues(user.GamesColumn, fks...))
+		s.Where(sql.InValues(s.C(user.GamesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -1019,7 +1019,7 @@ func (uq *UserQuery) loadGames(ctx context.Context, query *GameQuery, nodes []*U
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_games" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_games" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -1037,7 +1037,7 @@ func (uq *UserQuery) loadFavoriteGames(ctx context.Context, query *GameFavoriteQ
 	}
 	query.withFKs = true
 	query.Where(predicate.GameFavorite(func(s *sql.Selector) {
-		s.Where(sql.InValues(user.FavoriteGamesColumn, fks...))
+		s.Where(sql.InValues(s.C(user.FavoriteGamesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -1050,7 +1050,7 @@ func (uq *UserQuery) loadFavoriteGames(ctx context.Context, query *GameFavoriteQ
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_favorite_games" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_favorite_games" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

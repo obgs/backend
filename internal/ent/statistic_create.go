@@ -95,7 +95,7 @@ func (sc *StatisticCreate) Mutation() *StatisticMutation {
 // Save creates the Statistic in the database.
 func (sc *StatisticCreate) Save(ctx context.Context) (*Statistic, error) {
 	sc.defaults()
-	return withHooks[*Statistic, StatisticMutation](ctx, sc.sqlSave, sc.mutation, sc.hooks)
+	return withHooks(ctx, sc.sqlSave, sc.mutation, sc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -404,12 +404,16 @@ func (u *StatisticUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // StatisticCreateBulk is the builder for creating many Statistic entities in bulk.
 type StatisticCreateBulk struct {
 	config
+	err      error
 	builders []*StatisticCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the Statistic entities in the database.
 func (scb *StatisticCreateBulk) Save(ctx context.Context) ([]*Statistic, error) {
+	if scb.err != nil {
+		return nil, scb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(scb.builders))
 	nodes := make([]*Statistic, len(scb.builders))
 	mutators := make([]Mutator, len(scb.builders))
@@ -426,8 +430,8 @@ func (scb *StatisticCreateBulk) Save(ctx context.Context) ([]*Statistic, error) 
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, scb.builders[i+1].mutation)
 				} else {
@@ -590,6 +594,9 @@ func (u *StatisticUpsertBulk) UpdateValue() *StatisticUpsertBulk {
 
 // Exec executes the query.
 func (u *StatisticUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the StatisticCreateBulk instead", i)

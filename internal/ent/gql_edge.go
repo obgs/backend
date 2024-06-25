@@ -16,6 +16,26 @@ func (ga *Game) Author(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (gv *GameVersion) Game(ctx context.Context) (*Game, error) {
+	result, err := gv.Edges.GameOrErr()
+	if IsNotLoaded(err) {
+		result, err = gv.QueryGame().Only(ctx)
+	}
+	return result, err
+}
+
+func (gv *GameVersion) StatDescriptions(ctx context.Context) (result []*StatDescription, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = gv.NamedStatDescriptions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = gv.Edges.StatDescriptionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = gv.QueryStatDescriptions().All(ctx)
+	}
+	return result, err
+}
+
 func (gr *Group) Settings(ctx context.Context) (*GroupSettings, error) {
 	result, err := gr.Edges.SettingsOrErr()
 	if IsNotLoaded(err) {
@@ -33,7 +53,7 @@ func (gr *Group) Members(
 	alias := graphql.GetFieldContext(ctx).Field.Alias
 	totalCount, hasTotalCount := gr.Edges.totalCount[1][alias]
 	if nodes, err := gr.NamedMembers(alias); err == nil || hasTotalCount {
-		pager, err := newGroupMembershipPager(opts)
+		pager, err := newGroupMembershipPager(opts, last != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -88,10 +108,10 @@ func (gma *GroupMembershipApplication) Group(ctx context.Context) (*Group, error
 	return result, err
 }
 
-func (m *Match) Game(ctx context.Context) (*Game, error) {
-	result, err := m.Edges.GameOrErr()
+func (m *Match) GameVersion(ctx context.Context) (*GameVersion, error) {
+	result, err := m.Edges.GameVersionOrErr()
 	if IsNotLoaded(err) {
-		result, err = m.QueryGame().Only(ctx)
+		result, err = m.QueryGameVersion().Only(ctx)
 	}
 	return result, err
 }

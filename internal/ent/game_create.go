@@ -13,9 +13,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
-	"github.com/open-boardgame-stats/backend/internal/ent/match"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
 	"github.com/open-boardgame-stats/backend/internal/ent/user"
 )
 
@@ -129,34 +128,19 @@ func (gc *GameCreate) AddFavorites(g ...*GameFavorite) *GameCreate {
 	return gc.AddFavoriteIDs(ids...)
 }
 
-// AddStatDescriptionIDs adds the "stat_descriptions" edge to the StatDescription entity by IDs.
-func (gc *GameCreate) AddStatDescriptionIDs(ids ...guidgql.GUID) *GameCreate {
-	gc.mutation.AddStatDescriptionIDs(ids...)
+// AddVersionIDs adds the "versions" edge to the GameVersion entity by IDs.
+func (gc *GameCreate) AddVersionIDs(ids ...guidgql.GUID) *GameCreate {
+	gc.mutation.AddVersionIDs(ids...)
 	return gc
 }
 
-// AddStatDescriptions adds the "stat_descriptions" edges to the StatDescription entity.
-func (gc *GameCreate) AddStatDescriptions(s ...*StatDescription) *GameCreate {
-	ids := make([]guidgql.GUID, len(s))
-	for i := range s {
-		ids[i] = s[i].ID
+// AddVersions adds the "versions" edges to the GameVersion entity.
+func (gc *GameCreate) AddVersions(g ...*GameVersion) *GameCreate {
+	ids := make([]guidgql.GUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
 	}
-	return gc.AddStatDescriptionIDs(ids...)
-}
-
-// AddMatchIDs adds the "matches" edge to the Match entity by IDs.
-func (gc *GameCreate) AddMatchIDs(ids ...guidgql.GUID) *GameCreate {
-	gc.mutation.AddMatchIDs(ids...)
-	return gc
-}
-
-// AddMatches adds the "matches" edges to the Match entity.
-func (gc *GameCreate) AddMatches(m ...*Match) *GameCreate {
-	ids := make([]guidgql.GUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
-	}
-	return gc.AddMatchIDs(ids...)
+	return gc.AddVersionIDs(ids...)
 }
 
 // Mutation returns the GameMutation object of the builder.
@@ -167,7 +151,7 @@ func (gc *GameCreate) Mutation() *GameMutation {
 // Save creates the Game in the database.
 func (gc *GameCreate) Save(ctx context.Context) (*Game, error) {
 	gc.defaults()
-	return withHooks[*Game, GameMutation](ctx, gc.sqlSave, gc.mutation, gc.hooks)
+	return withHooks(ctx, gc.sqlSave, gc.mutation, gc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -230,9 +214,6 @@ func (gc *GameCreate) check() error {
 	}
 	if _, ok := gc.mutation.AuthorID(); !ok {
 		return &ValidationError{Name: "author", err: errors.New(`ent: missing required edge "Game.author"`)}
-	}
-	if len(gc.mutation.StatDescriptionsIDs()) == 0 {
-		return &ValidationError{Name: "stat_descriptions", err: errors.New(`ent: missing required edge "Game.stat_descriptions"`)}
 	}
 	return nil
 }
@@ -323,31 +304,15 @@ func (gc *GameCreate) createSpec() (*Game, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := gc.mutation.StatDescriptionsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   game.StatDescriptionsTable,
-			Columns: game.StatDescriptionsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(statdescription.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := gc.mutation.MatchesIDs(); len(nodes) > 0 {
+	if nodes := gc.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   game.MatchesTable,
-			Columns: []string{game.MatchesColumn},
+			Inverse: true,
+			Table:   game.VersionsTable,
+			Columns: []string{game.VersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -678,12 +643,16 @@ func (u *GameUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // GameCreateBulk is the builder for creating many Game entities in bulk.
 type GameCreateBulk struct {
 	config
+	err      error
 	builders []*GameCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the Game entities in the database.
 func (gcb *GameCreateBulk) Save(ctx context.Context) ([]*Game, error) {
+	if gcb.err != nil {
+		return nil, gcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gcb.builders))
 	nodes := make([]*Game, len(gcb.builders))
 	mutators := make([]Mutator, len(gcb.builders))
@@ -700,8 +669,8 @@ func (gcb *GameCreateBulk) Save(ctx context.Context) ([]*Game, error) {
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gcb.builders[i+1].mutation)
 				} else {
@@ -948,6 +917,9 @@ func (u *GameUpsertBulk) ClearBoardgamegeekURL() *GameUpsertBulk {
 
 // Exec executes the query.
 func (u *GameUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the GameCreateBulk instead", i)

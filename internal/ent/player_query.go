@@ -24,7 +24,7 @@ import (
 type PlayerQuery struct {
 	config
 	ctx                          *QueryContext
-	order                        []OrderFunc
+	order                        []player.OrderOption
 	inters                       []Interceptor
 	predicates                   []predicate.Player
 	withOwner                    *UserQuery
@@ -70,7 +70,7 @@ func (pq *PlayerQuery) Unique(unique bool) *PlayerQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (pq *PlayerQuery) Order(o ...OrderFunc) *PlayerQuery {
+func (pq *PlayerQuery) Order(o ...player.OrderOption) *PlayerQuery {
 	pq.order = append(pq.order, o...)
 	return pq
 }
@@ -374,7 +374,7 @@ func (pq *PlayerQuery) Clone() *PlayerQuery {
 	return &PlayerQuery{
 		config:                  pq.config,
 		ctx:                     pq.ctx.Clone(),
-		order:                   append([]OrderFunc{}, pq.order...),
+		order:                   append([]player.OrderOption{}, pq.order...),
 		inters:                  append([]Interceptor{}, pq.inters...),
 		predicates:              append([]predicate.Player{}, pq.predicates...),
 		withOwner:               pq.withOwner.Clone(),
@@ -734,7 +734,7 @@ func (pq *PlayerQuery) loadSupervisionRequests(ctx context.Context, query *Playe
 	}
 	query.withFKs = true
 	query.Where(predicate.PlayerSupervisionRequest(func(s *sql.Selector) {
-		s.Where(sql.InValues(player.SupervisionRequestsColumn, fks...))
+		s.Where(sql.InValues(s.C(player.SupervisionRequestsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -747,7 +747,7 @@ func (pq *PlayerQuery) loadSupervisionRequests(ctx context.Context, query *Playe
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "player_supervision_requests" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "player_supervision_requests" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -826,7 +826,7 @@ func (pq *PlayerQuery) loadStats(ctx context.Context, query *StatisticQuery, nod
 	}
 	query.withFKs = true
 	query.Where(predicate.Statistic(func(s *sql.Selector) {
-		s.Where(sql.InValues(player.StatsColumn, fks...))
+		s.Where(sql.InValues(s.C(player.StatsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -839,7 +839,7 @@ func (pq *PlayerQuery) loadStats(ctx context.Context, query *StatisticQuery, nod
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "player_stats" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "player_stats" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
+	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
 	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
@@ -86,19 +86,19 @@ func (sdc *StatDescriptionCreate) SetNillableID(gu *guidgql.GUID) *StatDescripti
 	return sdc
 }
 
-// AddGameIDs adds the "game" edge to the Game entity by IDs.
-func (sdc *StatDescriptionCreate) AddGameIDs(ids ...guidgql.GUID) *StatDescriptionCreate {
-	sdc.mutation.AddGameIDs(ids...)
+// AddGameVersionIDs adds the "game_version" edge to the GameVersion entity by IDs.
+func (sdc *StatDescriptionCreate) AddGameVersionIDs(ids ...guidgql.GUID) *StatDescriptionCreate {
+	sdc.mutation.AddGameVersionIDs(ids...)
 	return sdc
 }
 
-// AddGame adds the "game" edges to the Game entity.
-func (sdc *StatDescriptionCreate) AddGame(g ...*Game) *StatDescriptionCreate {
+// AddGameVersion adds the "game_version" edges to the GameVersion entity.
+func (sdc *StatDescriptionCreate) AddGameVersion(g ...*GameVersion) *StatDescriptionCreate {
 	ids := make([]guidgql.GUID, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
 	}
-	return sdc.AddGameIDs(ids...)
+	return sdc.AddGameVersionIDs(ids...)
 }
 
 // AddStatIDs adds the "stats" edge to the Statistic entity by IDs.
@@ -124,7 +124,7 @@ func (sdc *StatDescriptionCreate) Mutation() *StatDescriptionMutation {
 // Save creates the StatDescription in the database.
 func (sdc *StatDescriptionCreate) Save(ctx context.Context) (*StatDescription, error) {
 	sdc.defaults()
-	return withHooks[*StatDescription, StatDescriptionMutation](ctx, sdc.sqlSave, sdc.mutation, sdc.hooks)
+	return withHooks(ctx, sdc.sqlSave, sdc.mutation, sdc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -238,15 +238,15 @@ func (sdc *StatDescriptionCreate) createSpec() (*StatDescription, *sqlgraph.Crea
 		_spec.SetField(statdescription.FieldOrderNumber, field.TypeInt, value)
 		_node.OrderNumber = value
 	}
-	if nodes := sdc.mutation.GameIDs(); len(nodes) > 0 {
+	if nodes := sdc.mutation.GameVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   statdescription.GameTable,
-			Columns: statdescription.GamePrimaryKey,
+			Table:   statdescription.GameVersionTable,
+			Columns: statdescription.GameVersionPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(game.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(gameversion.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -580,12 +580,16 @@ func (u *StatDescriptionUpsertOne) IDX(ctx context.Context) guidgql.GUID {
 // StatDescriptionCreateBulk is the builder for creating many StatDescription entities in bulk.
 type StatDescriptionCreateBulk struct {
 	config
+	err      error
 	builders []*StatDescriptionCreate
 	conflict []sql.ConflictOption
 }
 
 // Save creates the StatDescription entities in the database.
 func (sdcb *StatDescriptionCreateBulk) Save(ctx context.Context) ([]*StatDescription, error) {
+	if sdcb.err != nil {
+		return nil, sdcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(sdcb.builders))
 	nodes := make([]*StatDescription, len(sdcb.builders))
 	mutators := make([]Mutator, len(sdcb.builders))
@@ -602,8 +606,8 @@ func (sdcb *StatDescriptionCreateBulk) Save(ctx context.Context) ([]*StatDescrip
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, sdcb.builders[i+1].mutation)
 				} else {
@@ -843,6 +847,9 @@ func (u *StatDescriptionUpsertBulk) UpdateOrderNumber() *StatDescriptionUpsertBu
 
 // Exec executes the query.
 func (u *StatDescriptionUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
 	for i, b := range u.create.builders {
 		if len(b.conflict) != 0 {
 			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the StatDescriptionCreateBulk instead", i)

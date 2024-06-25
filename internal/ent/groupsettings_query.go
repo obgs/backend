@@ -20,7 +20,7 @@ import (
 type GroupSettingsQuery struct {
 	config
 	ctx        *QueryContext
-	order      []OrderFunc
+	order      []groupsettings.OrderOption
 	inters     []Interceptor
 	predicates []predicate.GroupSettings
 	withGroup  *GroupQuery
@@ -58,7 +58,7 @@ func (gsq *GroupSettingsQuery) Unique(unique bool) *GroupSettingsQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (gsq *GroupSettingsQuery) Order(o ...OrderFunc) *GroupSettingsQuery {
+func (gsq *GroupSettingsQuery) Order(o ...groupsettings.OrderOption) *GroupSettingsQuery {
 	gsq.order = append(gsq.order, o...)
 	return gsq
 }
@@ -274,7 +274,7 @@ func (gsq *GroupSettingsQuery) Clone() *GroupSettingsQuery {
 	return &GroupSettingsQuery{
 		config:     gsq.config,
 		ctx:        gsq.ctx.Clone(),
-		order:      append([]OrderFunc{}, gsq.order...),
+		order:      append([]groupsettings.OrderOption{}, gsq.order...),
 		inters:     append([]Interceptor{}, gsq.inters...),
 		predicates: append([]predicate.GroupSettings{}, gsq.predicates...),
 		withGroup:  gsq.withGroup.Clone(),

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
@@ -27,6 +28,7 @@ type Statistic struct {
 	match_stats            *guidgql.GUID
 	player_stats           *guidgql.GUID
 	stat_description_stats *guidgql.GUID
+	selectValues           sql.SelectValues
 }
 
 // StatisticEdges holds the relations/edges for other nodes in the graph.
@@ -47,12 +49,10 @@ type StatisticEdges struct {
 // MatchOrErr returns the Match value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e StatisticEdges) MatchOrErr() (*Match, error) {
-	if e.loadedTypes[0] {
-		if e.Match == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: match.Label}
-		}
+	if e.Match != nil {
 		return e.Match, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: match.Label}
 	}
 	return nil, &NotLoadedError{edge: "match"}
 }
@@ -60,12 +60,10 @@ func (e StatisticEdges) MatchOrErr() (*Match, error) {
 // StatDescriptionOrErr returns the StatDescription value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e StatisticEdges) StatDescriptionOrErr() (*StatDescription, error) {
-	if e.loadedTypes[1] {
-		if e.StatDescription == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: statdescription.Label}
-		}
+	if e.StatDescription != nil {
 		return e.StatDescription, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: statdescription.Label}
 	}
 	return nil, &NotLoadedError{edge: "stat_description"}
 }
@@ -73,12 +71,10 @@ func (e StatisticEdges) StatDescriptionOrErr() (*StatDescription, error) {
 // PlayerOrErr returns the Player value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e StatisticEdges) PlayerOrErr() (*Player, error) {
-	if e.loadedTypes[2] {
-		if e.Player == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: player.Label}
-		}
+	if e.Player != nil {
 		return e.Player, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: player.Label}
 	}
 	return nil, &NotLoadedError{edge: "player"}
 }
@@ -99,7 +95,7 @@ func (*Statistic) scanValues(columns []string) ([]any, error) {
 		case statistic.ForeignKeys[2]: // stat_description_stats
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Statistic", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -146,9 +142,17 @@ func (s *Statistic) assignValues(columns []string, values []any) error {
 				s.stat_description_stats = new(guidgql.GUID)
 				*s.stat_description_stats = *value.S.(*guidgql.GUID)
 			}
+		default:
+			s.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// GetValue returns the ent.Value that was dynamically selected and assigned to the Statistic.
+// This includes values selected through modifiers, order, etc.
+func (s *Statistic) GetValue(name string) (ent.Value, error) {
+	return s.selectValues.Get(name)
 }
 
 // QueryMatch queries the "match" edge of the Statistic entity.

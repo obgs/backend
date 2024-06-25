@@ -21,7 +21,7 @@ import (
 type PlayerSupervisionRequestApprovalQuery struct {
 	config
 	ctx                    *QueryContext
-	order                  []OrderFunc
+	order                  []playersupervisionrequestapproval.OrderOption
 	inters                 []Interceptor
 	predicates             []predicate.PlayerSupervisionRequestApproval
 	withApprover           *UserQuery
@@ -60,7 +60,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) Unique(unique bool) *PlayerS
 }
 
 // Order specifies how the records should be ordered.
-func (psraq *PlayerSupervisionRequestApprovalQuery) Order(o ...OrderFunc) *PlayerSupervisionRequestApprovalQuery {
+func (psraq *PlayerSupervisionRequestApprovalQuery) Order(o ...playersupervisionrequestapproval.OrderOption) *PlayerSupervisionRequestApprovalQuery {
 	psraq.order = append(psraq.order, o...)
 	return psraq
 }
@@ -298,7 +298,7 @@ func (psraq *PlayerSupervisionRequestApprovalQuery) Clone() *PlayerSupervisionRe
 	return &PlayerSupervisionRequestApprovalQuery{
 		config:                 psraq.config,
 		ctx:                    psraq.ctx.Clone(),
-		order:                  append([]OrderFunc{}, psraq.order...),
+		order:                  append([]playersupervisionrequestapproval.OrderOption{}, psraq.order...),
 		inters:                 append([]Interceptor{}, psraq.inters...),
 		predicates:             append([]predicate.PlayerSupervisionRequestApproval{}, psraq.predicates...),
 		withApprover:           psraq.withApprover.Clone(),

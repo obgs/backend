@@ -3,6 +3,8 @@
 package statistic
 
 import (
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
 )
 
@@ -79,3 +81,58 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() guidgql.GUID
 )
+
+// OrderOption defines the ordering options for the Statistic queries.
+type OrderOption func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByValue orders the results by the value field.
+func ByValue(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldValue, opts...).ToFunc()
+}
+
+// ByMatchField orders the results by match field.
+func ByMatchField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMatchStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByStatDescriptionField orders the results by stat_description field.
+func ByStatDescriptionField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newStatDescriptionStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByPlayerField orders the results by player field.
+func ByPlayerField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPlayerStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newMatchStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MatchInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, MatchTable, MatchColumn),
+	)
+}
+func newStatDescriptionStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(StatDescriptionInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, StatDescriptionTable, StatDescriptionColumn),
+	)
+}
+func newPlayerStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PlayerInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, PlayerTable, PlayerColumn),
+	)
+}
