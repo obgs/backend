@@ -1,0 +1,63 @@
+type NumericMetric {
+  stat: StatDescription!
+  globalAverage: Float!
+  userAverage: Float @authenticated
+}
+
+type EnumOccurences {
+  value: String!
+  occurences: Int!
+}
+
+type EnumMetric {
+  stat: StatDescription!
+  global: [EnumOccurences!]!
+  user: [EnumOccurences!] @authenticated
+}
+
+enum Granularity {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
+input GranularityInput {
+  value: Granularity!
+}
+
+# a float value over a period with a value for the previous period
+type TimeFloatMetric {
+  value: Float!
+  trend: Float!
+}
+
+input TimeSeriesInput {
+  granularity: GranularityInput!
+  start: Time!
+  end: Time!
+}
+
+# generic time series data
+type TimeSeriesPeriod {
+  start: Time!
+  end: Time!
+  # how many activities happened over this period
+  activityCount: Int!
+}
+
+type TimeSeries {
+  series: [TimeSeriesPeriod!]!
+}
+
+type GameVersionMetrics {
+  numericStats: [NumericMetric!]!
+  enumStats: [EnumMetric!]!
+  # The percentage of matches created over a period using this version
+  adoption(input: GranularityInput!): TimeFloatMetric!
+  matchesCreated(input: TimeSeriesInput!): TimeSeries!
+}
+
+extend type GameVersion {
+  metrics: GameVersionMetrics!
+}

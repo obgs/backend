@@ -76,6 +76,9 @@ func (r *queryResolver) Users(ctx context.Context, after *entgql.Cursor[guidgql.
 // Game returns generated.GameResolver implementation.
 func (r *Resolver) Game() generated.GameResolver { return &gameResolver{r} }
 
+// GameVersion returns generated.GameVersionResolver implementation.
+func (r *Resolver) GameVersion() generated.GameVersionResolver { return &gameVersionResolver{r} }
+
 // Group returns generated.GroupResolver implementation.
 func (r *Resolver) Group() generated.GroupResolver { return &groupResolver{r} }
 
@@ -86,6 +89,7 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
 type gameResolver struct{ *Resolver }
+type gameVersionResolver struct{ *Resolver }
 type groupResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
