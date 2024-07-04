@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
@@ -45,6 +46,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Game() GameResolver
+	GameVersion() GameVersionResolver
 	Group() GroupResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
@@ -63,6 +65,17 @@ type ComplexityRoot struct {
 
 	EnumMetadata struct {
 		PossibleValues func(childComplexity int) int
+	}
+
+	EnumMetric struct {
+		Global func(childComplexity int) int
+		Stat   func(childComplexity int) int
+		User   func(childComplexity int) int
+	}
+
+	EnumOccurences struct {
+		Occurences func(childComplexity int) int
+		Value      func(childComplexity int) int
 	}
 
 	Favorites struct {
@@ -97,8 +110,16 @@ type ComplexityRoot struct {
 	GameVersion struct {
 		Game             func(childComplexity int) int
 		ID               func(childComplexity int) int
+		Metrics          func(childComplexity int) int
 		StatDescriptions func(childComplexity int) int
 		VersionNumber    func(childComplexity int) int
+	}
+
+	GameVersionMetrics struct {
+		Adoption       func(childComplexity int, input model.GranularityInput) int
+		EnumStats      func(childComplexity int) int
+		MatchesCreated func(childComplexity int, input model.TimeSeriesInput) int
+		NumericStats   func(childComplexity int) int
 	}
 
 	Group struct {
@@ -195,6 +216,12 @@ type ComplexityRoot struct {
 		UpdateUser                        func(childComplexity int, id guidgql.GUID, input ent.UpdateUserInput) int
 	}
 
+	NumericMetric struct {
+		GlobalAverage func(childComplexity int) int
+		Stat          func(childComplexity int) int
+		UserAverage   func(childComplexity int) int
+	}
+
 	PageInfo struct {
 		EndCursor       func(childComplexity int) int
 		HasNextPage     func(childComplexity int) int
@@ -266,6 +293,21 @@ type ComplexityRoot struct {
 		Value           func(childComplexity int) int
 	}
 
+	TimeFloatMetric struct {
+		Trend func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
+	TimeSeries struct {
+		Series func(childComplexity int) int
+	}
+
+	TimeSeriesPeriod struct {
+		ActivityCount func(childComplexity int) int
+		End           func(childComplexity int) int
+		Start         func(childComplexity int) int
+	}
+
 	UploadURL struct {
 		Headers func(childComplexity int) int
 		URL     func(childComplexity int) int
@@ -301,6 +343,9 @@ type GameResolver interface {
 	Favorites(ctx context.Context, obj *ent.Game) (*model.Favorites, error)
 	IsFavorite(ctx context.Context, obj *ent.Game) (bool, error)
 	Versions(ctx context.Context, obj *ent.Game) ([]*ent.GameVersion, error)
+}
+type GameVersionResolver interface {
+	Metrics(ctx context.Context, obj *ent.GameVersion) (*model.GameVersionMetrics, error)
 }
 type GroupResolver interface {
 	Role(ctx context.Context, obj *ent.Group) (*enums.Role, error)
@@ -376,6 +421,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.EnumMetadata.PossibleValues(childComplexity), true
+
+	case "EnumMetric.global":
+		if e.complexity.EnumMetric.Global == nil {
+			break
+		}
+
+		return e.complexity.EnumMetric.Global(childComplexity), true
+
+	case "EnumMetric.stat":
+		if e.complexity.EnumMetric.Stat == nil {
+			break
+		}
+
+		return e.complexity.EnumMetric.Stat(childComplexity), true
+
+	case "EnumMetric.user":
+		if e.complexity.EnumMetric.User == nil {
+			break
+		}
+
+		return e.complexity.EnumMetric.User(childComplexity), true
+
+	case "EnumOccurences.occurences":
+		if e.complexity.EnumOccurences.Occurences == nil {
+			break
+		}
+
+		return e.complexity.EnumOccurences.Occurences(childComplexity), true
+
+	case "EnumOccurences.value":
+		if e.complexity.EnumOccurences.Value == nil {
+			break
+		}
+
+		return e.complexity.EnumOccurences.Value(childComplexity), true
 
 	case "Favorites.total":
 		if e.complexity.Favorites.Total == nil {
@@ -510,6 +590,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.GameVersion.ID(childComplexity), true
 
+	case "GameVersion.metrics":
+		if e.complexity.GameVersion.Metrics == nil {
+			break
+		}
+
+		return e.complexity.GameVersion.Metrics(childComplexity), true
+
 	case "GameVersion.statDescriptions":
 		if e.complexity.GameVersion.StatDescriptions == nil {
 			break
@@ -523,6 +610,44 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.GameVersion.VersionNumber(childComplexity), true
+
+	case "GameVersionMetrics.adoption":
+		if e.complexity.GameVersionMetrics.Adoption == nil {
+			break
+		}
+
+		args, err := ec.field_GameVersionMetrics_adoption_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.GameVersionMetrics.Adoption(childComplexity, args["input"].(model.GranularityInput)), true
+
+	case "GameVersionMetrics.enumStats":
+		if e.complexity.GameVersionMetrics.EnumStats == nil {
+			break
+		}
+
+		return e.complexity.GameVersionMetrics.EnumStats(childComplexity), true
+
+	case "GameVersionMetrics.matchesCreated":
+		if e.complexity.GameVersionMetrics.MatchesCreated == nil {
+			break
+		}
+
+		args, err := ec.field_GameVersionMetrics_matchesCreated_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.GameVersionMetrics.MatchesCreated(childComplexity, args["input"].(model.TimeSeriesInput)), true
+
+	case "GameVersionMetrics.numericStats":
+		if e.complexity.GameVersionMetrics.NumericStats == nil {
+			break
+		}
+
+		return e.complexity.GameVersionMetrics.NumericStats(childComplexity), true
 
 	case "Group.applications":
 		if e.complexity.Group.Applications == nil {
@@ -979,6 +1104,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(guidgql.GUID), args["input"].(ent.UpdateUserInput)), true
 
+	case "NumericMetric.globalAverage":
+		if e.complexity.NumericMetric.GlobalAverage == nil {
+			break
+		}
+
+		return e.complexity.NumericMetric.GlobalAverage(childComplexity), true
+
+	case "NumericMetric.stat":
+		if e.complexity.NumericMetric.Stat == nil {
+			break
+		}
+
+		return e.complexity.NumericMetric.Stat(childComplexity), true
+
+	case "NumericMetric.userAverage":
+		if e.complexity.NumericMetric.UserAverage == nil {
+			break
+		}
+
+		return e.complexity.NumericMetric.UserAverage(childComplexity), true
+
 	case "PageInfo.endCursor":
 		if e.complexity.PageInfo.EndCursor == nil {
 			break
@@ -1322,6 +1468,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Statistic.Value(childComplexity), true
 
+	case "TimeFloatMetric.trend":
+		if e.complexity.TimeFloatMetric.Trend == nil {
+			break
+		}
+
+		return e.complexity.TimeFloatMetric.Trend(childComplexity), true
+
+	case "TimeFloatMetric.value":
+		if e.complexity.TimeFloatMetric.Value == nil {
+			break
+		}
+
+		return e.complexity.TimeFloatMetric.Value(childComplexity), true
+
+	case "TimeSeries.series":
+		if e.complexity.TimeSeries.Series == nil {
+			break
+		}
+
+		return e.complexity.TimeSeries.Series(childComplexity), true
+
+	case "TimeSeriesPeriod.activityCount":
+		if e.complexity.TimeSeriesPeriod.ActivityCount == nil {
+			break
+		}
+
+		return e.complexity.TimeSeriesPeriod.ActivityCount(childComplexity), true
+
+	case "TimeSeriesPeriod.end":
+		if e.complexity.TimeSeriesPeriod.End == nil {
+			break
+		}
+
+		return e.complexity.TimeSeriesPeriod.End(childComplexity), true
+
+	case "TimeSeriesPeriod.start":
+		if e.complexity.TimeSeriesPeriod.Start == nil {
+			break
+		}
+
+		return e.complexity.TimeSeriesPeriod.Start(childComplexity), true
+
 	case "UploadURL.headers":
 		if e.complexity.UploadURL.Headers == nil {
 			break
@@ -1464,6 +1652,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputEnumMetadataInput,
 		ec.unmarshalInputGameVersionWhereInput,
 		ec.unmarshalInputGameWhereInput,
+		ec.unmarshalInputGranularityInput,
 		ec.unmarshalInputGroupApplicationInput,
 		ec.unmarshalInputGroupMembershipWhereInput,
 		ec.unmarshalInputGroupSettingsInput,
@@ -1478,6 +1667,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputStatDescriptionInput,
 		ec.unmarshalInputStatInput,
 		ec.unmarshalInputStatMetadataInput,
+		ec.unmarshalInputTimeSeriesInput,
 		ec.unmarshalInputUpdateUserInput,
 		ec.unmarshalInputUserWhereInput,
 	)
@@ -2613,6 +2803,70 @@ extend type Mutation {
     @authenticated
 }
 `, BuiltIn: false},
+	{Name: "../schema/game_version.graphql", Input: `type NumericMetric {
+  stat: StatDescription!
+  globalAverage: Float!
+  userAverage: Float @authenticated
+}
+
+type EnumOccurences {
+  value: String!
+  occurences: Int!
+}
+
+type EnumMetric {
+  stat: StatDescription!
+  global: [EnumOccurences!]!
+  user: [EnumOccurences!] @authenticated
+}
+
+enum Granularity {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
+input GranularityInput {
+  value: Granularity!
+}
+
+# a float value over a period with a value for the previous period
+type TimeFloatMetric {
+  value: Float!
+  trend: Float!
+}
+
+input TimeSeriesInput {
+  granularity: GranularityInput!
+  start: Time!
+  end: Time!
+}
+
+# generic time series data
+type TimeSeriesPeriod {
+  start: Time!
+  end: Time!
+  # how many activities happened over this period
+  activityCount: Int!
+}
+
+type TimeSeries {
+  series: [TimeSeriesPeriod!]!
+}
+
+type GameVersionMetrics {
+  numericStats: [NumericMetric!]!
+  enumStats: [EnumMetric!]!
+  # The percentage of matches created over a period using this version
+  adoption(input: GranularityInput!): TimeFloatMetric!
+  matchesCreated(input: TimeSeriesInput!): TimeSeries!
+}
+
+extend type GameVersion {
+  metrics: GameVersionMetrics!
+}
+`, BuiltIn: false},
 	{Name: "../schema/group.graphql", Input: `input GroupSettingsInput {
   visibility: GroupSettingsVisibility!
   joinPolicy: GroupSettingsJoinPolicy!
@@ -2705,6 +2959,8 @@ extend type Mutation {
   ): Boolean! @authenticated
 }
 `, BuiltIn: false},
+	{Name: "../schema/scalars.graphql", Input: `scalar Time
+`, BuiltIn: false},
 	{Name: "../schema/stat_description.graphql", Input: `input EnumMetadataInput {
   possibleValues: [String!]!
 }
@@ -2771,6 +3027,36 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_GameVersionMetrics_adoption_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.GranularityInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNGranularityInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGranularityInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_GameVersionMetrics_matchesCreated_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.TimeSeriesInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNTimeSeriesInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeSeriesInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Group_members_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -3542,6 +3828,269 @@ func (ec *executionContext) fieldContext_EnumMetadata_possibleValues(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _EnumMetric_stat(ctx context.Context, field graphql.CollectedField, obj *model.EnumMetric) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EnumMetric_stat(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Stat, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.StatDescription)
+	fc.Result = res
+	return ec.marshalNStatDescription2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐStatDescription(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EnumMetric_stat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EnumMetric",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_StatDescription_id(ctx, field)
+			case "type":
+				return ec.fieldContext_StatDescription_type(ctx, field)
+			case "name":
+				return ec.fieldContext_StatDescription_name(ctx, field)
+			case "description":
+				return ec.fieldContext_StatDescription_description(ctx, field)
+			case "metadata":
+				return ec.fieldContext_StatDescription_metadata(ctx, field)
+			case "orderNumber":
+				return ec.fieldContext_StatDescription_orderNumber(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StatDescription", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EnumMetric_global(ctx context.Context, field graphql.CollectedField, obj *model.EnumMetric) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EnumMetric_global(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Global, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.EnumOccurences)
+	fc.Result = res
+	return ec.marshalNEnumOccurences2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumOccurencesᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EnumMetric_global(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EnumMetric",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_EnumOccurences_value(ctx, field)
+			case "occurences":
+				return ec.fieldContext_EnumOccurences_occurences(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type EnumOccurences", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EnumMetric_user(ctx context.Context, field graphql.CollectedField, obj *model.EnumMetric) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EnumMetric_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return obj.User, nil
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Authenticated == nil {
+				return nil, errors.New("directive authenticated is not implemented")
+			}
+			return ec.directives.Authenticated(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.EnumOccurences); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/open-boardgame-stats/backend/internal/graphql/model.EnumOccurences`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.EnumOccurences)
+	fc.Result = res
+	return ec.marshalOEnumOccurences2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumOccurencesᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EnumMetric_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EnumMetric",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_EnumOccurences_value(ctx, field)
+			case "occurences":
+				return ec.fieldContext_EnumOccurences_occurences(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type EnumOccurences", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EnumOccurences_value(ctx context.Context, field graphql.CollectedField, obj *model.EnumOccurences) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EnumOccurences_value(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EnumOccurences_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EnumOccurences",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EnumOccurences_occurences(ctx context.Context, field graphql.CollectedField, obj *model.EnumOccurences) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EnumOccurences_occurences(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Occurences, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EnumOccurences_occurences(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EnumOccurences",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Favorites_total(ctx context.Context, field graphql.CollectedField, obj *model.Favorites) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Favorites_total(ctx, field)
 	if err != nil {
@@ -4121,6 +4670,8 @@ func (ec *executionContext) fieldContext_Game_versions(_ context.Context, field 
 				return ec.fieldContext_GameVersion_game(ctx, field)
 			case "statDescriptions":
 				return ec.fieldContext_GameVersion_statDescriptions(ctx, field)
+			case "metrics":
+				return ec.fieldContext_GameVersion_metrics(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type GameVersion", field.Name)
 		},
@@ -4588,6 +5139,284 @@ func (ec *executionContext) fieldContext_GameVersion_statDescriptions(_ context.
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StatDescription", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameVersion_metrics(ctx context.Context, field graphql.CollectedField, obj *ent.GameVersion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameVersion_metrics(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.GameVersion().Metrics(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.GameVersionMetrics)
+	fc.Result = res
+	return ec.marshalNGameVersionMetrics2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGameVersionMetrics(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameVersion_metrics(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameVersion",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "numericStats":
+				return ec.fieldContext_GameVersionMetrics_numericStats(ctx, field)
+			case "enumStats":
+				return ec.fieldContext_GameVersionMetrics_enumStats(ctx, field)
+			case "adoption":
+				return ec.fieldContext_GameVersionMetrics_adoption(ctx, field)
+			case "matchesCreated":
+				return ec.fieldContext_GameVersionMetrics_matchesCreated(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GameVersionMetrics", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameVersionMetrics_numericStats(ctx context.Context, field graphql.CollectedField, obj *model.GameVersionMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameVersionMetrics_numericStats(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NumericStats, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.NumericMetric)
+	fc.Result = res
+	return ec.marshalNNumericMetric2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐNumericMetricᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameVersionMetrics_numericStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameVersionMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stat":
+				return ec.fieldContext_NumericMetric_stat(ctx, field)
+			case "globalAverage":
+				return ec.fieldContext_NumericMetric_globalAverage(ctx, field)
+			case "userAverage":
+				return ec.fieldContext_NumericMetric_userAverage(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NumericMetric", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameVersionMetrics_enumStats(ctx context.Context, field graphql.CollectedField, obj *model.GameVersionMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameVersionMetrics_enumStats(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EnumStats, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.EnumMetric)
+	fc.Result = res
+	return ec.marshalNEnumMetric2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumMetricᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameVersionMetrics_enumStats(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameVersionMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "stat":
+				return ec.fieldContext_EnumMetric_stat(ctx, field)
+			case "global":
+				return ec.fieldContext_EnumMetric_global(ctx, field)
+			case "user":
+				return ec.fieldContext_EnumMetric_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type EnumMetric", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameVersionMetrics_adoption(ctx context.Context, field graphql.CollectedField, obj *model.GameVersionMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameVersionMetrics_adoption(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Adoption, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TimeFloatMetric)
+	fc.Result = res
+	return ec.marshalNTimeFloatMetric2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeFloatMetric(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameVersionMetrics_adoption(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameVersionMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_TimeFloatMetric_value(ctx, field)
+			case "trend":
+				return ec.fieldContext_TimeFloatMetric_trend(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TimeFloatMetric", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_GameVersionMetrics_adoption_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GameVersionMetrics_matchesCreated(ctx context.Context, field graphql.CollectedField, obj *model.GameVersionMetrics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GameVersionMetrics_matchesCreated(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MatchesCreated, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TimeSeries)
+	fc.Result = res
+	return ec.marshalNTimeSeries2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeSeries(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GameVersionMetrics_matchesCreated(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameVersionMetrics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "series":
+				return ec.fieldContext_TimeSeries_series(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TimeSeries", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_GameVersionMetrics_matchesCreated_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -6300,6 +7129,8 @@ func (ec *executionContext) fieldContext_Match_gameVersion(_ context.Context, fi
 				return ec.fieldContext_GameVersion_game(ctx, field)
 			case "statDescriptions":
 				return ec.fieldContext_GameVersion_statDescriptions(ctx, field)
+			case "metrics":
+				return ec.fieldContext_GameVersion_metrics(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type GameVersion", field.Name)
 		},
@@ -7721,6 +8552,169 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 	if fc.Args, err = ec.field_Mutation_updateUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumericMetric_stat(ctx context.Context, field graphql.CollectedField, obj *model.NumericMetric) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NumericMetric_stat(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Stat, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.StatDescription)
+	fc.Result = res
+	return ec.marshalNStatDescription2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐStatDescription(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NumericMetric_stat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumericMetric",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_StatDescription_id(ctx, field)
+			case "type":
+				return ec.fieldContext_StatDescription_type(ctx, field)
+			case "name":
+				return ec.fieldContext_StatDescription_name(ctx, field)
+			case "description":
+				return ec.fieldContext_StatDescription_description(ctx, field)
+			case "metadata":
+				return ec.fieldContext_StatDescription_metadata(ctx, field)
+			case "orderNumber":
+				return ec.fieldContext_StatDescription_orderNumber(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type StatDescription", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumericMetric_globalAverage(ctx context.Context, field graphql.CollectedField, obj *model.NumericMetric) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NumericMetric_globalAverage(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GlobalAverage, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NumericMetric_globalAverage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumericMetric",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NumericMetric_userAverage(ctx context.Context, field graphql.CollectedField, obj *model.NumericMetric) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NumericMetric_userAverage(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return obj.UserAverage, nil
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Authenticated == nil {
+				return nil, errors.New("directive authenticated is not implemented")
+			}
+			return ec.directives.Authenticated(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*float64); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *float64`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*float64)
+	fc.Result = res
+	return ec.marshalOFloat2ᚖfloat64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NumericMetric_userAverage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NumericMetric",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -10152,6 +11146,278 @@ func (ec *executionContext) fieldContext_Statistic_player(_ context.Context, fie
 				return ec.fieldContext_Player_matches(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TimeFloatMetric_value(ctx context.Context, field graphql.CollectedField, obj *model.TimeFloatMetric) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TimeFloatMetric_value(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TimeFloatMetric_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TimeFloatMetric",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TimeFloatMetric_trend(ctx context.Context, field graphql.CollectedField, obj *model.TimeFloatMetric) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TimeFloatMetric_trend(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Trend, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TimeFloatMetric_trend(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TimeFloatMetric",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TimeSeries_series(ctx context.Context, field graphql.CollectedField, obj *model.TimeSeries) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TimeSeries_series(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Series, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.TimeSeriesPeriod)
+	fc.Result = res
+	return ec.marshalNTimeSeriesPeriod2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeSeriesPeriodᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TimeSeries_series(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TimeSeries",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "start":
+				return ec.fieldContext_TimeSeriesPeriod_start(ctx, field)
+			case "end":
+				return ec.fieldContext_TimeSeriesPeriod_end(ctx, field)
+			case "activityCount":
+				return ec.fieldContext_TimeSeriesPeriod_activityCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TimeSeriesPeriod", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TimeSeriesPeriod_start(ctx context.Context, field graphql.CollectedField, obj *model.TimeSeriesPeriod) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TimeSeriesPeriod_start(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Start, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TimeSeriesPeriod_start(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TimeSeriesPeriod",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TimeSeriesPeriod_end(ctx context.Context, field graphql.CollectedField, obj *model.TimeSeriesPeriod) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TimeSeriesPeriod_end(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.End, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TimeSeriesPeriod_end(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TimeSeriesPeriod",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TimeSeriesPeriod_activityCount(ctx context.Context, field graphql.CollectedField, obj *model.TimeSeriesPeriod) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TimeSeriesPeriod_activityCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActivityCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TimeSeriesPeriod_activityCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TimeSeriesPeriod",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -13608,6 +14874,33 @@ func (ec *executionContext) unmarshalInputGameWhereInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputGranularityInput(ctx context.Context, obj interface{}) (model.GranularityInput, error) {
+	var it model.GranularityInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"value"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "value":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			data, err := ec.unmarshalNGranularity2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGranularity(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Value = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputGroupApplicationInput(ctx context.Context, obj interface{}) (model.GroupApplicationInput, error) {
 	var it model.GroupApplicationInput
 	asMap := map[string]interface{}{}
@@ -15050,6 +16343,47 @@ func (ec *executionContext) unmarshalInputStatMetadataInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTimeSeriesInput(ctx context.Context, obj interface{}) (model.TimeSeriesInput, error) {
+	var it model.TimeSeriesInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"granularity", "start", "end"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "granularity":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("granularity"))
+			data, err := ec.unmarshalNGranularityInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGranularityInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Granularity = data
+		case "start":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("start"))
+			data, err := ec.unmarshalNTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Start = data
+		case "end":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("end"))
+			data, err := ec.unmarshalNTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.End = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, obj interface{}) (ent.UpdateUserInput, error) {
 	var it ent.UpdateUserInput
 	asMap := map[string]interface{}{}
@@ -15626,6 +16960,96 @@ func (ec *executionContext) _EnumMetadata(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var enumMetricImplementors = []string{"EnumMetric"}
+
+func (ec *executionContext) _EnumMetric(ctx context.Context, sel ast.SelectionSet, obj *model.EnumMetric) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, enumMetricImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EnumMetric")
+		case "stat":
+			out.Values[i] = ec._EnumMetric_stat(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "global":
+			out.Values[i] = ec._EnumMetric_global(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "user":
+			out.Values[i] = ec._EnumMetric_user(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var enumOccurencesImplementors = []string{"EnumOccurences"}
+
+func (ec *executionContext) _EnumOccurences(ctx context.Context, sel ast.SelectionSet, obj *model.EnumOccurences) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, enumOccurencesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EnumOccurences")
+		case "value":
+			out.Values[i] = ec._EnumOccurences_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "occurences":
+			out.Values[i] = ec._EnumOccurences_occurences(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var favoritesImplementors = []string{"Favorites"}
 
 func (ec *executionContext) _Favorites(ctx context.Context, sel ast.SelectionSet, obj *model.Favorites) graphql.Marshaler {
@@ -16052,6 +17476,96 @@ func (ec *executionContext) _GameVersion(ctx context.Context, sel ast.SelectionS
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "metrics":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GameVersion_metrics(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var gameVersionMetricsImplementors = []string{"GameVersionMetrics"}
+
+func (ec *executionContext) _GameVersionMetrics(ctx context.Context, sel ast.SelectionSet, obj *model.GameVersionMetrics) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gameVersionMetricsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GameVersionMetrics")
+		case "numericStats":
+			out.Values[i] = ec._GameVersionMetrics_numericStats(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "enumStats":
+			out.Values[i] = ec._GameVersionMetrics_enumStats(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "adoption":
+			out.Values[i] = ec._GameVersionMetrics_adoption(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "matchesCreated":
+			out.Values[i] = ec._GameVersionMetrics_matchesCreated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -17165,6 +18679,52 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var numericMetricImplementors = []string{"NumericMetric"}
+
+func (ec *executionContext) _NumericMetric(ctx context.Context, sel ast.SelectionSet, obj *model.NumericMetric) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, numericMetricImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NumericMetric")
+		case "stat":
+			out.Values[i] = ec._NumericMetric_stat(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "globalAverage":
+			out.Values[i] = ec._NumericMetric_globalAverage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userAverage":
+			out.Values[i] = ec._NumericMetric_userAverage(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var pageInfoImplementors = []string{"PageInfo"}
 
 func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *entgql.PageInfo[guidgql.GUID]) graphql.Marshaler {
@@ -18190,6 +19750,138 @@ func (ec *executionContext) _Statistic(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
+var timeFloatMetricImplementors = []string{"TimeFloatMetric"}
+
+func (ec *executionContext) _TimeFloatMetric(ctx context.Context, sel ast.SelectionSet, obj *model.TimeFloatMetric) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, timeFloatMetricImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TimeFloatMetric")
+		case "value":
+			out.Values[i] = ec._TimeFloatMetric_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "trend":
+			out.Values[i] = ec._TimeFloatMetric_trend(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var timeSeriesImplementors = []string{"TimeSeries"}
+
+func (ec *executionContext) _TimeSeries(ctx context.Context, sel ast.SelectionSet, obj *model.TimeSeries) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, timeSeriesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TimeSeries")
+		case "series":
+			out.Values[i] = ec._TimeSeries_series(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var timeSeriesPeriodImplementors = []string{"TimeSeriesPeriod"}
+
+func (ec *executionContext) _TimeSeriesPeriod(ctx context.Context, sel ast.SelectionSet, obj *model.TimeSeriesPeriod) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, timeSeriesPeriodImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TimeSeriesPeriod")
+		case "start":
+			out.Values[i] = ec._TimeSeriesPeriod_start(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "end":
+			out.Values[i] = ec._TimeSeriesPeriod_end(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "activityCount":
+			out.Values[i] = ec._TimeSeriesPeriod_activityCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var uploadURLImplementors = []string{"UploadURL"}
 
 func (ec *executionContext) _UploadURL(ctx context.Context, sel ast.SelectionSet, obj *model.UploadURL) graphql.Marshaler {
@@ -18993,6 +20685,114 @@ func (ec *executionContext) marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCurso
 	return v
 }
 
+func (ec *executionContext) marshalNEnumMetric2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumMetricᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EnumMetric) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNEnumMetric2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumMetric(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNEnumMetric2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumMetric(ctx context.Context, sel ast.SelectionSet, v *model.EnumMetric) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._EnumMetric(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNEnumOccurences2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumOccurencesᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EnumOccurences) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNEnumOccurences2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumOccurences(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNEnumOccurences2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumOccurences(ctx context.Context, sel ast.SelectionSet, v *model.EnumOccurences) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._EnumOccurences(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNFavorites2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐFavorites(ctx context.Context, sel ast.SelectionSet, v model.Favorites) graphql.Marshaler {
 	return ec._Favorites(ctx, sel, &v)
 }
@@ -19005,6 +20805,21 @@ func (ec *executionContext) marshalNFavorites2ᚖgithubᚗcomᚋopenᚑboardgame
 		return graphql.Null
 	}
 	return ec._Favorites(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) marshalNGame2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGame(ctx context.Context, sel ast.SelectionSet, v ent.Game) graphql.Marshaler {
@@ -19089,6 +20904,20 @@ func (ec *executionContext) marshalNGameVersion2ᚖgithubᚗcomᚋopenᚑboardga
 	return ec._GameVersion(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNGameVersionMetrics2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGameVersionMetrics(ctx context.Context, sel ast.SelectionSet, v model.GameVersionMetrics) graphql.Marshaler {
+	return ec._GameVersionMetrics(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGameVersionMetrics2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGameVersionMetrics(ctx context.Context, sel ast.SelectionSet, v *model.GameVersionMetrics) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GameVersionMetrics(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNGameVersionWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameVersionWhereInput(ctx context.Context, v interface{}) (*ent.GameVersionWhereInput, error) {
 	res, err := ec.unmarshalInputGameVersionWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -19096,6 +20925,26 @@ func (ec *executionContext) unmarshalNGameVersionWhereInput2ᚖgithubᚗcomᚋop
 
 func (ec *executionContext) unmarshalNGameWhereInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameWhereInput(ctx context.Context, v interface{}) (*ent.GameWhereInput, error) {
 	res, err := ec.unmarshalInputGameWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNGranularity2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGranularity(ctx context.Context, v interface{}) (model.Granularity, error) {
+	var res model.Granularity
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNGranularity2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGranularity(ctx context.Context, sel ast.SelectionSet, v model.Granularity) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNGranularityInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGranularityInput(ctx context.Context, v interface{}) (model.GranularityInput, error) {
+	res, err := ec.unmarshalInputGranularityInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNGranularityInput2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐGranularityInput(ctx context.Context, v interface{}) (*model.GranularityInput, error) {
+	res, err := ec.unmarshalInputGranularityInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -19456,6 +21305,60 @@ func (ec *executionContext) marshalNNode2ᚕgithubᚗcomᚋopenᚑboardgameᚑst
 	return ret
 }
 
+func (ec *executionContext) marshalNNumericMetric2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐNumericMetricᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.NumericMetric) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNumericMetric2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐNumericMetric(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNNumericMetric2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐNumericMetric(ctx context.Context, sel ast.SelectionSet, v *model.NumericMetric) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NumericMetric(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v entgql.PageInfo[guidgql.GUID]) graphql.Marshaler {
 	return ec._PageInfo(ctx, sel, &v)
 }
@@ -19783,6 +21686,100 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	res := graphql.MarshalTime(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNTimeFloatMetric2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeFloatMetric(ctx context.Context, sel ast.SelectionSet, v *model.TimeFloatMetric) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TimeFloatMetric(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTimeSeries2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeSeries(ctx context.Context, sel ast.SelectionSet, v *model.TimeSeries) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TimeSeries(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTimeSeriesInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeSeriesInput(ctx context.Context, v interface{}) (model.TimeSeriesInput, error) {
+	res, err := ec.unmarshalInputTimeSeriesInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTimeSeriesPeriod2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeSeriesPeriodᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TimeSeriesPeriod) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTimeSeriesPeriod2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeSeriesPeriod(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTimeSeriesPeriod2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐTimeSeriesPeriod(ctx context.Context, sel ast.SelectionSet, v *model.TimeSeriesPeriod) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TimeSeriesPeriod(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐUpdateUserInput(ctx context.Context, v interface{}) (ent.UpdateUserInput, error) {
@@ -20190,6 +22187,69 @@ func (ec *executionContext) unmarshalOEnumMetadataInput2ᚖgithubᚗcomᚋopen�
 	}
 	res, err := ec.unmarshalInputEnumMetadataInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOEnumOccurences2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumOccurencesᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.EnumOccurences) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNEnumOccurences2ᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋgraphqlᚋmodelᚐEnumOccurences(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalFloatContext(*v)
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) marshalOGame2ᚕᚖgithubᚗcomᚋopenᚑboardgameᚑstatsᚋbackendᚋinternalᚋentᚐGameᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Game) graphql.Marshaler {

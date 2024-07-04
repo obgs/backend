@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/ent/enums"
@@ -61,9 +62,31 @@ type EnumMetadataInput struct {
 	PossibleValues []string `json:"possibleValues"`
 }
 
+type EnumMetric struct {
+	Stat   *ent.StatDescription `json:"stat"`
+	Global []*EnumOccurences    `json:"global"`
+	User   []*EnumOccurences    `json:"user,omitempty"`
+}
+
+type EnumOccurences struct {
+	Value      string `json:"value"`
+	Occurences int    `json:"occurences"`
+}
+
 type Favorites struct {
 	Total int         `json:"total"`
 	Users []*ent.User `json:"users"`
+}
+
+type GameVersionMetrics struct {
+	NumericStats   []*NumericMetric `json:"numericStats"`
+	EnumStats      []*EnumMetric    `json:"enumStats"`
+	Adoption       *TimeFloatMetric `json:"adoption"`
+	MatchesCreated *TimeSeries      `json:"matchesCreated"`
+}
+
+type GranularityInput struct {
+	Value Granularity `json:"value"`
 }
 
 type GroupApplicationInput struct {
@@ -80,6 +103,12 @@ type GroupSettingsInput struct {
 type Header struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
+}
+
+type NumericMetric struct {
+	Stat          *ent.StatDescription `json:"stat"`
+	GlobalAverage float64              `json:"globalAverage"`
+	UserAverage   *float64             `json:"userAverage,omitempty"`
 }
 
 type RequestPlayerSupervisionInput struct {
@@ -111,6 +140,27 @@ type StatMetadataInput struct {
 	// Once input unions are in graphql, this will be one
 	EnumMetadata      *EnumMetadataInput      `json:"enumMetadata,omitempty"`
 	AggregateMetadata *AggregateMetadataInput `json:"aggregateMetadata,omitempty"`
+}
+
+type TimeFloatMetric struct {
+	Value float64 `json:"value"`
+	Trend float64 `json:"trend"`
+}
+
+type TimeSeries struct {
+	Series []*TimeSeriesPeriod `json:"series"`
+}
+
+type TimeSeriesInput struct {
+	Granularity *GranularityInput `json:"granularity"`
+	Start       time.Time         `json:"start"`
+	End         time.Time         `json:"end"`
+}
+
+type TimeSeriesPeriod struct {
+	Start         time.Time `json:"start"`
+	End           time.Time `json:"end"`
+	ActivityCount int       `json:"activityCount"`
 }
 
 type UploadURL struct {
@@ -155,5 +205,50 @@ func (e *AggregateMetadataType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e AggregateMetadataType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type Granularity string
+
+const (
+	GranularityDay   Granularity = "DAY"
+	GranularityWeek  Granularity = "WEEK"
+	GranularityMonth Granularity = "MONTH"
+	GranularityYear  Granularity = "YEAR"
+)
+
+var AllGranularity = []Granularity{
+	GranularityDay,
+	GranularityWeek,
+	GranularityMonth,
+	GranularityYear,
+}
+
+func (e Granularity) IsValid() bool {
+	switch e {
+	case GranularityDay, GranularityWeek, GranularityMonth, GranularityYear:
+		return true
+	}
+	return false
+}
+
+func (e Granularity) String() string {
+	return string(e)
+}
+
+func (e *Granularity) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Granularity(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Granularity", str)
+	}
+	return nil
+}
+
+func (e Granularity) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
