@@ -1,8 +1,11 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -18,6 +21,9 @@ type Match struct {
 func (Match) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").GoType(guidgql.GUID{}).DefaultFunc(guidgql.New(guidgql.Match)),
+		field.Time("created_at").Immutable().Default(time.Now).Annotations(
+			entsql.Default("CURRENT_TIMESTAMP"),
+		),
 	}
 }
 

@@ -183,6 +183,7 @@ type ComplexityRoot struct {
 	}
 
 	Match struct {
+		CreatedAt   func(childComplexity int) int
 		GameVersion func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Players     func(childComplexity int) int
@@ -884,6 +885,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Header.Value(childComplexity), true
+
+	case "Match.createdAt":
+		if e.complexity.Match.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Match.CreatedAt(childComplexity), true
 
 	case "Match.gameVersion":
 		if e.complexity.Match.GameVersion == nil {
@@ -2175,6 +2183,7 @@ input GroupWhereInput {
 }
 type Match implements Node {
   id: ID!
+  createdAt: Time!
   gameVersion: GameVersion!
   players: [Player!]!
   stats: [Statistic!]
@@ -2228,6 +2237,17 @@ input MatchWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
   """
   game_version edge predicates
   """
@@ -7082,6 +7102,50 @@ func (ec *executionContext) fieldContext_Match_id(_ context.Context, field graph
 	return fc, nil
 }
 
+func (ec *executionContext) _Match_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.Match) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Match_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Match_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Match",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Match_gameVersion(ctx context.Context, field graphql.CollectedField, obj *ent.Match) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Match_gameVersion(ctx, field)
 	if err != nil {
@@ -7432,6 +7496,8 @@ func (ec *executionContext) fieldContext_MatchEdge_node(_ context.Context, field
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Match_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Match_createdAt(ctx, field)
 			case "gameVersion":
 				return ec.fieldContext_Match_gameVersion(ctx, field)
 			case "players":
@@ -8202,6 +8268,8 @@ func (ec *executionContext) fieldContext_Mutation_createMatch(ctx context.Contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Match_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Match_createdAt(ctx, field)
 			case "gameVersion":
 				return ec.fieldContext_Match_gameVersion(ctx, field)
 			case "players":
@@ -9198,6 +9266,8 @@ func (ec *executionContext) fieldContext_Player_matches(_ context.Context, field
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Match_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Match_createdAt(ctx, field)
 			case "gameVersion":
 				return ec.fieldContext_Match_gameVersion(ctx, field)
 			case "players":
@@ -11022,6 +11092,8 @@ func (ec *executionContext) fieldContext_Statistic_match(_ context.Context, fiel
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Match_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Match_createdAt(ctx, field)
 			case "gameVersion":
 				return ec.fieldContext_Match_gameVersion(ctx, field)
 			case "players":
@@ -15505,7 +15577,7 @@ func (ec *executionContext) unmarshalInputMatchWhereInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "hasGameVersion", "hasGameVersionWith", "hasPlayers", "hasPlayersWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "hasGameVersion", "hasGameVersionWith", "hasPlayers", "hasPlayersWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15589,6 +15661,62 @@ func (ec *executionContext) unmarshalInputMatchWhereInput(ctx context.Context, o
 				return it, err
 			}
 			it.IDLTE = data
+		case "createdAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAt = data
+		case "createdAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNEQ = data
+		case "createdAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtIn = data
+		case "createdAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtNotIn = data
+		case "createdAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGT = data
+		case "createdAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtGTE = data
+		case "createdAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLT = data
+		case "createdAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatedAtLTE = data
 		case "hasGameVersion":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasGameVersion"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -18328,6 +18456,11 @@ func (ec *executionContext) _Match(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = graphql.MarshalString("Match")
 		case "id":
 			out.Values[i] = ec._Match_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._Match_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -23596,6 +23729,60 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	res := graphql.MarshalString(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx context.Context, v interface{}) ([]time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]time.Time, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTime2timeᚐTime(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOTime2ᚕtimeᚐTimeᚄ(ctx context.Context, sel ast.SelectionSet, v []time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNTime2timeᚐTime(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalTime(*v)
 	return res
 }
 
