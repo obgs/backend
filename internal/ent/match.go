@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -15,9 +16,11 @@ import (
 
 // Match is the model entity for the Match schema.
 type Match struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID guidgql.GUID `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MatchQuery when eager-loading is set.
 	Edges                MatchEdges `json:"edges"`
@@ -79,6 +82,8 @@ func (*Match) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case match.FieldID:
 			values[i] = new(guidgql.GUID)
+		case match.FieldCreatedAt:
+			values[i] = new(sql.NullTime)
 		case match.ForeignKeys[0]: // game_version_matches
 			values[i] = &sql.NullScanner{S: new(guidgql.GUID)}
 		default:
@@ -101,6 +106,12 @@ func (m *Match) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				m.ID = *value
+			}
+		case match.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				m.CreatedAt = value.Time
 			}
 		case match.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -159,7 +170,9 @@ func (m *Match) Unwrap() *Match {
 func (m *Match) String() string {
 	var builder strings.Builder
 	builder.WriteString("Match(")
-	builder.WriteString(fmt.Sprintf("id=%v", m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(m.CreatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

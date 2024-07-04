@@ -372,6 +372,18 @@ func (mq *MatchQuery) WithStats(opts ...func(*StatisticQuery)) *MatchQuery {
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		CreatedAt time.Time `json:"created_at,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.Match.Query().
+//		GroupBy(match.FieldCreatedAt).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (mq *MatchQuery) GroupBy(field string, fields ...string) *MatchGroupBy {
 	mq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &MatchGroupBy{build: mq}
@@ -383,6 +395,16 @@ func (mq *MatchQuery) GroupBy(field string, fields ...string) *MatchGroupBy {
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		CreatedAt time.Time `json:"created_at,omitempty"`
+//	}
+//
+//	client.Match.Query().
+//		Select(match.FieldCreatedAt).
+//		Scan(ctx, &v)
 func (mq *MatchQuery) Select(fields ...string) *MatchSelect {
 	mq.ctx.Fields = append(mq.ctx.Fields, fields...)
 	sbuild := &MatchSelect{MatchQuery: mq}

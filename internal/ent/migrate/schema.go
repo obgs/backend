@@ -170,6 +170,7 @@ var (
 	// MatchesColumns holds the columns for the "matches" table.
 	MatchesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "game_version_matches", Type: field.TypeString},
 	}
 	// MatchesTable holds the schema information for the "matches" table.
@@ -180,7 +181,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "matches_game_versions_matches",
-				Columns:    []*schema.Column{MatchesColumns[1]},
+				Columns:    []*schema.Column{MatchesColumns[2]},
 				RefColumns: []*schema.Column{GameVersionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
@@ -24,6 +25,20 @@ type MatchCreate struct {
 	mutation *MatchMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (mc *MatchCreate) SetCreatedAt(t time.Time) *MatchCreate {
+	mc.mutation.SetCreatedAt(t)
+	return mc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (mc *MatchCreate) SetNillableCreatedAt(t *time.Time) *MatchCreate {
+	if t != nil {
+		mc.SetCreatedAt(*t)
+	}
+	return mc
 }
 
 // SetID sets the "id" field.
@@ -116,6 +131,10 @@ func (mc *MatchCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (mc *MatchCreate) defaults() {
+	if _, ok := mc.mutation.CreatedAt(); !ok {
+		v := match.DefaultCreatedAt()
+		mc.mutation.SetCreatedAt(v)
+	}
 	if _, ok := mc.mutation.ID(); !ok {
 		v := match.DefaultID()
 		mc.mutation.SetID(v)
@@ -124,6 +143,9 @@ func (mc *MatchCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (mc *MatchCreate) check() error {
+	if _, ok := mc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Match.created_at"`)}
+	}
 	if _, ok := mc.mutation.GameVersionID(); !ok {
 		return &ValidationError{Name: "game_version", err: errors.New(`ent: missing required edge "Match.game_version"`)}
 	}
@@ -165,6 +187,10 @@ func (mc *MatchCreate) createSpec() (*Match, *sqlgraph.CreateSpec) {
 	if id, ok := mc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := mc.mutation.CreatedAt(); ok {
+		_spec.SetField(match.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
 	}
 	if nodes := mc.mutation.GameVersionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -222,11 +248,17 @@ func (mc *MatchCreate) createSpec() (*Match, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.Match.Create().
+//		SetCreatedAt(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.MatchUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
 //		Exec(ctx)
 func (mc *MatchCreate) OnConflict(opts ...sql.ConflictOption) *MatchUpsertOne {
 	mc.conflict = opts
@@ -277,6 +309,9 @@ func (u *MatchUpsertOne) UpdateNewValues() *MatchUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
 		if _, exists := u.create.mutation.ID(); exists {
 			s.SetIgnore(match.FieldID)
+		}
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(match.FieldCreatedAt)
 		}
 	}))
 	return u
@@ -442,6 +477,11 @@ func (mcb *MatchCreateBulk) ExecX(ctx context.Context) {
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.MatchUpsert) {
+//			SetCreatedAt(v+v).
+//		}).
 //		Exec(ctx)
 func (mcb *MatchCreateBulk) OnConflict(opts ...sql.ConflictOption) *MatchUpsertBulk {
 	mcb.conflict = opts
@@ -486,6 +526,9 @@ func (u *MatchUpsertBulk) UpdateNewValues() *MatchUpsertBulk {
 		for _, b := range u.create.builders {
 			if _, exists := b.mutation.ID(); exists {
 				s.SetIgnore(match.FieldID)
+			}
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(match.FieldCreatedAt)
 			}
 		}
 	}))

@@ -16,6 +16,7 @@ import (
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
 	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
+	"github.com/open-boardgame-stats/backend/internal/ent/match"
 	"github.com/open-boardgame-stats/backend/internal/ent/player"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
 	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
@@ -670,6 +671,11 @@ func (m *MatchQuery) CollectFields(ctx context.Context, satisfies ...string) (*M
 
 func (m *MatchQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
 	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(match.Columns))
+		selectedFields = []string{match.FieldID}
+	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
 
@@ -709,7 +715,19 @@ func (m *MatchQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			m.WithNamedStats(alias, func(wq *StatisticQuery) {
 				*wq = *query
 			})
+		case "createdAt":
+			if _, ok := fieldSeen[match.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, match.FieldCreatedAt)
+				fieldSeen[match.FieldCreatedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
 		}
+	}
+	if !unknownSeen {
+		m.Select(selectedFields...)
 	}
 	return nil
 }

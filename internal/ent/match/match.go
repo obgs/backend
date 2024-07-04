@@ -3,6 +3,8 @@
 package match
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
@@ -13,6 +15,8 @@ const (
 	Label = "match"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
 	// EdgeGameVersion holds the string denoting the game_version edge name in mutations.
 	EdgeGameVersion = "game_version"
 	// EdgePlayers holds the string denoting the players edge name in mutations.
@@ -45,6 +49,7 @@ const (
 // Columns holds all SQL columns for match fields.
 var Columns = []string{
 	FieldID,
+	FieldCreatedAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "matches"
@@ -75,6 +80,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() guidgql.GUID
 )
@@ -85,6 +92,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
 // ByGameVersionField orders the results by game_version field.

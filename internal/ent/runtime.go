@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"time"
+
 	"github.com/open-boardgame-stats/backend/internal/ent/game"
 	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
 	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
@@ -105,6 +107,10 @@ func init() {
 	groupsettings.DefaultID = groupsettingsDescID.Default.(func() guidgql.GUID)
 	matchFields := schema.Match{}.Fields()
 	_ = matchFields
+	// matchDescCreatedAt is the schema descriptor for created_at field.
+	matchDescCreatedAt := matchFields[1].Descriptor()
+	// match.DefaultCreatedAt holds the default value on creation for the created_at field.
+	match.DefaultCreatedAt = matchDescCreatedAt.Default.(func() time.Time)
 	// matchDescID is the schema descriptor for id field.
 	matchDescID := matchFields[0].Descriptor()
 	// match.DefaultID holds the default value on creation for the id field.

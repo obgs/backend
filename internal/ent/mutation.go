@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -4073,6 +4074,7 @@ type MatchMutation struct {
 	op                  Op
 	typ                 string
 	id                  *guidgql.GUID
+	created_at          *time.Time
 	clearedFields       map[string]struct{}
 	game_version        *guidgql.GUID
 	clearedgame_version bool
@@ -4189,6 +4191,42 @@ func (m *MatchMutation) IDs(ctx context.Context) ([]guidgql.GUID, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MatchMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MatchMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Match entity.
+// If the Match object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MatchMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MatchMutation) ResetCreatedAt() {
+	m.created_at = nil
 }
 
 // SetGameVersionID sets the "game_version" edge to the GameVersion entity by id.
@@ -4372,7 +4410,10 @@ func (m *MatchMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MatchMutation) Fields() []string {
-	fields := make([]string, 0, 0)
+	fields := make([]string, 0, 1)
+	if m.created_at != nil {
+		fields = append(fields, match.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -4380,6 +4421,10 @@ func (m *MatchMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *MatchMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case match.FieldCreatedAt:
+		return m.CreatedAt()
+	}
 	return nil, false
 }
 
@@ -4387,6 +4432,10 @@ func (m *MatchMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *MatchMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case match.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
 	return nil, fmt.Errorf("unknown Match field %s", name)
 }
 
@@ -4395,6 +4444,13 @@ func (m *MatchMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *MatchMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case match.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Match field %s", name)
 }
@@ -4416,6 +4472,8 @@ func (m *MatchMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *MatchMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Match numeric field %s", name)
 }
 
@@ -4441,6 +4499,11 @@ func (m *MatchMutation) ClearField(name string) error {
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *MatchMutation) ResetField(name string) error {
+	switch name {
+	case match.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown Match field %s", name)
 }
 
