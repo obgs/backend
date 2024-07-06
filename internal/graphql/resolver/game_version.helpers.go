@@ -185,9 +185,11 @@ func getEnumStats(
 			metadata = *res.Metadata
 		}
 		histogram := make(map[string]int)
-		err = json.Unmarshal(res.Histogram, &histogram)
-		if err != nil {
-			return nil, err
+		if len(res.Histogram) != 0 {
+			err = json.Unmarshal(res.Histogram, &histogram)
+			if err != nil {
+				return nil, err
+			}
 		}
 		occurrences := make([]*model.EnumOccurences, 0, len(histogram))
 		for value, count := range histogram {
