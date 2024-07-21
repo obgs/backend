@@ -3,6 +3,9 @@ package resolver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/open-boardgame-stats/backend/internal/ent"
 	"github.com/open-boardgame-stats/backend/internal/graphql/model"
@@ -213,4 +216,80 @@ func getEnumStats(
 	}
 
 	return resp, nil
+}
+
+var granularityToDuration = map[model.Granularity]time.Duration{
+	//nolint:gomnd,mnd
+	model.GranularityDay:   24 * time.Hour,
+	model.GranularityWeek:  7 * 24 * time.Hour,
+	model.GranularityMonth: 30 * 24 * time.Hour,
+}
+
+func getMatchesCreated(
+	ctx context.Context,
+	client *ent.Client,
+	gameVersion *ent.GameVersion,
+	input *model.TimeSeriesInput,
+) (*model.TimeSeries, error) {
+	period := strings.ToLower(input.Granularity.Value.String())
+	resp := make([]*model.TimeSeriesPeriod, 0)
+	rows, err := client.QueryContext(
+		ctx,
+		fmt.Sprintf(
+			`WITH periods AS (SELECT generate_series($1::date, $2::date, '1 %s'::interval) AS period)
+			SELECT
+				p.period,
+				COALESCE(COUNT(m.created_at), 0) AS occurrences
+			FROM
+				periods p
+			LEFT JOIN
+				matches m ON m.created_at >= p.period AND m.created_at < p.period + INTERVAL '1 %s' AND m.game_version_matches = $3
+			GROUP BY
+				p.period
+			ORDER BY
+				p.period;`,
+			period, period),
+		input.Start,
+		input.End,
+		gameVersion.ID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var res struct {
+			Period      string
+			Occurrences int
+		}
+		err = rows.Scan(&res.Period, &res.Occurrences)
+		if err != nil {
+			return nil, err
+		}
+		t, err := time.Parse(time.RFC3339, res.Period)
+		if err != nil {
+			return nil, err
+		}
+		resp = append(resp, &model.TimeSeriesPeriod{
+			ActivityCount: res.Occurrences,
+			Start:         t,
+			End:           t.Add(granularityToDuration[input.Granularity.Value]),
+		})
+	}
+
+	return &model.TimeSeries{
+		Series: resp,
+	}, nil
+}
+
+func getAdoption(
+	ctx context.Context,
+	client *ent.Client,
+	gameVersion *ent.GameVersion,
+	input *model.GranularityInput,
+) (*model.TimeFloatMetric, error) {
+	return &model.TimeFloatMetric{
+		Value: 0,
+		Trend: 0,
+	}, nil
 }
