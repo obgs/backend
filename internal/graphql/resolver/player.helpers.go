@@ -3,12 +3,12 @@ package resolver
 import (
 	"context"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/player"
-	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
-	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequestapproval"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/user"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent/player"
+	"github.com/obgs/backend/internal/ent/playersupervisionrequest"
+	"github.com/obgs/backend/internal/ent/playersupervisionrequestapproval"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/user"
 )
 
 func deleteRequestAndApprovals(ctx context.Context, client *ent.Client, requestID guidgql.GUID) error {

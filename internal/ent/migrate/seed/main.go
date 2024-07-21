@@ -3,7 +3,7 @@ package seed
 import (
 	"context"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent"
 )
 
 func SeedDB(ctx context.Context, client *ent.Client) (err error) {

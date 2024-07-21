@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/open-boardgame-stats/backend/internal/ent/migrate/seed"
+	"github.com/obgs/backend/internal/ent/migrate/seed"
 	"github.com/spf13/cobra"
 )
 

@@ -3,7 +3,7 @@ package seed
 import (
 	"context"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent"
 )
 
 func createPlayers(ctx context.Context, tx *ent.Tx) (*ent.Player, *ent.Player, *ent.Player) {

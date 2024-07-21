@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	miniocreds "github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/open-boardgame-stats/backend/internal/graphql/model"
+	"github.com/obgs/backend/internal/graphql/model"
 )
 
 type FileStorageService struct {

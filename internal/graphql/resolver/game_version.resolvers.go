@@ -9,8 +9,8 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/graphql/model"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/graphql/model"
 )
 
 // Metrics is the resolver for the metrics field.

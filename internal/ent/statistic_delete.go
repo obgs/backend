@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
+	"github.com/obgs/backend/internal/ent/predicate"
+	"github.com/obgs/backend/internal/ent/statistic"
 )
 
 // StatisticDelete is the builder for deleting a Statistic entity.

@@ -10,13 +10,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/match"
-	"github.com/open-boardgame-stats/backend/internal/ent/player"
-	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
-	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
-	"github.com/open-boardgame-stats/backend/internal/ent/user"
+	"github.com/obgs/backend/internal/ent/match"
+	"github.com/obgs/backend/internal/ent/player"
+	"github.com/obgs/backend/internal/ent/playersupervisionrequest"
+	"github.com/obgs/backend/internal/ent/predicate"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/statistic"
+	"github.com/obgs/backend/internal/ent/user"
 )
 
 // PlayerUpdate is the builder for updating Player entities.

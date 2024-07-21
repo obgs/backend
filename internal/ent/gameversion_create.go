@@ -11,11 +11,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
-	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
-	"github.com/open-boardgame-stats/backend/internal/ent/match"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/obgs/backend/internal/ent/game"
+	"github.com/obgs/backend/internal/ent/gameversion"
+	"github.com/obgs/backend/internal/ent/match"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/statdescription"
 )
 
 // GameVersionCreate is the builder for creating a GameVersion entity.

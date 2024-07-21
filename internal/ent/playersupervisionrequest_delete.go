@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/playersupervisionrequest"
-	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/obgs/backend/internal/ent/playersupervisionrequest"
+	"github.com/obgs/backend/internal/ent/predicate"
 )
 
 // PlayerSupervisionRequestDelete is the builder for deleting a PlayerSupervisionRequest entity.

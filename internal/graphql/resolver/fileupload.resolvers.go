@@ -7,7 +7,7 @@ package resolver
 import (
 	"context"
 
-	"github.com/open-boardgame-stats/backend/internal/graphql/model"
+	"github.com/obgs/backend/internal/graphql/model"
 )
 
 // PreSignUploadURL is the resolver for the preSignUploadURL field.

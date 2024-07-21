@@ -10,7 +10,7 @@ import (
 	atlas "ariga.io/atlas/sql/migrate"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
+	"github.com/obgs/backend/internal/ent/migrate"
 
 	_ "github.com/lib/pq"
 )

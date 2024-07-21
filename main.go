@@ -1,6 +1,6 @@
 package main
 
-import "github.com/open-boardgame-stats/backend/cmd"
+import "github.com/obgs/backend/cmd"
 
 func main() {
 	cmd.Execute()
