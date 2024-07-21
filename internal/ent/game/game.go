@@ -5,7 +5,7 @@ package game
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
 )
 
 const (

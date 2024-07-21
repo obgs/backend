@@ -6,8 +6,8 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/schema/stat"
 )
 
 // StatDescription is the schema for the StatDescription entity.

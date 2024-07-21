@@ -8,11 +8,11 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/open-boardgame-stats/backend/internal/ent/match"
-	"github.com/open-boardgame-stats/backend/internal/ent/player"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
-	"github.com/open-boardgame-stats/backend/internal/ent/statistic"
+	"github.com/obgs/backend/internal/ent/match"
+	"github.com/obgs/backend/internal/ent/player"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/statdescription"
+	"github.com/obgs/backend/internal/ent/statistic"
 )
 
 // Statistic is the model entity for the Statistic schema.

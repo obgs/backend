@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
-	"github.com/open-boardgame-stats/backend/internal/graphql/model"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent/gameversion"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/schema/stat"
+	"github.com/obgs/backend/internal/ent/statdescription"
+	"github.com/obgs/backend/internal/graphql/model"
 )
 
 func prepareAggregateStatCalculation(ctx context.Context, client *ent.Client, input []*model.StatInput, playerIds []guidgql.GUID, m *ent.Match) (map[guidgql.GUID]*ent.StatDescription, []*ent.StatDescription, map[guidgql.GUID]map[guidgql.GUID]*model.StatInput, error) {

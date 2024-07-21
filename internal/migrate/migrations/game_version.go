@@ -3,8 +3,8 @@ package migrations
 import (
 	"context"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
 )
 
 type GameVersionMigration struct{}

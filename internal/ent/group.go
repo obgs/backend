@@ -8,9 +8,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/open-boardgame-stats/backend/internal/ent/group"
-	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/group"
+	"github.com/obgs/backend/internal/ent/groupsettings"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
 )
 
 // Group is the model entity for the Group schema.

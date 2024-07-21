@@ -7,10 +7,10 @@ package resolver
 import (
 	"context"
 
-	"github.com/open-boardgame-stats/backend/internal/auth"
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/player"
-	"github.com/open-boardgame-stats/backend/internal/graphql/model"
+	"github.com/obgs/backend/internal/auth"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent/player"
+	"github.com/obgs/backend/internal/graphql/model"
 )
 
 // CreatePlayer is the resolver for the createPlayer field.

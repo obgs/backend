@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
-	"github.com/open-boardgame-stats/backend/internal/graphql/model"
+	"github.com/obgs/backend/internal/ent/schema/stat"
+	"github.com/obgs/backend/internal/graphql/model"
 )
 
 const (

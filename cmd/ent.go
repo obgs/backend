@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent"
 )
 
 func createEntClient() (client *ent.Client, err error) {

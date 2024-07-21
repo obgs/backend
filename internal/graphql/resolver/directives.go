@@ -6,7 +6,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 
-	"github.com/open-boardgame-stats/backend/internal/auth"
+	"github.com/obgs/backend/internal/auth"
 )
 
 func AuthenticatedDirective(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error) {

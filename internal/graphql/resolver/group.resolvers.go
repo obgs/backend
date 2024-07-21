@@ -8,16 +8,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/open-boardgame-stats/backend/internal/auth"
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/enums"
-	"github.com/open-boardgame-stats/backend/internal/ent/group"
-	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
-	"github.com/open-boardgame-stats/backend/internal/ent/groupmembershipapplication"
-	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/user"
-	"github.com/open-boardgame-stats/backend/internal/graphql/model"
+	"github.com/obgs/backend/internal/auth"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent/enums"
+	"github.com/obgs/backend/internal/ent/group"
+	"github.com/obgs/backend/internal/ent/groupmembership"
+	"github.com/obgs/backend/internal/ent/groupmembershipapplication"
+	"github.com/obgs/backend/internal/ent/groupsettings"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/user"
+	"github.com/obgs/backend/internal/graphql/model"
 )
 
 // Role is the resolver for the role field.

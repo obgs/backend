@@ -17,10 +17,10 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
 
-	"github.com/open-boardgame-stats/backend/internal/auth"
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/filestorage"
-	"github.com/open-boardgame-stats/backend/internal/graphql/resolver"
+	"github.com/obgs/backend/internal/auth"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/filestorage"
+	"github.com/obgs/backend/internal/graphql/resolver"
 )
 
 const CORS_MAX_AGE = 300

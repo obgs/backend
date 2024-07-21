@@ -3,9 +3,9 @@ package resolver
 import (
 	"github.com/99designs/gqlgen/graphql"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/filestorage"
-	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/filestorage"
+	"github.com/obgs/backend/internal/graphql/generated"
 )
 
 // This file will not be regenerated automatically.

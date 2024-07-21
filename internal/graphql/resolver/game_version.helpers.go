@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/graphql/model"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/graphql/model"
 )
 
 //nolint:funlen

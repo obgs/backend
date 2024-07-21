@@ -5,10 +5,10 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
-	"github.com/open-boardgame-stats/backend/internal/ent/statdescription"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent/gameversion"
+	"github.com/obgs/backend/internal/ent/schema/stat"
+	"github.com/obgs/backend/internal/ent/statdescription"
 )
 
 const MATCH_MAX_NUMERIC_VALUE = 100

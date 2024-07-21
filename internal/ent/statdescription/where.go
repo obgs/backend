@@ -5,9 +5,9 @@ package statdescription
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
+	"github.com/obgs/backend/internal/ent/predicate"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/schema/stat"
 )
 
 // ID filters vertices based on their ID field.

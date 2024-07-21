@@ -10,12 +10,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/enums"
-	"github.com/open-boardgame-stats/backend/internal/ent/group"
-	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
-	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/user"
+	"github.com/obgs/backend/internal/ent/enums"
+	"github.com/obgs/backend/internal/ent/group"
+	"github.com/obgs/backend/internal/ent/groupmembership"
+	"github.com/obgs/backend/internal/ent/predicate"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/user"
 )
 
 // GroupMembershipUpdate is the builder for updating GroupMembership entities.

@@ -258,7 +258,7 @@ type GroupMembershipEdge {
 """
 GroupMembershipRole is enum for the field role
 """
-enum GroupMembershipRole @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/enums.Role") {
+enum GroupMembershipRole @goModel(model: "github.com/obgs/backend/internal/ent/enums.Role") {
   owner
   admin
   member
@@ -309,7 +309,7 @@ type GroupSettings implements Node {
 """
 GroupSettingsJoinPolicy is enum for the field join_policy
 """
-enum GroupSettingsJoinPolicy @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/groupsettings.JoinPolicy") {
+enum GroupSettingsJoinPolicy @goModel(model: "github.com/obgs/backend/internal/ent/groupsettings.JoinPolicy") {
   OPEN
   INVITE_ONLY
   APPLICATION_ONLY
@@ -318,7 +318,7 @@ enum GroupSettingsJoinPolicy @goModel(model: "github.com/open-boardgame-stats/ba
 """
 GroupSettingsVisibility is enum for the field visibility
 """
-enum GroupSettingsVisibility @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/groupsettings.Visibility") {
+enum GroupSettingsVisibility @goModel(model: "github.com/obgs/backend/internal/ent/groupsettings.Visibility") {
   PUBLIC
   PRIVATE
 }
@@ -484,7 +484,7 @@ input MatchWhereInput {
 An object with an ID.
 Follows the [Relay Global Object Identification Specification](https://relay.dev/graphql/objectidentification.htm)
 """
-interface Node @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent.Noder") {
+interface Node @goModel(model: "github.com/obgs/backend/internal/ent.Noder") {
   """
   The id of the object.
   """
@@ -860,7 +860,7 @@ type StatDescription implements Node {
 """
 StatDescriptionStatType is enum for the field type
 """
-enum StatDescriptionStatType @goModel(model: "github.com/open-boardgame-stats/backend/internal/ent/schema/stat.StatType") {
+enum StatDescriptionStatType @goModel(model: "github.com/obgs/backend/internal/ent/schema/stat.StatType") {
   numeric
   enum
   aggregate

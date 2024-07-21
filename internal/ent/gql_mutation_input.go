@@ -3,7 +3,7 @@
 package ent
 
 import (
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
 )
 
 // UpdateUserInput represents a mutation input for updating users.

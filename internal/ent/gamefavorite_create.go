@@ -11,10 +11,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
-	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/user"
+	"github.com/obgs/backend/internal/ent/game"
+	"github.com/obgs/backend/internal/ent/gamefavorite"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/user"
 )
 
 // GameFavoriteCreate is the builder for creating a GameFavorite entity.

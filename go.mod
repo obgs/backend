@@ -1,4 +1,4 @@
-module github.com/open-boardgame-stats/backend
+module github.com/obgs/backend
 
 go 1.22.3
 

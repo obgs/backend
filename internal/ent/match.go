@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
-	"github.com/open-boardgame-stats/backend/internal/ent/match"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/gameversion"
+	"github.com/obgs/backend/internal/ent/match"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
 )
 
 // Match is the model entity for the Match schema.

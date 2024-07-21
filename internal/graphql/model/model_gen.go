@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/enums"
-	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/stat"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent/enums"
+	"github.com/obgs/backend/internal/ent/groupsettings"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/schema/stat"
 )
 
 // This type is exposed for type safety on client side

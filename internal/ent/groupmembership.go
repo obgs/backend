@@ -8,11 +8,11 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/open-boardgame-stats/backend/internal/ent/enums"
-	"github.com/open-boardgame-stats/backend/internal/ent/group"
-	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/user"
+	"github.com/obgs/backend/internal/ent/enums"
+	"github.com/obgs/backend/internal/ent/group"
+	"github.com/obgs/backend/internal/ent/groupmembership"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/user"
 )
 
 // GroupMembership is the model entity for the GroupMembership schema.

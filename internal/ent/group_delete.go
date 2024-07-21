@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/group"
-	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
+	"github.com/obgs/backend/internal/ent/group"
+	"github.com/obgs/backend/internal/ent/predicate"
 )
 
 // GroupDelete is the builder for deleting a Group entity.

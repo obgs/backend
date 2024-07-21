@@ -8,14 +8,14 @@ import (
 	"context"
 
 	"entgo.io/contrib/entgql"
-	"github.com/open-boardgame-stats/backend/internal/auth"
-	"github.com/open-boardgame-stats/backend/internal/ent"
-	"github.com/open-boardgame-stats/backend/internal/ent/group"
-	"github.com/open-boardgame-stats/backend/internal/ent/groupmembership"
-	"github.com/open-boardgame-stats/backend/internal/ent/groupsettings"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/user"
-	"github.com/open-boardgame-stats/backend/internal/graphql/generated"
+	"github.com/obgs/backend/internal/auth"
+	"github.com/obgs/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent/group"
+	"github.com/obgs/backend/internal/ent/groupmembership"
+	"github.com/obgs/backend/internal/ent/groupsettings"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/user"
+	"github.com/obgs/backend/internal/graphql/generated"
 )
 
 // Node is the resolver for the node field.

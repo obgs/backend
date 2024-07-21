@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent"
 )
 
 // The GameFunc type is an adapter to allow the use of ordinary

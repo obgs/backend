@@ -10,12 +10,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/open-boardgame-stats/backend/internal/ent/game"
-	"github.com/open-boardgame-stats/backend/internal/ent/gamefavorite"
-	"github.com/open-boardgame-stats/backend/internal/ent/gameversion"
-	"github.com/open-boardgame-stats/backend/internal/ent/predicate"
-	"github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql"
-	"github.com/open-boardgame-stats/backend/internal/ent/user"
+	"github.com/obgs/backend/internal/ent/game"
+	"github.com/obgs/backend/internal/ent/gamefavorite"
+	"github.com/obgs/backend/internal/ent/gameversion"
+	"github.com/obgs/backend/internal/ent/predicate"
+	"github.com/obgs/backend/internal/ent/schema/guidgql"
+	"github.com/obgs/backend/internal/ent/user"
 )
 
 // GameUpdate is the builder for updating Game entities.

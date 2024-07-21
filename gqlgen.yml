@@ -35,12 +35,12 @@ struct_tag: json
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-  - github.com/open-boardgame-stats/backend/internal/ent
+  - github.com/obgs/backend/internal/ent
 
 models:
   ID:
     model:
-      - github.com/open-boardgame-stats/backend/internal/ent/schema/guidgql.GUID
+      - github.com/obgs/backend/internal/ent/schema/guidgql.GUID
   Node:
     model:
-      - github.com/open-boardgame-stats/backend/internal/ent.Noder
+      - github.com/obgs/backend/internal/ent.Noder

@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/obgs/backend/internal/ent"
 	// required by schema hooks.
-	_ "github.com/open-boardgame-stats/backend/internal/ent/runtime"
+	_ "github.com/obgs/backend/internal/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/open-boardgame-stats/backend/internal/ent/migrate"
+	"github.com/obgs/backend/internal/ent/migrate"
 )
 
 type (

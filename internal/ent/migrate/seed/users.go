@@ -3,8 +3,8 @@ package seed
 import (
 	"context"
 
-	"github.com/open-boardgame-stats/backend/internal/auth"
-	"github.com/open-boardgame-stats/backend/internal/ent"
+	"github.com/obgs/backend/internal/auth"
+	"github.com/obgs/backend/internal/ent"
 )
 
 func createUsers(ctx context.Context, tx *ent.Tx, player1, player2 *ent.Player) (*ent.User, *ent.User) {
